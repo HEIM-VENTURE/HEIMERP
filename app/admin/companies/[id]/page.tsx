@@ -12,6 +12,7 @@ import {
   TODO_STATUS_LABELS,
   FILE_KIND_LABELS,
 } from "@/lib/labels";
+import { StageChanger } from "./stage-changer";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +185,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             ) : null}
           </div>
         </div>
+        <StageChanger
+          companyId={company.id}
+          currentSalesStage={company.sales_stage}
+          currentConsultingStage={company.consulting_stage}
+        />
       </div>
 
       {/* 통합 12단계 타임라인 — 한 회사 여정 */}

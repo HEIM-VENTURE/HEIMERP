@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Checkbox } from "@/components/ui/checkbox";
 import { TODO_STATUS_LABELS } from "@/lib/labels";
+import { NewTodoModal } from "./new-todo-modal";
+import { TodoCheckbox } from "./todo-checkbox";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,13 @@ export default async function TodosPage({
   const { data, error } = await query;
   const list = (data as Todo[]) ?? [];
 
+  // 회사 목록 (모달의 드롭다운용)
+  const { data: companiesData } = await supabase
+    .from("companies")
+    .select("id, name")
+    .order("name", { ascending: true });
+  const companies = (companiesData as { id: number; name: string }[]) ?? [];
+
   // 통계
   const { data: counts } = await supabase
     .from("todos")
@@ -86,6 +94,7 @@ export default async function TodosPage({
             전체 {totalActive}개 진행 중 · 단계 변경 시 자동 생성 + 수동 추가
           </p>
         </div>
+        <NewTodoModal companies={companies} />
       </div>
 
       {/* 빠른 필터 카드 */}
@@ -129,7 +138,7 @@ export default async function TodosPage({
               return (
                 <tr key={t.id} className="hover:bg-zinc-50">
                   <td className="px-4 py-3">
-                    <Checkbox checked={t.status === "done"} disabled />
+                    <TodoCheckbox todoId={t.id} currentStatus={t.status} />
                   </td>
                   <td className="px-4 py-3">
                     <div className={`${t.status === "done" ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
@@ -192,7 +201,7 @@ export default async function TodosPage({
       </div>
 
       <div className="text-xs text-zinc-400 mt-4">
-        💡 체크박스로 완료 처리 / 직접 추가는 v1.5에서 활성화 예정
+        💡 체크박스 클릭 = 완료 처리 / 우상단 &quot;+ 새 To-do&quot; 버튼으로 직접 추가 가능
       </div>
     </>
   );
