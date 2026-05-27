@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getField,
   getFieldDate,
@@ -37,11 +37,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing responseId" }, { status: 400 });
   }
 
-  // 3. Supabase anon 클라이언트 (RLS 정책으로 source='tally_webhook' INSERT만 허용)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // 3. Service role 클라이언트 (RLS 우회 - webhook은 신뢰된 외부 호출)
+  const supabase = createAdminClient();
 
   // 4. 중복 체크 (같은 responseId는 무시)
   const { data: existing } = await supabase
