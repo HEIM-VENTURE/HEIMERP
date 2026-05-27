@@ -4,17 +4,25 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { LogoutButton } from "./logout-button";
 
 const navItems = [
   { href: "/hvp/dashboard", label: "내 대시보드" },
-  { href: "/hvp/companies", label: "내 기업", count: 12 },
-  { href: "/hvp/submit", label: "기업 접수하기", plus: true },
+  { href: "/hvp/companies", label: "내 기업" },
+  { href: "/hvp/submit", label: "기업 접수하기" },
   { href: "/hvp/fees", label: "수수료 내역" },
-  { href: "/hvp/notifications", label: "알림", badge: 2 },
+  { href: "/hvp/notifications", label: "알림" },
 ];
 
-export function HvpSidebar() {
+type Props = {
+  profile: { name: string; email: string; role: string };
+  hvpInfo: { name: string; cohort: string | null } | null;
+};
+
+export function HvpSidebar({ profile, hvpInfo }: Props) {
   const pathname = usePathname();
+  const displayName = hvpInfo?.name ?? profile.name;
+  const cohort = hvpInfo?.cohort ?? "";
 
   return (
     <aside className="w-60 min-h-screen bg-white border-r border-zinc-200 px-3 py-5 flex flex-col shrink-0">
@@ -27,7 +35,9 @@ export function HvpSidebar() {
           className="h-7 w-auto"
           priority
         />
-        <div className="text-[10px] text-zinc-400 mt-1.5 ml-0.5">ERP · HVP · 5기</div>
+        <div className="text-[10px] text-zinc-400 mt-1.5 ml-0.5">
+          ERP · HVP{cohort ? ` · ${cohort}` : ""}
+        </div>
       </div>
 
       <nav className="space-y-0.5 text-sm">
@@ -46,17 +56,6 @@ export function HvpSidebar() {
             >
               <span className={cn("w-1.5 h-1.5 rounded-full", active ? "bg-zinc-900" : "bg-zinc-300")} />
               <span>{item.label}</span>
-              {item.count !== undefined ? (
-                <span className="ml-auto text-[10px] text-zinc-400">{item.count}</span>
-              ) : null}
-              {item.plus ? (
-                <span className="ml-auto text-[10px] bg-zinc-900 text-white px-1.5 py-0.5 rounded">+</span>
-              ) : null}
-              {item.badge ? (
-                <span className="ml-auto text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">
-                  {item.badge}
-                </span>
-              ) : null}
             </Link>
           );
         })}
@@ -72,15 +71,16 @@ export function HvpSidebar() {
       </nav>
 
       <div className="mt-auto pt-4 border-t border-zinc-100 px-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-semibold text-emerald-700">
-            민
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-semibold text-emerald-700 shrink-0">
+            {displayName.slice(0, 1)}
           </div>
-          <div className="text-xs">
-            <div className="font-medium text-zinc-900">김민준</div>
-            <div className="text-zinc-400">5기 · HVP</div>
+          <div className="text-xs min-w-0 flex-1">
+            <div className="font-medium text-zinc-900 truncate">{displayName}</div>
+            <div className="text-zinc-400 truncate">{cohort ? `${cohort} · HVP` : "HVP"}</div>
           </div>
         </div>
+        <LogoutButton />
       </div>
     </aside>
   );

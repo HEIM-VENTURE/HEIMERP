@@ -4,18 +4,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { LogoutButton } from "./logout-button";
 
 const navItems = [
   { href: "/admin/dashboard", label: "대시보드" },
   { href: "/admin/pipeline", label: "기업 파이프라인" },
-  { href: "/admin/applications", label: "신청자 / 접수", badge: 3 },
+  { href: "/admin/applications", label: "신청자 / 접수" },
   { href: "/admin/hvp", label: "HVP 관리" },
   { href: "/admin/contracts", label: "계약 · 수수료" },
   { href: "/admin/meetings", label: "미팅 · 회의록" },
   { href: "/admin/tips", label: "TIPS 운영사" },
 ];
 
-export function AdminSidebar() {
+type Props = {
+  profile: { name: string; email: string; role: string };
+};
+
+export function AdminSidebar({ profile }: Props) {
   const pathname = usePathname();
 
   return (
@@ -48,11 +53,6 @@ export function AdminSidebar() {
             >
               <span className={cn("w-1.5 h-1.5 rounded-full", active ? "bg-zinc-900" : "bg-zinc-300")} />
               <span>{item.label}</span>
-              {item.badge ? (
-                <span className="ml-auto text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">
-                  {item.badge}
-                </span>
-              ) : null}
             </Link>
           );
         })}
@@ -68,15 +68,16 @@ export function AdminSidebar() {
       </nav>
 
       <div className="mt-auto pt-4 border-t border-zinc-100 px-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-            관
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700 shrink-0">
+            {profile.name.slice(0, 1)}
           </div>
-          <div className="text-xs">
-            <div className="font-medium text-zinc-900">관리자</div>
-            <div className="text-zinc-400">admin@heimvi.com</div>
+          <div className="text-xs min-w-0 flex-1">
+            <div className="font-medium text-zinc-900 truncate">{profile.name}</div>
+            <div className="text-zinc-400 truncate">{profile.email}</div>
           </div>
         </div>
+        <LogoutButton />
       </div>
     </aside>
   );
