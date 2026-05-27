@@ -67,3 +67,35 @@ export async function logoutAction() {
   revalidatePath("/", "layout");
   redirect("/");
 }
+
+/**
+ * Google OAuth 로그인 시작 (server action).
+ * client보다 안정적 — PKCE verifier가 cookie에 저장됨.
+ */
+export async function signInWithGoogleAction() {
+  const supabase = await createClient();
+
+  // request headers에서 origin 추출
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const origin = `${proto}://${host}`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    redirect(`/?error=${encodeURIComponent("Google 로그인 시작 실패: " + error.message)}`);
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+
+  redirect(`/?error=${encodeURIComponent("OAuth URL 생성 실패")}`);
+}

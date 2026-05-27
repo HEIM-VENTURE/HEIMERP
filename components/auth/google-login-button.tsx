@@ -1,32 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useTransition } from "react";
+import { signInWithGoogleAction } from "@/app/auth/actions";
 
 export function GoogleLoginButton() {
-  const [pending, setPending] = useState(false);
-
-  const onClick = async () => {
-    setPending(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      alert("Google 로그인 시작 실패: " + error.message);
-      setPending(false);
-    }
-    // 성공 시 Google 동의 화면으로 자동 redirect됨
-  };
+  const [pending, startTransition] = useTransition();
 
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => startTransition(() => signInWithGoogleAction())}
       disabled={pending}
       className="w-full py-2.5 bg-white border border-zinc-200 text-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 transition flex items-center justify-center gap-2 disabled:opacity-60"
     >
