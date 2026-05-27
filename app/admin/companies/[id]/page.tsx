@@ -13,6 +13,7 @@ import {
   FILE_KIND_LABELS,
 } from "@/lib/labels";
 import { StageChanger } from "./stage-changer";
+import { NewMeetingModal } from "./new-meeting-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
     title: string;
     sub?: string;
     color: string;
+    aiSummary?: string | null;
   };
 
   const activities: Activity[] = [
@@ -122,6 +124,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       title: `${m.sequence ?? "미팅"} — ${m.title ?? "회의록"}`,
       sub: m.attendees ?? undefined,
       color: "bg-amber-500",
+      aiSummary: m.ai_summary as string | null,
     })),
     ...todos.map((t: any) => ({
       when: t.completed_at ?? t.created_at,
@@ -185,11 +188,14 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             ) : null}
           </div>
         </div>
-        <StageChanger
-          companyId={company.id}
-          currentSalesStage={company.sales_stage}
-          currentConsultingStage={company.consulting_stage}
-        />
+        <div className="flex gap-2">
+          <NewMeetingModal companyId={company.id} />
+          <StageChanger
+            companyId={company.id}
+            currentSalesStage={company.sales_stage}
+            currentConsultingStage={company.consulting_stage}
+          />
+        </div>
       </div>
 
       {/* 통합 12단계 타임라인 — 한 회사 여정 */}
@@ -254,10 +260,18 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 <div key={i} className="flex items-start gap-3 text-sm">
                   <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${a.color}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-zinc-900">{a.title}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-zinc-900">{a.title}</div>
+                      <span className="text-xs text-zinc-400 shrink-0">{formatRelative(a.when)}</span>
+                    </div>
                     {a.sub ? <div className="text-xs text-zinc-500 mt-0.5">{a.sub}</div> : null}
+                    {a.aiSummary ? (
+                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900">
+                        <div className="font-semibold mb-1">✨ AI 요약</div>
+                        <pre className="whitespace-pre-wrap font-sans leading-relaxed">{a.aiSummary}</pre>
+                      </div>
+                    ) : null}
                   </div>
-                  <span className="text-xs text-zinc-400 shrink-0">{formatRelative(a.when)}</span>
                 </div>
               ))}
             </div>
