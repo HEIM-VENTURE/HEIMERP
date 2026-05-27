@@ -4,93 +4,180 @@
 
 ## 프로젝트 한 줄 소개
 
-하임벤처투자(스타트업 컨설팅)의 전체 워크플로우를 관리하는 ERP. **클라이언트 스타트업을 TIPS 프로그램에 선정시키는 컨설팅 파이프라인이 핵심.**
+하임벤처투자(스타트업 컨설팅)의 전체 워크플로우 ERP. **클라이언트 스타트업을 TIPS 프로그램에 선정시키는 컨설팅 파이프라인이 핵심.**
+
+## 운영 URL
+
+- **Production**: https://heimventure.netlify.app
+- **GitHub**: https://github.com/imyoonaheo/Heim-venture
+- **Supabase Project ID**: `evcdteayjtflrujabvys`
+- **Supabase Dashboard**: https://supabase.com/dashboard/project/evcdteayjtflrujabvys
 
 ## 사용자 3종 역할
 
-- **관리자 (하임)** — 모든 데이터 RW, 커스텀 필드(컬럼) 추가 가능
-- **HVP (Heim Venture Partners, 영업자)** — 자기 데려온 기업만 RW. 단계는 접수→1차미팅까지만 변경. 본인 수수료(계약비의 20%) 조회
-- **기업 (스타트업)** — 자기 회사 조회 + 자료 업로드 + To-do 완료 체크만
+| 역할 | 권한 | 자동 매칭 |
+|---|---|---|
+| **admin** | 전체 RW | `@heimvi.com` 도메인 → 자동 admin |
+| **hvp** | 자기 데려온 기업만 RW | hvp 테이블의 이메일 매칭 시 자동 |
+| **company_member** | 자기 회사만 R, 일부 W | 기본값 |
 
 ## 비용 정책 ⚠️
 
-**0원 운영이 절대 조건.** Supabase Free + Netlify Free + Cloudflare R2 무료 + Gemini Flash 무료티어만 사용. 유료 옵션 제안 금지.
+**0원 운영이 절대 조건.** 모두 무료 티어. 유료 옵션 제안 금지.
 
-## 기술 스택
+## 기술 스택 (전부 작동 중)
 
 | 영역 | 선택 | 상태 |
 |---|---|---|
-| 프레임워크 | Next.js 16 App Router + TypeScript + Turbopack | ✅ |
-| 스타일링 | Tailwind 4 + shadcn/ui (14개 컴포넌트) | ✅ |
-| 폰트 | Pretendard (CDN) | ✅ |
-| DB + Auth | Supabase Free | ⏳ |
-| 대용량 파일 | Cloudflare R2 (10GB 무료) | ⏳ |
-| AI 회의록 요약 | Google Gemini 2.0 Flash (일 1,500회 무료) | ⏳ |
-| 이메일 알림 | Resend Free (3,000건/월) | ⏳ |
-| 호스팅 | Netlify Free | ⏳ |
+| Frontend | Next.js 16 App Router + TS + Tailwind 4 + Turbopack | ✅ |
+| UI | shadcn/ui + Pretendard | ✅ |
+| DB + Auth + Storage | Supabase Free | ✅ |
+| AI 요약 | Google Gemini 2.0 Flash (무료) | ✅ |
+| 호스팅 | Netlify Free | ✅ |
+| Google OAuth | Google Cloud Console (무료) | ✅ |
+| Tally Webhook | Tally Pro | ✅ |
+| Google Form Webhook | Apps Script | ✅ |
+| Cloudflare R2 | (미연동, v1.5) | ⏳ |
+| Resend (이메일) | (미연동, v1.5) | ⏳ |
 
 ## 폴더 / 환경
 
 - **작업 폴더**: `C:\Users\laa02\Projects\heim-erp`
-- **mockup 참고**: `C:\Users\laa02\OneDrive\Desktop\Heimvc\heim-erp-mockup` (정적 HTML 6개)
-- VS Code, Node v25.8.2 (Miniconda base), Git 2.54.0
-- Bash 명령 패턴: `cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\laa02\Projects\heim-erp && <명령>"`
-- Dev server: `npm run dev` → http://localhost:3000
+- **mockup 참고**: `C:\Users\laa02\OneDrive\Desktop\Heimvc\heim-erp-mockup`
+- Node v25.8.2 (Miniconda base), Git 2.54.0, VS Code
 
-## 단계(stage) 디자인
+**Bash 명령 패턴**:
+```bash
+cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\laa02\Projects\heim-erp && <명령>"
+```
 
-**영업 칸반 5단계**: `접수 → 1차미팅 → 제안 → 계약 → 착수`
+**Dev server**: 사용자가 직접 Miniconda Prompt에서 `npm run dev` → http://localhost:3000
 
-**컨설팅 타임라인 7단계** (착수 후): `착수 → 초기검토 → 개발자문/1차사업계획 → IR Deck → TIPS 운영사 IR → TIPS 심사 → 조합투자 Closing → Final Closing`
+## 환경변수 (`.env.local` + Netlify)
 
-(언제든) `Drop`
+| Key | 용도 |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | https://evcdteayjtflrujabvys.supabase.co |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Legacy anon key (eyJhbGc...) |
+| `SUPABASE_SERVICE_ROLE_KEY` | 관리자 API용 (webhook, 신청 승인 등) |
+| `TALLY_WEBHOOK_SECRET` | Tally/Google Form webhook 시크릿 |
+| `GOOGLE_GENAI_API_KEY` | Gemini AI 요약용 |
 
-**프로그램 등급**: `Premium / Basic / Free` (컨설팅 제안금액 1,500만/1,000만원, HVP 수수료 20%)
+## 단계 디자인
 
-## 단계 진입 시 자동 To-do 룰 (v1: 코드 하드코딩)
+**영업 5단계**: `received → meeting_1st → proposal → contract → kickoff`
 
-| 단계 진입 | 자동 To-do | 담당자 | 알림 |
-|---|---|---|---|
-| 접수 (Tally 직후) | "OO기수 카톡방 초대" / "신규 접수 검토" / "1차 미팅 일정" | HVP / 관리자 / 컨설턴트 | 메일 |
-| 1차미팅 | "회의록 작성" / "내부 검토" | 컨설턴트 / 관리자 | - |
-| 제안 | "제안서·견적서 작성" | 컨설턴트 | - |
-| 계약 | "계약서 작성" / "조건 확정" | 컨설턴트 | HVP 알림 |
-| 착수 | "킥오프 일정" / "HVP 수수료 정산 등록" / "초기 검토" | 컨설턴트 / 관리자 | HVP 알림 |
-| IR Deck | "초안" / "내부 리뷰" | 컨설턴트 | - |
-| TIPS 운영사 IR | "운영사 매칭" / "IR 일정" | 관리자 | - |
-| TIPS 심사 | "심사 결과 추적" | 관리자 | - |
-| Final Closing | "HVP 수수료 지급" / "모니터링 시작" | 관리자 | HVP 알림 |
-| Drop | "Drop 사유 기록" | 컨설턴트 | HVP 알림 |
+**컨설팅 7단계** (착수 후): `kickoff → initial_review → dev_advisory → ir_deck → tips_operator_ir → tips_review → fund_closing → final_closing`
+
+**프로그램 등급**: `premium / basic / free`
+
+## SQL 마이그레이션 (0001~0012)
+
+모두 `supabase/migrations/` 에 있음. 새 환경에 적용하려면 순서대로 실행.
+
+| 번호 | 내용 |
+|---|---|
+| 0001 | 초기 스키마 (13 테이블 + enum + 트리거) |
+| 0002 | RLS 정책 |
+| 0003 | 시드 데이터 (테스트용, 옵션) |
+| 0004 | handle_new_user 트리거 권한 픽스 |
+| 0005 | anon/authenticated GRANT |
+| 0006 | 노션 투자&TIPS 컨설팅 51개 import |
+| 0007 | 단계 변경 시 자동 To-do 트리거 |
+| 0008 | HVP 5명 시드 + 회사 담당 할당 |
+| 0009 | hvp_applications에 cohort 컬럼 |
+| 0010 | service_role GRANT |
+| 0011 | handle_new_user에 hvp 자동 매칭 |
+| 0012 | @heimvi.com 자동 admin |
 
 ## 외부 데이터 소스
 
-- **Tally 폼 1** (기업 접수, HVP가 사용): https://tally.so/r/1AMgOQ
-- **Tally 폼 2** (HVP 마스터코스 신청): https://tally.so/r/q4YRxG
-- **노션 마스터 대시보드**: https://www.notion.so/HEIM-Dash-Board-2491fd615b8080ccb622d36536ddd9b7
+- **Tally 기업 접수 폼**: https://tally.so/r/1AMgOQ → Webhook 연동됨
+- **구글 폼 HVP 신청**: https://docs.google.com/forms/d/e/1FAIpQLSdMnfm4GLLm3MLqg1DEVrCdinai2kL1pP7rcZVDhjHT4GVjhw/viewform → Google Apps Script로 webhook 연동됨
 
-## ERD 핵심 테이블
+## 완성된 페이지
 
-`profiles` (auth.users 확장, role) · `hvp` · `hvp_applications` · `companies` · `company_stage_history` · `meetings` · `todos` · `files` · `contracts` · `notifications` · `activity_log` · `custom_fields` (jsonb, v1은 HVP만)
+### Admin (`@heimvi.com`)
+- ✅ `/admin/dashboard` — KPI + 단계별 분포 + 월별 차트 + 최근 활동 + 오늘 할일
+- ✅ `/admin/pipeline` — 테이블 + 4종 필터 + KPI/차트
+- ✅ `/admin/applications` — HVP 신청자 관리 + 승인+계정생성
+- ✅ `/admin/todos` — To-do 관리 (수동 추가 모달 + 체크박스 완료)
+- ✅ `/admin/companies/[id]` — 12단계 통합 타임라인 + 활동 피드 + 단계 변경 + 미팅·회의록 추가 + AI 요약
 
-## 만든 페이지 (현재)
+### HVP
+- ✅ `/hvp/dashboard` — KPI + 깔때기 + 내 기업 요약
+- ✅ `/hvp/companies` — 내 기업 목록 + 검색 + 단계 필터
+- ✅ `/hvp/submit` — 새 기업 접수 폼 (ERP 자체)
+- ✅ `/hvp/companies/[id]` — 12단계 + 미팅 + To-do + 내 수수료
 
-- ✅ `/` — 로그인 (역할 빠른 전환)
-- ✅ `/admin/dashboard` — 관리자 대시보드
-- ✅ `/hvp/dashboard` — HVP 대시보드
-- ✅ Layout & Sidebar 컴포넌트
+### 공용
+- ✅ `/` — 로그인 (Google + 이메일/비밀번호)
+- ✅ `/auth/callback` — OAuth 콜백
+- ✅ `/company/dashboard` — placeholder
 
-## 남은 작업 (우선순위)
+## 자동화 흐름
 
-1. `/admin/pipeline` — 영업 칸반 (드래그&드롭 v1.5)
-2. `/admin/companies/[id]` — 기업 상세 (탭 + 컨설팅 타임라인 + AI 회의록 요약)
-3. `/admin/hvp` — HVP 관리 + 신규 추가 + **커스텀 필드 추가** UI
-4. `/company/dashboard` — 기업용 화면
-5. Supabase 프로젝트 생성·스키마·RLS
-6. 인증 미들웨어 + 역할 가드
-7. Tally Webhook + CSV 업로드
-8. 단계별 자동 To-do/알림 룰
-9. 노션 데이터 마이그레이션
-10. Netlify 배포
+```
+[HVP 모집]
+구글 폼 신청 → Apps Script → webhook → hvp_applications "신규"
+  → /admin/applications에서 admin이 "승인+계정생성" 클릭
+  → hvp 테이블 INSERT
+  → HVP에게 "본인 Google 계정으로 로그인" 안내
+  → HVP가 Google 로그인 → 이메일 매칭 자동 → role='hvp' + hvp_id 자동 연결
+
+[영업]
+HVP가 Tally 폼 또는 /hvp/submit에서 기업 접수 → companies INSERT
+  → 자동 To-do 트리거 (예: "기수 카톡방 초대")
+  → admin이 단계 변경 → 또 자동 To-do
+  → 단계 진입 시 자동으로 contracted_at, started_at 채워짐
+```
+
+## 자동 To-do 룰 (0007 트리거)
+
+| 단계 진입 | 자동 To-do |
+|---|---|
+| received | 기수 카톡방 초대, 신규 검토, 1차 미팅 일정 |
+| meeting_1st | 회의록 작성, 내부 검토 회의 |
+| proposal | 제안서 작성·발송, 견적서 작성 |
+| contract | 계약서 작성, 계약 조건 확정 |
+| kickoff | 킥오프 미팅 일정, HVP 수수료 정산, 초기 검토 |
+| ir_deck | IR Deck 초안, 내부 리뷰 |
+| tips_operator_ir | TIPS 운영사 매칭, IR 일정 |
+| tips_review | 심사 결과 추적 |
+| final_closing | HVP 수수료 지급, 기업 모니터링 시작 |
+
+## 핵심 헬퍼
+
+- `lib/labels.ts` — UI 라벨·색상 매핑 (영어 DB ↔ 한국어 UI)
+- `lib/supabase/client.ts` — 브라우저용 (createBrowserClient)
+- `lib/supabase/server.ts` — 서버용 (createServerClient + cookies)
+- `lib/supabase/admin.ts` — service_role (RLS 우회, webhook·승인 액션용)
+- `lib/supabase/middleware.ts` — 세션 쿠키 갱신 + 권한 가드
+- `lib/tally.ts` — Tally 페이로드 파싱
+- `lib/gemini.ts` — Gemini AI 요약
+
+## 남은 작업 (우선순위순)
+
+| 순위 | 작업 | 비고 |
+|---|---|---|
+| 1 | `/admin/contracts` (계약·수수료) | 단계 "계약" 진입 시 자동 contracts 생성 + 지급 처리 UI |
+| 2 | `/hvp/fees` | HVP가 자기 수수료 자세히 |
+| 3 | 자료 업로드 (Supabase Storage) | 사업계획서·IR Deck 등 첨부 |
+| 4 | 이메일 알림 (Resend) | "오늘 마감 To-do" 알림 |
+| 5 | 기업 정보 직접 편집 UI | 현재는 SQL로만 |
+| 6 | HVP가 자기 기업 미팅·자료 추가 | RLS는 OK, UI만 admin에 있음 |
+| 7 | `/admin/meetings` (회의록 전체) | 모든 회사 미팅 한 화면 |
+| 8 | `/admin/tips` (TIPS 운영사 DB) | tips_operators 테이블 활용 |
+| 9 | `/hvp/notifications`, `/hvp/profile` | placeholder 페이지들 |
+| 10 | 알림 시스템 (notifications 테이블) | UI + 실시간 |
+| 11 | 모바일 반응형 | 현재 데스크탑 위주 |
+| 12 | 회의록 녹음 + STT (v1.5) | 무료 STT 한계 — 유료 검토 |
+
+## 알려진 이슈
+
+- Next.js 16: `middleware.ts` deprecated 경고 → `proxy.ts`로 이름 변경 필요 (작동엔 X 영향)
+- 시드 HVP 5명 (김민준 등)은 가짜 이메일 — 실제 운영 시 교체
+- `yoona.heo04@gmail.com`은 테스트용 HVP — 실제 운영 시 정리
 
 ## 다음 세션 빠른 시작
 
@@ -99,14 +186,13 @@ cd C:\Users\laa02\Projects\heim-erp
 npm run dev
 ```
 
-브라우저: http://localhost:3000
+또는 그냥 Production URL: https://heimventure.netlify.app
 
-## 디자인 참고
+새 세션에서 Claude에게: **"이어서 작업하자"** 또는 **"#1번부터 시작하자"** 정도면 OK.
 
-- mockup 폴더의 6개 HTML 톤 유지: zinc, 흰 배경, 둥근 모서리, 미니멀 그림자
-- 강조 색: emerald/blue/amber/purple
-- 폰트: Pretendard 통일
+## 디자인 톤
 
-## 주의
-
-사이드바의 미구현 메뉴(`/admin/applications`, `/admin/contracts`, 등)는 404. 우선순위 1~4 페이지 작업하면서 placeholder도 같이 만들 것.
+- Pretendard 폰트
+- zinc 베이스 + 강조 색 (emerald/blue/amber/purple/rose)
+- 흰 배경 + 둥근 모서리 + 미니멀 그림자
+- 가독성·정보 밀도 우선 (노션 차별화)
