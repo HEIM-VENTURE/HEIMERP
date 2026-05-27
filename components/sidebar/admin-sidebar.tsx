@@ -9,6 +9,7 @@ import { LogoutButton } from "./logout-button";
 const navItems = [
   { href: "/admin/dashboard", label: "대시보드" },
   { href: "/admin/pipeline", label: "기업 파이프라인" },
+  { href: "/admin/todos", label: "할 일 (To-do)" },
   { href: "/admin/applications", label: "신청자 / 접수" },
   { href: "/admin/hvp", label: "HVP 관리" },
   { href: "/admin/contracts", label: "계약 · 수수료" },
