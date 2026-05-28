@@ -1,10 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/server";
-import { loginAction } from "./auth/actions";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 
 export const dynamic = "force-dynamic";
@@ -51,59 +47,19 @@ export default async function LoginPage({ searchParams }: Props) {
         </div>
 
         <div className="bg-white border border-zinc-200 rounded-2xl p-7 shadow-sm space-y-4">
-          {/* Google 로그인 (가장 추천) */}
+          {/* Google 로그인 */}
           <GoogleLoginButton />
 
-          <div className="flex items-center gap-3 text-xs text-zinc-400">
-            <div className="flex-1 h-px bg-zinc-200"></div>
-            <span>또는 이메일로</span>
-            <div className="flex-1 h-px bg-zinc-200"></div>
-          </div>
-
-          {/* 이메일·비밀번호 로그인 */}
-          <form action={loginAction} className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium text-zinc-700 mb-1.5 block">
-                이메일
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@heimvi.com"
-                required
-                autoComplete="email"
-              />
+          {error ? (
+            <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+              {error}
             </div>
-            <div>
-              <Label htmlFor="password" className="text-sm font-medium text-zinc-700 mb-1.5 block">
-                비밀번호
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-
-            {error ? (
-              <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
-                {error}
-              </div>
-            ) : null}
-
-            <Button type="submit" className="w-full">
-              로그인
-            </Button>
-          </form>
+          ) : null}
 
           <div className="pt-4 border-t border-zinc-100">
             <p className="text-xs text-zinc-400">
               💡 HVP는 신청서 작성 후 관리자 승인을 받으셔야 합니다.<br />
-              승인된 후 본인 Google 계정으로 로그인하세요.
+              승인 후 본인 <b>Google 계정</b>으로 로그인하세요.
             </p>
           </div>
         </div>
