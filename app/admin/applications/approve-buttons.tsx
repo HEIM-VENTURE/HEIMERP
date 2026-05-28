@@ -23,16 +23,22 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
   >(null);
   const [payOpen, setPayOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
+  // 클릭 즉시 이 행만 반영 (서버 재검증 전 낙관적 표시 — 다른 행과 절대 안 섞임)
+  const [optimisticStage, setOptimisticStage] = useState<Stage | null>(null);
+  const shownStage = optimisticStage ?? stage;
 
   const run = (
     toStage: Stage,
     payload?: { paidAmount?: number; paidAt?: string; completedAt?: string; reason?: string }
   ) => {
     setError(null);
+    setOptimisticStage(toStage);
     startTransition(async () => {
       const r = await updateOnboardingStageAction(applicationId, toStage, payload);
-      if ("error" in r) setError(r.error);
-      else {
+      if ("error" in r) {
+        setError(r.error);
+        setOptimisticStage(null); // 실패 시 원복
+      } else {
         setPayOpen(false);
         setDoneOpen(false);
         if (toStage === "partner") setSuccess({ stage: "partner", email: r.email, alreadyLoggedIn: r.alreadyLoggedIn });
@@ -49,17 +55,17 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        {stage === "applied" ? (
+        {shownStage === "applied" ? (
           <Button size="sm" onClick={() => setPayOpen(true)} disabled={pending} className="text-xs">
             💳 결제 확인
           </Button>
         ) : null}
-        {stage === "paid" ? (
+        {shownStage === "paid" ? (
           <Button size="sm" onClick={() => setDoneOpen(true)} disabled={pending} className="text-xs">
             🎓 교육 이수 처리
           </Button>
         ) : null}
-        {stage === "completed" ? (
+        {shownStage === "completed" ? (
           <Button
             size="sm"
             onClick={() => {
@@ -71,14 +77,14 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
             🤝 파트너 등록 (HVP)
           </Button>
         ) : null}
-        {stage === "partner" ? (
+        {shownStage === "partner" ? (
           <span className="text-xs text-emerald-700 font-medium px-2 py-1">✓ 파트너 활동 중</span>
         ) : null}
-        {stage === "rejected" ? (
+        {shownStage === "rejected" ? (
           <span className="text-xs text-zinc-400 px-2 py-1">거절/이탈</span>
         ) : null}
 
-        {stage !== "partner" && stage !== "rejected" ? (
+        {shownStage !== "partner" && shownStage !== "rejected" ? (
           <Button
             size="sm"
             variant="outline"
@@ -89,7 +95,7 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
             거절
           </Button>
         ) : null}
-        {stage === "rejected" ? (
+        {shownStage === "rejected" ? (
           <Button size="sm" variant="outline" onClick={() => run("applied")} disabled={pending} className="text-xs">
             신청으로 되돌리기
           </Button>
@@ -100,11 +106,11 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] text-zinc-400">단계 수동:</span>
         <select
-          value={stage}
+          value={shownStage}
           disabled={pending}
           onChange={(e) => {
             const next = e.target.value as Stage;
-            if (next === stage) return;
+            if (next === shownStage) return;
             if (next === "partner" && !confirm(`${applicantName}님을 파트너 HVP로 등록할까요?`)) return;
             run(next);
           }}

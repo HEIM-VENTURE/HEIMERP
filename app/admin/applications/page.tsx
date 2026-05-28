@@ -51,7 +51,8 @@ export default async function ApplicationsPage({
   let listQuery = supabase
     .from("hvp_applications")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true }); // 동점 시 순서 고정 (행 뒤바뀜 방지)
   if (filter !== "all") listQuery = listQuery.eq("onboarding_stage", filter);
 
   const [listRes, countsRes] = await Promise.all([
