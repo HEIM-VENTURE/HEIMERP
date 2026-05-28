@@ -15,14 +15,29 @@ type Todo = {
   status: "pending" | "in_progress" | "done";
   auto_generated: boolean;
   trigger_stage: string | null;
+  category: string | null;
   created_at: string;
   completed_at: string | null;
   companies?: { id: number; name: string } | null;
 };
 
+type Cat = "all" | "hvp_onboarding" | "deal" | "general";
+
 type SearchParams = {
   filter?: "all" | "today" | "overdue" | "this_week" | "done";
   auto?: "all" | "auto" | "manual";
+  cat?: Cat;
+};
+
+const CAT_LABEL: Record<string, string> = {
+  hvp_onboarding: "HVP 온보딩",
+  deal: "딜·기업",
+  general: "일반",
+};
+const CAT_BADGE: Record<string, string> = {
+  hvp_onboarding: "bg-violet-100 text-violet-700",
+  deal: "bg-blue-100 text-blue-700",
+  general: "bg-zinc-100 text-zinc-600",
 };
 
 export default async function TodosPage({
@@ -33,6 +48,12 @@ export default async function TodosPage({
   const sp = await searchParams;
   const filter = sp.filter ?? "all";
   const auto = sp.auto ?? "all";
+  const cat = (sp.cat ?? "all") as Cat;
+
+  const qs = (over: Partial<{ filter: string; auto: string; cat: string }>) => {
+    const p = new URLSearchParams({ filter, auto, cat, ...over });
+    return `?${p.toString()}`;
+  };
 
   const supabase = await createClient();
 
@@ -61,18 +82,21 @@ export default async function TodosPage({
 
   if (auto === "auto") listQuery = listQuery.eq("auto_generated", true);
   if (auto === "manual") listQuery = listQuery.eq("auto_generated", false);
+  if (cat !== "all") listQuery = listQuery.eq("category", cat);
 
   // 3개 쿼리 동시
   const [listRes, companiesRes, countsRes] = await Promise.all([
     listQuery,
     supabase.from("companies").select("id, name").order("name", { ascending: true }),
-    supabase.from("todos").select("id, due_date, status, auto_generated"),
+    supabase.from("todos").select("id, due_date, status, auto_generated, category"),
   ]);
 
   const { data, error } = listRes;
   const list = (data as Todo[]) ?? [];
   const companies = (companiesRes.data as { id: number; name: string }[]) ?? [];
   const all = (countsRes.data as Todo[]) ?? [];
+  const activeAll = all.filter((t) => t.status !== "done");
+  const catCount = (c: string) => activeAll.filter((t) => (t.category ?? "deal") === c).length;
   const overdueCount = all.filter((t) => t.status !== "done" && t.due_date && t.due_date < todayStr).length;
   const todayCount = all.filter((t) => t.status !== "done" && t.due_date === todayStr).length;
   const weekCount = all.filter(
@@ -93,20 +117,28 @@ export default async function TodosPage({
         <NewTodoModal companies={companies} />
       </div>
 
+      {/* 카테고리 탭 */}
+      <div className="flex gap-2 mb-4 text-sm border-b border-zinc-200">
+        <CatTab active={cat === "all"} href={qs({ cat: "all" })} label="전체" count={activeAll.length} />
+        <CatTab active={cat === "hvp_onboarding"} href={qs({ cat: "hvp_onboarding" })} label="HVP 온보딩" count={catCount("hvp_onboarding")} />
+        <CatTab active={cat === "deal"} href={qs({ cat: "deal" })} label="딜·기업" count={catCount("deal")} />
+        <CatTab active={cat === "general"} href={qs({ cat: "general" })} label="일반" count={catCount("general")} />
+      </div>
+
       {/* 빠른 필터 카드 */}
       <div className="grid grid-cols-5 gap-3 mb-4">
-        <FilterCard active={filter === "overdue"} href="?filter=overdue" label="지난 마감" count={overdueCount} tone="rose" />
-        <FilterCard active={filter === "today"} href="?filter=today" label="오늘 마감" count={todayCount} tone="amber" />
-        <FilterCard active={filter === "this_week"} href="?filter=this_week" label="이번 주" count={weekCount} tone="blue" />
-        <FilterCard active={filter === "all" || !filter} href="?filter=all" label="전체 진행" count={totalActive} tone="zinc" />
-        <FilterCard active={filter === "done"} href="?filter=done" label="완료됨" count={doneCount} tone="emerald" />
+        <FilterCard active={filter === "overdue"} href={qs({ filter: "overdue" })} label="지난 마감" count={overdueCount} tone="rose" />
+        <FilterCard active={filter === "today"} href={qs({ filter: "today" })} label="오늘 마감" count={todayCount} tone="amber" />
+        <FilterCard active={filter === "this_week"} href={qs({ filter: "this_week" })} label="이번 주" count={weekCount} tone="blue" />
+        <FilterCard active={filter === "all" || !filter} href={qs({ filter: "all" })} label="전체 진행" count={totalActive} tone="zinc" />
+        <FilterCard active={filter === "done"} href={qs({ filter: "done" })} label="완료됨" count={doneCount} tone="emerald" />
       </div>
 
       {/* 자동/수동 필터 */}
       <div className="flex gap-2 mb-4 text-xs">
-        <FilterPill active={auto === "all" || !auto} href={`?filter=${filter}&auto=all`} label="전체" />
-        <FilterPill active={auto === "auto"} href={`?filter=${filter}&auto=auto`} label="자동 생성만" />
-        <FilterPill active={auto === "manual"} href={`?filter=${filter}&auto=manual`} label="수동 추가만" />
+        <FilterPill active={auto === "all" || !auto} href={qs({ auto: "all" })} label="전체" />
+        <FilterPill active={auto === "auto"} href={qs({ auto: "auto" })} label="자동 생성만" />
+        <FilterPill active={auto === "manual"} href={qs({ auto: "manual" })} label="수동 추가만" />
       </div>
 
       {error ? (
@@ -137,8 +169,13 @@ export default async function TodosPage({
                     <TodoCheckbox todoId={t.id} currentStatus={t.status} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className={`${t.status === "done" ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
-                      {t.title}
+                    <div className="flex items-center gap-1.5">
+                      <span className={`inline-block px-1.5 py-0.5 text-[10px] rounded ${CAT_BADGE[t.category ?? "deal"] ?? CAT_BADGE.deal}`}>
+                        {CAT_LABEL[t.category ?? "deal"] ?? "딜·기업"}
+                      </span>
+                      <span className={`${t.status === "done" ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
+                        {t.title}
+                      </span>
                     </div>
                     {t.trigger_stage ? (
                       <div className="text-[10px] text-zinc-400 mt-0.5">단계 진입: {t.trigger_stage}</div>
@@ -200,6 +237,19 @@ export default async function TodosPage({
         💡 체크박스 클릭 = 완료 처리 / 우상단 &quot;+ 새 To-do&quot; 버튼으로 직접 추가 가능
       </div>
     </>
+  );
+}
+
+function CatTab({ active, href, label, count }: { active: boolean; href: string; label: string; count: number }) {
+  return (
+    <Link
+      href={href}
+      className={`px-3 py-2 -mb-px border-b-2 font-medium ${
+        active ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-400 hover:text-zinc-700"
+      }`}
+    >
+      {label} <span className="text-xs">{count}</span>
+    </Link>
   );
 }
 

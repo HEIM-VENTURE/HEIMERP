@@ -8,6 +8,7 @@ import {
   CONSULTING_STAGES_ORDER,
   PROGRAM_GRADE_LABELS,
   PROGRAM_GRADE_COLORS,
+  hvpStageHint,
 } from "@/lib/labels";
 import { FileManager } from "../../../admin/companies/[id]/file-manager";
 import { MeetingViewer, type MeetingRow } from "../../../admin/companies/[id]/meeting-viewer";
@@ -111,6 +112,9 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
             </div>
             <p className="text-sm text-zinc-500">
               {[company.main_item, company.address].filter(Boolean).join(" · ") || "추가 정보 없음"}
+            </p>
+            <p className="text-xs text-zinc-400 mt-1">
+              · {hvpStageHint(company.sales_stage, company.consulting_stage)}
             </p>
           </div>
         </div>

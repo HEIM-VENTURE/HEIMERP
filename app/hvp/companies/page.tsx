@@ -10,6 +10,7 @@ import {
   PROGRAM_GRADE_LABELS,
   PROGRAM_GRADE_COLORS,
   SALES_STAGES_ORDER,
+  hvpStageHint,
 } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -186,6 +187,9 @@ export default async function HvpCompaniesPage({
                             {[c.main_item, c.address].filter(Boolean).join(" · ")}
                           </div>
                         ) : null}
+                        <div className="text-[11px] text-zinc-400 mt-0.5">
+                          · {hvpStageHint(c.sales_stage, c.consulting_stage)}
+                        </div>
                       </Link>
                     </td>
                     <td className="px-4 py-3">

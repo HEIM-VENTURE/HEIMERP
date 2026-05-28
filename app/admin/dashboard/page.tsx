@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/server";
 import { NewCompanyModal } from "../pipeline/company-modals";
 import {
@@ -15,14 +14,14 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  // 오늘 처리할 일 마감 기준 — 동시 query에 미리 계산해두기
-  const tomorrow = new Date();
-  tomorrow.setHours(0, 0, 0, 0);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  // 임박 To-do 기준 (이번 주까지)
+  const todayStr0 = new Date().toISOString().split("T")[0];
+  const weekLater0 = new Date();
+  weekLater0.setDate(weekLater0.getDate() + 7);
+  const weekStr0 = weekLater0.toISOString().split("T")[0];
 
   // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
-  const [companiesRes, hvpsRes, contractsRes, todayTodosRes, hvpListRes] = await Promise.all([
+  const [companiesRes, hvpsRes, contractsRes, imminentRes, hvpListRes] = await Promise.all([
     supabase
       .from("companies")
       .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
@@ -30,18 +29,29 @@ export default async function AdminDashboardPage() {
     supabase.from("contracts").select("id, total_amount, hvp_fee_amount, payment_status"),
     supabase
       .from("todos")
-      .select("id, title, due_date, status")
+      .select("id, title, due_date, status, category, companies(id, name)")
       .neq("status", "done")
-      .lte("due_date", tomorrowStr)
+      .not("due_date", "is", null)
+      .lte("due_date", weekStr0)
       .order("due_date", { ascending: true })
-      .limit(5),
+      .limit(12),
     supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
   ]);
 
   const allCompanies = companiesRes.data ?? [];
   const allHvps = hvpsRes.data ?? [];
   const allContracts = contractsRes.data ?? [];
-  const todayTodos = todayTodosRes.data ?? [];
+  type ImminentTodo = {
+    id: number;
+    title: string;
+    due_date: string | null;
+    category: string | null;
+    companies: { id: number; name: string } | null;
+  };
+  const imminent = (imminentRes.data as unknown as ImminentTodo[]) ?? [];
+  const overdueTodos = imminent.filter((t) => t.due_date && t.due_date < todayStr0);
+  const todayDue = imminent.filter((t) => t.due_date === todayStr0);
+  const weekDue = imminent.filter((t) => t.due_date && t.due_date > todayStr0);
   const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
 
   const totalCompanies = allCompanies.length;
@@ -275,34 +285,66 @@ export default async function AdminDashboardPage() {
           ) : null}
         </div>
 
-        {/* 오늘 처리할 일 */}
+        {/* 임박 To-do (놓치면 안 되는 것) */}
         <div className="bg-white border border-zinc-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-zinc-900">오늘 처리할 일</h2>
-            <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium">
-              {todayTodos.length}
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-zinc-900">⏰ 임박 To-do</h2>
+            <Link href="/admin/todos" className="text-xs text-zinc-500 hover:text-zinc-900">
+              전체 →
+            </Link>
           </div>
-          {todayTodos.length === 0 ? (
-            <div className="text-sm text-zinc-400 text-center py-6">
-              오늘 마감 To-do가 없습니다 ✨
-            </div>
+          {overdueTodos.length + todayDue.length + weekDue.length === 0 ? (
+            <div className="text-sm text-zinc-400 text-center py-6">임박한 To-do가 없습니다 ✨</div>
           ) : (
-            <div className="space-y-3">
-              {todayTodos.map((t) => (
-                <div key={t.id} className="flex items-start gap-3 text-sm">
-                  <Checkbox className="mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-zinc-900 truncate">{t.title}</div>
-                    <div className="text-xs text-zinc-400 mt-0.5">{t.due_date ?? "마감일 없음"}</div>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-4">
+              <TodoGroup label="지난 마감" tone="rose" todos={overdueTodos} />
+              <TodoGroup label="오늘 마감" tone="amber" todos={todayDue} />
+              <TodoGroup label="이번 주" tone="blue" todos={weekDue} />
             </div>
           )}
         </div>
       </div>
     </>
+  );
+}
+
+function TodoGroup({
+  label,
+  tone,
+  todos,
+}: {
+  label: string;
+  tone: "rose" | "amber" | "blue";
+  todos: { id: number; title: string; due_date: string | null; category: string | null; companies: { id: number; name: string } | null }[];
+}) {
+  if (todos.length === 0) return null;
+  const toneCls = {
+    rose: "bg-rose-50 border-rose-200 text-rose-700",
+    amber: "bg-amber-50 border-amber-200 text-amber-700",
+    blue: "bg-blue-50 border-blue-200 text-blue-700",
+  }[tone];
+  const dot = { rose: "bg-rose-500", amber: "bg-amber-500", blue: "bg-blue-400" }[tone];
+  return (
+    <div>
+      <div className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded border mb-2 ${toneCls}`}>
+        {label} {todos.length}
+      </div>
+      <div className="space-y-1.5">
+        {todos.slice(0, 6).map((t) => (
+          <div key={t.id} className="flex items-start gap-2 text-sm">
+            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dot}`} />
+            <div className="flex-1 min-w-0">
+              <div className="text-zinc-800 truncate">{t.title}</div>
+              <div className="text-[11px] text-zinc-400">
+                {t.due_date}
+                {t.companies ? ` · ${t.companies.name}` : t.category === "hvp_onboarding" ? " · HVP 온보딩" : ""}
+              </div>
+            </div>
+          </div>
+        ))}
+        {todos.length > 6 ? <div className="text-[11px] text-zinc-400 pl-3.5">+ {todos.length - 6}개 더</div> : null}
+      </div>
+    </div>
   );
 }
 

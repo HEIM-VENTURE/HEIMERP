@@ -27,6 +27,7 @@ export async function createTodoAction(formData: FormData) {
     company_id: companyId,
     status: "pending",
     auto_generated: false,
+    category: companyId ? "deal" : "general",
   });
 
   if (error) return { error: error.message };
