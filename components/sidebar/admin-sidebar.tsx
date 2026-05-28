@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "./logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/admin/dashboard", label: "대시보드" },
@@ -27,14 +28,16 @@ export function AdminSidebar({ profile }: Props) {
   return (
     <aside className="w-60 min-h-screen bg-white border-r border-zinc-200 px-3 py-5 flex flex-col shrink-0">
       <div className="px-2 mb-7">
-        <Image
-          src="/heim-logo-horizontal.jpg"
-          alt="HEIM VENTURE INVESTMENT"
-          width={200}
-          height={40}
-          className="h-7 w-auto"
-          priority
-        />
+        <span className="inline-block rounded-md px-1.5 py-1" style={{ backgroundColor: "#fff" }}>
+          <Image
+            src="/heim-logo-horizontal.jpg"
+            alt="HEIM VENTURE INVESTMENT"
+            width={200}
+            height={40}
+            className="h-7 w-auto"
+            priority
+          />
+        </span>
         <div className="text-[10px] text-zinc-400 mt-1.5 ml-0.5">ERP · 관리자</div>
       </div>
 
@@ -77,6 +80,9 @@ export function AdminSidebar({ profile }: Props) {
             <div className="font-medium text-zinc-900 truncate">{profile.name}</div>
             <div className="text-zinc-400 truncate">{profile.email}</div>
           </div>
+        </div>
+        <div className="mb-2">
+          <ThemeToggle />
         </div>
         <LogoutButton />
       </div>
