@@ -34,6 +34,11 @@ function numOrNull(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function pmOrNull(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s && s !== "none" ? s : null;
+}
+
 export async function createCompanyAction(formData: FormData): Promise<ActionResult> {
   const { supabase, error: authError } = await requireAdmin();
   if (authError) return { error: authError };
@@ -63,6 +68,7 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     sales_stage: String(formData.get("sales_stage") ?? "received"),
     source: "manual",
     notes: nullIfEmpty(formData.get("notes")),
+    custom_fields: pmOrNull(formData.get("pm")) ? { pm: pmOrNull(formData.get("pm")) } : {},
   };
 
   const { data, error } = await supabase
@@ -94,6 +100,17 @@ export async function updateCompanyAction(
   const gradeRaw = String(formData.get("program_grade") ?? "").trim();
   const programGrade = gradeRaw && gradeRaw !== "none" ? gradeRaw : null;
 
+  // 기존 custom_fields 유지하며 pm만 갱신
+  const { data: existing } = await supabase
+    .from("companies")
+    .select("custom_fields")
+    .eq("id", companyId)
+    .single();
+  const customFields = { ...(existing?.custom_fields ?? {}) };
+  const pm = pmOrNull(formData.get("pm"));
+  if (pm) customFields.pm = pm;
+  else delete customFields.pm;
+
   const update = {
     name,
     address: nullIfEmpty(formData.get("address")),
@@ -108,6 +125,7 @@ export async function updateCompanyAction(
     program_grade: programGrade,
     hvp_id: hvpId,
     notes: nullIfEmpty(formData.get("notes")),
+    custom_fields: customFields,
     updated_at: new Date().toISOString(),
   };
 

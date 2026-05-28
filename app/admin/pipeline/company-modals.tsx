@@ -23,8 +23,11 @@ type CompanyValues = {
   proposal_amount?: number | null;
   program_grade?: string | null;
   hvp_id?: string | null;
+  pm?: string | null;
   notes?: string | null;
 };
+
+const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
 
 const GRADE_OPTIONS = [
   { value: "none", label: "— 미정" },
@@ -152,6 +155,21 @@ function CompanyFormFields({
           </Field>
         ) : null}
       </div>
+
+      <Field label="담당 PM">
+        <select
+          name="pm"
+          defaultValue={values.pm ?? "none"}
+          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
+        >
+          <option value="none">— 없음</option>
+          {PM_OPTIONS.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <Field label="접수 목적 / 메모">
         <textarea

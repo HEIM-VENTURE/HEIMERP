@@ -49,6 +49,7 @@ type Company = {
   contracted_at: string | null;
   started_at: string | null;
   notes: string | null;
+  custom_fields?: { pm?: string } | null;
   hvp?: { name: string; cohort: string | null } | null;
 };
 
@@ -216,6 +217,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               proposal_amount: company.proposal_amount,
               program_grade: company.program_grade,
               hvp_id: company.hvp_id,
+              pm: company.custom_fields?.pm ?? null,
               notes: company.notes,
             }}
           />
@@ -310,6 +312,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             <h3 className="text-sm font-semibold text-zinc-900 mb-3">기본 정보</h3>
             <div className="space-y-2 text-xs">
               <Info label="대표자" value={company.ceo_name} />
+              <Info label="담당 PM" value={company.custom_fields?.pm ?? null} />
               <Info label="연락처" value={company.phone} />
               <Info label="이메일" value={company.email} />
               <Info label="설립일" value={company.founded_at} />
