@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { regenerateSummaryAction } from "./meeting-actions";
 import { MeetingTodoSuggestions } from "./meeting-todos";
+import { MarkdownView } from "./markdown-view";
 
 export type MeetingRow = {
   id: number;
@@ -48,8 +49,11 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
       {/* 요약 미리보기 (있으면) */}
       {summary ? (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900">
-          <div className="font-semibold mb-1">✨ AI 요약</div>
-          <pre className="whitespace-pre-wrap font-sans leading-relaxed line-clamp-4">{summary}</pre>
+          <div className="font-semibold mb-1">✨ AI 회의록 정리</div>
+          <p className="text-amber-900/80 leading-relaxed line-clamp-3">{plainExcerpt(summary)}</p>
+          <button onClick={() => setOpen(true)} className="text-amber-700 hover:text-amber-900 underline mt-1">
+            정리된 회의록 보기 →
+          </button>
         </div>
       ) : (
         <div className="text-xs text-zinc-400 italic">AI 요약 없음</div>
@@ -107,10 +111,10 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
               </button>
             </div>
 
-            {/* AI 요약 */}
+            {/* AI 정리 회의록 */}
             <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-amber-900">✨ AI 요약</div>
+                <div className="text-sm font-semibold text-amber-900">✨ AI 정리 회의록</div>
                 <Button
                   type="button"
                   variant="outline"
@@ -123,9 +127,7 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
                 </Button>
               </div>
               {summary ? (
-                <pre className="text-sm text-amber-900 whitespace-pre-wrap font-sans leading-relaxed">
-                  {summary}
-                </pre>
+                <MarkdownView text={summary} className="text-amber-950" />
               ) : (
                 <p className="text-xs text-amber-700">
                   아직 요약이 없습니다. &quot;요약 생성&quot;을 눌러주세요.
@@ -152,4 +154,14 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
       ) : null}
     </div>
   );
+}
+
+/** 마크다운 마커를 떼고 앞부분만 — 인라인 미리보기용 */
+function plainExcerpt(md: string): string {
+  return md
+    .split(/\r?\n/)
+    .filter((l) => l.trim() && !/^#{1,6}\s/.test(l.trim()) && !/^-{3,}$/.test(l.trim()))
+    .map((l) => l.replace(/^[*\-]\s+/, "").replace(/\*\*/g, "").trim())
+    .join(" ")
+    .slice(0, 180);
 }

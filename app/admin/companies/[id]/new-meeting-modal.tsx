@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createMeetingAction } from "./meeting-actions";
 import { MeetingTodoSuggestions } from "./meeting-todos";
+import { MarkdownView } from "./markdown-view";
 
 type Props = {
   companyId: number;
@@ -66,7 +67,9 @@ export function NewMeetingModal({ companyId }: Props) {
             {result?.aiSummary ? (
               <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <div className="text-sm font-semibold text-emerald-900 mb-2">✨ AI 회의록 정리 완료!</div>
-                <pre className="text-sm text-emerald-900 whitespace-pre-wrap font-sans max-h-72 overflow-y-auto">{result.aiSummary}</pre>
+                <div className="max-h-72 overflow-y-auto">
+                  <MarkdownView text={result.aiSummary} className="text-emerald-950" />
+                </div>
                 {result.aiTodos && result.aiTodos.length > 0 ? (
                   <MeetingTodoSuggestions companyId={companyId} todos={result.aiTodos} />
                 ) : null}

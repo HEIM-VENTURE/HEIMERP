@@ -4,6 +4,10 @@
  *
  * SDK 대신 REST(fetch)로 직접 호출 — 서버 환경(Netlify)에서 SDK 인증 이슈를
  * 피하고, API 키의 공백·줄바꿈을 방어적으로 trim 처리하기 위함.
+ *
+ * 출력은 JSON이 아니라 '마크다운'으로 받음 — 모델이 긴 한국어 문자열에서
+ * 따옴표 이스케이프를 자주 틀려 JSON 파싱이 깨지기 때문. 마크다운을 그대로
+ * 저장/렌더하고, To-do는 '대표님 (To-do)' 섹션을 파싱해서 추출.
  */
 
 // 우선순위 순서로 시도 (앞 모델 실패 시 다음 모델로 폴백).
@@ -38,16 +42,8 @@ export async function summarizeMeetingNotes(
 2. 추측 금지 — 녹취록에 없는 내용은 추가하지 마.
 3. 사람 이름·날짜·금액 같은 구체 정보는 보존.
 4. 'To-do' 항목은 대표(의사결정권자) 관점에서 직접 챙기고 지시해야 할 액션 아이템으로 작성.
-5. 결과는 반드시 아래 JSON 형식으로만 출력. 다른 텍스트·코드펜스 없이 순수 JSON만.
-
-[JSON 출력 형식]
-{
-  "summary": "아래 [회의록 작성 양식] 그대로 채운 마크다운 전체 문자열",
-  "todos": ["대표님이 직접 챙길 액션 1", "액션 2", "..."]
-}
-
-- "summary"에는 아래 양식을 빠짐없이 마크다운으로 채워 넣어. (## 제목들 유지)
-- "todos"에는 '대표님 (To-do)' 섹션의 각 항목을 짧고 실행 가능한 한 문장씩 배열로 분리해서 넣어. 없으면 빈 배열.
+5. 출력은 아래 양식 그대로의 '마크다운'만. 다른 안내문·코드펜스(\`\`\`) 없이 마크다운 본문만 출력.
+6. '## 5. 대표님 (To-do)' 섹션에는 각 액션을 한 줄씩 '* '로 시작하는 불릿으로 작성 (실행 가능한 한 문장).
 
 [회의록 작성 양식]
 # 회의록(상세 정리)
@@ -89,10 +85,9 @@ ${contextLine ? `[회의 컨텍스트]\n${contextLine}\n` : ""}
 [녹취록 원문]
 ${body}`;
 
-  // 키 형식 사전 검증 (Google AI Studio 키는 보통 'AIza'로 시작, 39자)
   const keyHint = `key[len=${apiKey.length},head=${apiKey.slice(0, 4)}]`;
-
   let lastError = "";
+
   for (const model of MODELS) {
     try {
       const res = await fetch(
@@ -102,7 +97,6 @@ ${body}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" },
           }),
         }
       );
@@ -119,7 +113,8 @@ ${body}`;
         data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? undefined;
 
       if (text && text.trim()) {
-        return parseSummary(text.trim());
+        const summary = stripFences(text.trim());
+        return { summary, todos: extractTodos(summary) };
       }
       lastError = `[${model}] 빈 응답`;
     } catch (e) {
@@ -127,7 +122,6 @@ ${body}`;
     }
   }
 
-  // 401/403 이면 키 문제임을 명확히 안내
   if (lastError.includes("401") || lastError.includes("403") || lastError.includes("API key")) {
     throw new Error(
       `Gemini 인증 실패 — API 키가 잘못되었거나 권한이 없습니다. (${keyHint}) 상세: ${lastError}`
@@ -136,28 +130,46 @@ ${body}`;
   throw new Error(`Gemini 요약 실패 (모든 모델 시도): ${lastError || "알 수 없는 오류"}`);
 }
 
-/**
- * Gemini 응답(JSON 기대)을 안전하게 파싱.
- * JSON 파싱 실패 시 전체 텍스트를 summary로, todos는 빈 배열로 폴백.
- */
-function parseSummary(text: string): MeetingSummary {
-  // 혹시 ```json ... ``` 코드펜스로 감싸 나온 경우 제거
-  const cleaned = text
-    .replace(/^```(?:json)?\s*/i, "")
+/** 혹시 ```markdown ... ``` 코드펜스로 감싸 나오면 제거 */
+function stripFences(text: string): string {
+  return text
+    .replace(/^```(?:markdown|md)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
+}
 
-  try {
-    const obj = JSON.parse(cleaned);
-    const summary = typeof obj.summary === "string" ? obj.summary.trim() : cleaned;
-    const todos = Array.isArray(obj.todos)
-      ? obj.todos
-          .map((t: unknown) => (typeof t === "string" ? t.trim() : ""))
-          .filter((t: string) => t.length > 0)
-      : [];
-    return { summary, todos };
-  } catch {
-    // JSON이 아니면 통째로 요약 처리
-    return { summary: cleaned, todos: [] };
+/**
+ * 마크다운에서 '대표님 (To-do)' 섹션의 불릿들을 추출.
+ * '## 5. 대표님 (To-do)' (숫자·기호 유연) 다음부터 다음 헤딩/구분선 전까지의 불릿 라인.
+ */
+function extractTodos(markdown: string): string[] {
+  const lines = markdown.split(/\r?\n/);
+  const todos: string[] = [];
+  let inSection = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // To-do 섹션 헤딩 진입 (예: "## 5. 대표님 (To-do)", "## 대표님 To-do")
+    if (/^#{1,6}\s.*대표님.*to-?do/i.test(trimmed)) {
+      inSection = true;
+      continue;
+    }
+
+    if (inSection) {
+      // 다음 헤딩이나 구분선이면 섹션 종료
+      if (/^#{1,6}\s/.test(trimmed) || /^-{3,}$/.test(trimmed)) break;
+      // 불릿 라인 추출
+      const m = trimmed.match(/^[*\-]\s+(.+)$/);
+      if (m) {
+        const item = m[1].replace(/\*\*/g, "").trim(); // 볼드 마크 제거
+        // 양식 안내문(괄호로 시작)·없음 표기는 제외
+        if (item && !/^\(.*\)$/.test(item) && !/^없[음다]/.test(item)) {
+          todos.push(item);
+        }
+      }
+    }
   }
+
+  return todos;
 }
