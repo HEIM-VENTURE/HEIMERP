@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createMeetingAction } from "./meeting-actions";
+import { MeetingTodoSuggestions } from "./meeting-todos";
 
 type Props = {
   companyId: number;
@@ -14,7 +15,11 @@ export function NewMeetingModal({ companyId }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ aiSummary?: string; aiError?: string } | null>(null);
+  const [result, setResult] = useState<{
+    aiSummary?: string;
+    aiTodos?: string[];
+    aiError?: string;
+  } | null>(null);
 
   const onSubmit = (formData: FormData) => {
     setError(null);
@@ -26,7 +31,7 @@ export function NewMeetingModal({ companyId }: Props) {
         setError(r.error);
       } else if (r.aiSummary || r.aiError) {
         // 요약 성공/실패 결과를 보여주고 사용자가 닫게 함 (미팅은 이미 저장됨)
-        setResult({ aiSummary: r.aiSummary, aiError: r.aiError });
+        setResult({ aiSummary: r.aiSummary, aiTodos: r.aiTodos, aiError: r.aiError });
       } else {
         setOpen(false);
       }
@@ -60,8 +65,11 @@ export function NewMeetingModal({ companyId }: Props) {
 
             {result?.aiSummary ? (
               <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <div className="text-sm font-semibold text-emerald-900 mb-2">✨ AI 요약 완료!</div>
-                <pre className="text-sm text-emerald-900 whitespace-pre-wrap font-sans">{result.aiSummary}</pre>
+                <div className="text-sm font-semibold text-emerald-900 mb-2">✨ AI 회의록 정리 완료!</div>
+                <pre className="text-sm text-emerald-900 whitespace-pre-wrap font-sans max-h-72 overflow-y-auto">{result.aiSummary}</pre>
+                {result.aiTodos && result.aiTodos.length > 0 ? (
+                  <MeetingTodoSuggestions companyId={companyId} todos={result.aiTodos} />
+                ) : null}
                 <Button onClick={() => setOpen(false)} className="mt-3" size="sm">
                   닫기
                 </Button>

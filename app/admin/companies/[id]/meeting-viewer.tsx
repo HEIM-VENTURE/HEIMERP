@@ -3,9 +3,11 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { regenerateSummaryAction } from "./meeting-actions";
+import { MeetingTodoSuggestions } from "./meeting-todos";
 
 export type MeetingRow = {
   id: number;
+  company_id: number;
   sequence: string | null;
   title: string | null;
   meeting_date: string;
@@ -13,6 +15,7 @@ export type MeetingRow = {
   body: string | null;
   ai_summary: string | null;
   ai_summary_at: string | null;
+  ai_todos: string[] | null;
 };
 
 /**
@@ -25,6 +28,7 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [summary, setSummary] = useState<string | null>(meeting.ai_summary);
+  const [todos, setTodos] = useState<string[]>(meeting.ai_todos ?? []);
   const [error, setError] = useState<string | null>(null);
 
   const onRegenerate = () => {
@@ -32,7 +36,10 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
     startTransition(async () => {
       const r = await regenerateSummaryAction(meeting.id);
       if ("error" in r) setError(r.error);
-      else setSummary(r.summary);
+      else {
+        setSummary(r.summary);
+        setTodos(r.todos);
+      }
     });
   };
 
@@ -67,6 +74,9 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
         ) : null}
       </div>
       {error ? <div className="text-xs text-rose-600 mt-1">{error}</div> : null}
+
+      {/* AI 추출 To-do → 바로 추가 (피드에 인라인) */}
+      <MeetingTodoSuggestions companyId={meeting.company_id} todos={todos} />
 
       {/* 전문 모달 */}
       {open ? (
