@@ -87,6 +87,68 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ===== 브랜드 단색화: 채도 낮은 스틸블루 + 오렌지 ===== */
+  /* 스틸블루 램프 (로고 #41566b 기반, 저채도) */
+  --steel-50: #eef2f6;
+  --steel-100: #dde5ec;
+  --steel-200: #c5d1dd;
+  --steel-300: #a3b5c6;
+  --steel-400: #7a91a6;
+  --steel-500: #5a7187;
+  --steel-600: #46596f;
+  --steel-700: #3b4b5c;
+  --steel-800: #323f4d;
+  --steel-900: #2b3641;
+  --steel-950: #1b232c;
+  /* 오렌지 램프 (로고 #e5531f 기반, 살짝 저채도) */
+  --burnt-50: #fdf4ef;
+  --burnt-100: #fae3d7;
+  --burnt-200: #f4c9af;
+  --burnt-300: #eca981;
+  --burnt-400: #e58a5c;
+  --burnt-500: #dc6d3f;
+  --burnt-600: #c8562a;
+  --burnt-700: #a44420;
+  --burnt-800: #83381d;
+  --burnt-900: #6b311b;
+  --burnt-950: #3a1810;
+
+  /* 긍정·주요 계열 → 스틸블루 */
+  --color-emerald-50: var(--steel-50);   --color-emerald-100: var(--steel-100);
+  --color-emerald-200: var(--steel-200); --color-emerald-300: var(--steel-300);
+  --color-emerald-400: var(--steel-400); --color-emerald-500: var(--steel-500);
+  --color-emerald-600: var(--steel-600); --color-emerald-700: var(--steel-700);
+  --color-emerald-800: var(--steel-800); --color-emerald-900: var(--steel-900);
+  --color-emerald-950: var(--steel-950);
+  --color-blue-50: var(--steel-50);   --color-blue-100: var(--steel-100);
+  --color-blue-200: var(--steel-200); --color-blue-300: var(--steel-300);
+  --color-blue-400: var(--steel-400); --color-blue-500: var(--steel-500);
+  --color-blue-600: var(--steel-600); --color-blue-700: var(--steel-700);
+  --color-blue-800: var(--steel-800); --color-blue-900: var(--steel-900);
+  --color-blue-950: var(--steel-950);
+  --color-sky-100: var(--steel-100); --color-sky-400: var(--steel-400);
+  --color-sky-500: var(--steel-500); --color-sky-600: var(--steel-600);
+  --color-sky-700: var(--steel-700);
+  --color-cyan-500: var(--steel-500); --color-cyan-600: var(--steel-600);
+  --color-teal-500: var(--steel-500); --color-teal-600: var(--steel-600);
+  --color-indigo-100: var(--steel-100); --color-indigo-500: var(--steel-500);
+  --color-indigo-600: var(--steel-600); --color-indigo-700: var(--steel-700);
+  /* 보라 계열(계약·일부 단계) → 스틸블루로 흡수 */
+  --color-purple-100: var(--steel-100); --color-purple-500: var(--steel-500);
+  --color-purple-600: var(--steel-600); --color-purple-700: var(--steel-700);
+  --color-violet-50: var(--steel-50); --color-violet-100: var(--steel-100);
+  --color-violet-500: var(--steel-500); --color-violet-600: var(--steel-600);
+  --color-violet-700: var(--steel-700);
+  --color-fuchsia-500: var(--steel-500); --color-fuchsia-600: var(--steel-600);
+
+  /* 강조·주의 계열 → 오렌지 */
+  --color-amber-50: var(--burnt-50);   --color-amber-100: var(--burnt-100);
+  --color-amber-200: var(--burnt-200); --color-amber-300: var(--burnt-300);
+  --color-amber-400: var(--burnt-400); --color-amber-500: var(--burnt-500);
+  --color-amber-600: var(--burnt-600); --color-amber-700: var(--burnt-700);
+  --color-amber-800: var(--burnt-800); --color-amber-900: var(--burnt-900);
+  --color-amber-950: var(--burnt-950);
 }
 
 .dark {
