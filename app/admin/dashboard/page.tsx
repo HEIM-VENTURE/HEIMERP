@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/server";
+import { NewCompanyModal } from "../pipeline/company-modals";
 import {
   SALES_STAGE_LABELS,
   SALES_STAGES_ORDER,
@@ -21,7 +22,7 @@ export default async function AdminDashboardPage() {
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
   // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
-  const [companiesRes, hvpsRes, contractsRes, todayTodosRes] = await Promise.all([
+  const [companiesRes, hvpsRes, contractsRes, todayTodosRes, hvpListRes] = await Promise.all([
     supabase
       .from("companies")
       .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
@@ -34,12 +35,14 @@ export default async function AdminDashboardPage() {
       .lte("due_date", tomorrowStr)
       .order("due_date", { ascending: true })
       .limit(5),
+    supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
   ]);
 
   const allCompanies = companiesRes.data ?? [];
   const allHvps = hvpsRes.data ?? [];
   const allContracts = contractsRes.data ?? [];
   const todayTodos = todayTodosRes.data ?? [];
+  const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
 
   const totalCompanies = allCompanies.length;
   const kickoffCount = allCompanies.filter((c) => c.sales_stage === "kickoff").length;
@@ -140,7 +143,7 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/pipeline">
             <Button variant="outline">파이프라인 →</Button>
           </Link>
-          <Button>+ 신규 기업</Button>
+          <NewCompanyModal hvps={hvpList} label="+ 신규 기업" />
         </div>
       </div>
 

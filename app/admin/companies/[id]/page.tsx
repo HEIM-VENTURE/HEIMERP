@@ -19,6 +19,8 @@ import {
   EditContractRow,
   PaidToggle,
 } from "../../contracts/contract-modals";
+import { EditCompanyModal } from "../../pipeline/company-modals";
+import { FileManager } from "./file-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -196,6 +198,25 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           </div>
         </div>
         <div className="flex gap-2">
+          <EditCompanyModal
+            hvps={hvpList}
+            company={{
+              id: company.id,
+              name: company.name,
+              address: company.address,
+              ceo_name: company.ceo_name,
+              phone: company.phone,
+              email: company.email,
+              main_item: company.main_item,
+              founded_at: company.founded_at,
+              last_year_revenue: company.last_year_revenue,
+              inquiry_purpose: company.inquiry_purpose,
+              proposal_amount: company.proposal_amount,
+              program_grade: company.program_grade,
+              hvp_id: company.hvp_id,
+              notes: company.notes,
+            }}
+          />
           <NewMeetingModal companyId={company.id} />
           <StageChanger
             companyId={company.id}
@@ -401,6 +422,9 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               </>
             )}
           </div>
+
+          {/* 자료 */}
+          <FileManager companyId={company.id} files={files as any} />
         </div>
       </div>
     </>

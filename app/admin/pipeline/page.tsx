@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import {
   SALES_STAGE_LABELS,
   SALES_STAGES_ORDER,
@@ -11,6 +10,7 @@ import {
   PROGRAM_GRADE_COLORS,
 } from "@/lib/labels";
 import { PipelineFilters } from "./filters";
+import { NewCompanyModal } from "./company-modals";
 
 export const dynamic = "force-dynamic";
 
@@ -74,15 +74,17 @@ export default async function PipelinePage({
     else listQuery = listQuery.eq("consulting_stage", consulting);
   }
 
-  // KPI용 전체 + 필터된 리스트 동시
-  const [allRes, listRes] = await Promise.all([
+  // KPI용 전체 + 필터된 리스트 + HVP 목록 동시
+  const [allRes, listRes, hvpsRes] = await Promise.all([
     supabase.from("companies").select("id, sales_stage, consulting_stage"),
     listQuery,
+    supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
   ]);
 
   const all = (allRes.data as { sales_stage: Company["sales_stage"]; consulting_stage: Company["consulting_stage"] }[]) ?? [];
   const { data, error } = listRes;
   const list: Company[] = (data as Company[]) ?? [];
+  const hvps = (hvpsRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
 
   // 통계 (전체 기준)
   const total = all.length;
@@ -107,7 +109,7 @@ export default async function PipelinePage({
           <p className="text-sm text-zinc-500 mt-1">한 화면에 모든 기업과 단계</p>
         </div>
         <div className="flex gap-2">
-          <Button>+ 신규</Button>
+          <NewCompanyModal hvps={hvps} />
         </div>
       </div>
 

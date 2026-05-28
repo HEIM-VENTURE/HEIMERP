@@ -8,8 +8,8 @@ import {
   CONSULTING_STAGES_ORDER,
   PROGRAM_GRADE_LABELS,
   PROGRAM_GRADE_COLORS,
-  FILE_KIND_LABELS,
 } from "@/lib/labels";
+import { FileManager } from "../../../admin/companies/[id]/file-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -39,17 +39,19 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  // profile + company + 관련 데이터 전부 동시 (5개 쿼리 한 번에 RTT)
-  const [profileRes, companyRes, meetingsRes, todosRes, contractsRes] = await Promise.all([
+  // profile + company + 관련 데이터 전부 동시 (6개 쿼리 한 번에 RTT)
+  const [profileRes, companyRes, meetingsRes, todosRes, contractsRes, filesRes] = await Promise.all([
     supabase.from("profiles").select("hvp_id, role").eq("id", user.id).single(),
     supabase.from("companies").select("*").eq("id", id).single(),
     supabase.from("meetings").select("*").eq("company_id", id).order("meeting_date", { ascending: false }),
     supabase.from("todos").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("contracts").select("*").eq("company_id", id),
+    supabase.from("files").select("*").eq("company_id", id).order("created_at", { ascending: false }),
   ]);
 
   const profile = profileRes.data;
   const company = companyRes.data;
+  const files = filesRes.data ?? [];
 
   if (!company) notFound();
 
@@ -229,6 +231,9 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
               <div className="text-xs text-zinc-500">계약·금액 확정 전</div>
             )}
           </div>
+
+          {/* 자료 */}
+          <FileManager companyId={company.id} files={files as any} />
         </div>
       </div>
     </>

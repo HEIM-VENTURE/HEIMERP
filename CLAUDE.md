@@ -90,6 +90,7 @@ cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\l
 | 0011 | handle_new_user에 hvp 자동 매칭 |
 | 0012 | @heimvi.com 자동 admin |
 | 0013 | 'contract' 단계 진입 시 contracts row 자동 생성 |
+| 0014 | Storage 버킷 `company-files` (자료 업로드, 50MB, private) |
 
 ## 외부 데이터 소스
 
@@ -103,14 +104,16 @@ cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\l
 - ✅ `/admin/pipeline` — 테이블 + 4종 필터 + KPI/차트
 - ✅ `/admin/applications` — HVP 신청자 관리 + 승인+계정생성
 - ✅ `/admin/todos` — To-do 관리 (수동 추가 모달 + 체크박스 완료)
-- ✅ `/admin/companies/[id]` — 12단계 통합 타임라인 + 활동 피드 + 단계 변경 + 미팅·회의록 추가 + AI 요약 + 계약·수수료 카드 (추가/편집/지급토글)
+- ✅ `/admin/companies/[id]` — 12단계 통합 타임라인 + 활동 피드 + 단계 변경 + 미팅·회의록 추가 + AI 요약 + 계약·수수료 카드 + **기업 정보 편집 모달** + **자료 업로드(Storage)**
 - ✅ `/admin/contracts` — 계약·수수료 목록 + KPI(총액·지급/미지급) + 지급상태/HVP 필터 + 생성/편집/지급 토글
+- ✅ `/admin/pipeline`, `/admin/dashboard` — **+신규 기업 추가 모달** 연결 (이전엔 작동 안 함)
 
 ### HVP
 - ✅ `/hvp/dashboard` — KPI + 깔때기 + 내 기업 요약
 - ✅ `/hvp/companies` — 내 기업 목록 + 검색 + 단계 필터
 - ✅ `/hvp/submit` — 새 기업 접수 폼 (ERP 자체)
-- ✅ `/hvp/companies/[id]` — 12단계 + 미팅 + To-do + 내 수수료
+- ✅ `/hvp/companies/[id]` — 12단계 + 미팅 + To-do + 내 수수료 + **자료 업로드**
+- ✅ `/hvp/fees` — 내 계약별 수수료 표 + 지급/미지급 합계
 
 ### 공용
 - ✅ `/` — 로그인 (Google + 이메일/비밀번호)
@@ -163,11 +166,11 @@ HVP가 Tally 폼 또는 /hvp/submit에서 기업 접수 → companies INSERT
 | 순위 | 작업 | 비고 |
 |---|---|---|
 | ~~1~~ | ~~`/admin/contracts` (계약·수수료)~~ | ✅ 완료 (0013 마이그레이션 + 페이지) |
-| 2 | `/hvp/fees` | HVP가 자기 수수료 자세히 |
-| 3 | 자료 업로드 (Supabase Storage) | 사업계획서·IR Deck 등 첨부 |
+| ~~2~~ | ~~`/hvp/fees`~~ | ✅ 완료 |
+| ~~3~~ | ~~자료 업로드 (Supabase Storage)~~ | ✅ 완료 (0014 버킷 + admin/HVP 기업상세) |
 | 4 | 이메일 알림 (Resend) | "오늘 마감 To-do" 알림 |
-| 5 | 기업 정보 직접 편집 UI | 현재는 SQL로만 |
-| 6 | HVP가 자기 기업 미팅·자료 추가 | RLS는 OK, UI만 admin에 있음 |
+| ~~5~~ | ~~기업 정보 직접 편집 UI~~ | ✅ 완료 (편집 모달 + +신규 추가 모달) |
+| ~~6~~ | ~~HVP가 자기 기업 자료 추가~~ | ✅ 자료는 완료 (미팅 추가 UI는 남음) |
 | 7 | `/admin/meetings` (회의록 전체) | 모든 회사 미팅 한 화면 |
 | 8 | `/admin/tips` (TIPS 운영사 DB) | tips_operators 테이블 활용 |
 | 9 | `/hvp/notifications`, `/hvp/profile` | placeholder 페이지들 |
