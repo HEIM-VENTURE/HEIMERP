@@ -10,6 +10,7 @@ import {
   PROGRAM_GRADE_COLORS,
 } from "@/lib/labels";
 import { FileManager } from "../../../admin/companies/[id]/file-manager";
+import { MeetingViewer, type MeetingRow } from "../../../admin/companies/[id]/meeting-viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -159,7 +160,7 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
             {meetings.length === 0 ? (
               <div className="text-xs text-zinc-400 text-center py-4">아직 미팅 기록이 없습니다</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {meetings.slice(0, 5).map((m: any) => (
                   <div key={m.id} className="text-sm border-l-2 border-zinc-200 pl-3">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -168,6 +169,7 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
                     </div>
                     {m.title ? <div className="text-zinc-700">{m.title}</div> : null}
                     {m.attendees ? <div className="text-xs text-zinc-500 mt-0.5">참석: {m.attendees}</div> : null}
+                    <MeetingViewer meeting={m as MeetingRow} />
                   </div>
                 ))}
               </div>

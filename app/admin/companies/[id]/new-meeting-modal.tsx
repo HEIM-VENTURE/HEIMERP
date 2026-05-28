@@ -14,7 +14,7 @@ export function NewMeetingModal({ companyId }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ aiSummary?: string } | null>(null);
+  const [result, setResult] = useState<{ aiSummary?: string; aiError?: string } | null>(null);
 
   const onSubmit = (formData: FormData) => {
     setError(null);
@@ -24,12 +24,11 @@ export function NewMeetingModal({ companyId }: Props) {
       const r = await createMeetingAction(formData);
       if ("error" in r) {
         setError(r.error);
+      } else if (r.aiSummary || r.aiError) {
+        // 요약 성공/실패 결과를 보여주고 사용자가 닫게 함 (미팅은 이미 저장됨)
+        setResult({ aiSummary: r.aiSummary, aiError: r.aiError });
       } else {
-        if (r.aiSummary) {
-          setResult({ aiSummary: r.aiSummary });
-        } else {
-          setOpen(false);
-        }
+        setOpen(false);
       }
     });
   };
@@ -64,6 +63,21 @@ export function NewMeetingModal({ companyId }: Props) {
                 <div className="text-sm font-semibold text-emerald-900 mb-2">✨ AI 요약 완료!</div>
                 <pre className="text-sm text-emerald-900 whitespace-pre-wrap font-sans">{result.aiSummary}</pre>
                 <Button onClick={() => setOpen(false)} className="mt-3" size="sm">
+                  닫기
+                </Button>
+              </div>
+            ) : result?.aiError ? (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="text-sm font-semibold text-amber-900 mb-1">
+                  ⚠️ 회의록은 저장됐지만 AI 요약은 실패했어요
+                </div>
+                <p className="text-xs text-amber-800 mb-2">
+                  사유: {result.aiError}
+                </p>
+                <p className="text-xs text-amber-700 mb-3">
+                  나중에 회의록 상세에서 &quot;AI 요약 재생성&quot;으로 다시 시도할 수 있어요.
+                </p>
+                <Button onClick={() => setOpen(false)} className="mt-1" size="sm">
                   닫기
                 </Button>
               </div>

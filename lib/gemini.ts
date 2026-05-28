@@ -4,7 +4,9 @@
  */
 import { GoogleGenAI } from "@google/genai";
 
-const MODEL = "gemini-2.0-flash-exp";
+// 우선순위 순서로 시도 (앞 모델 실패 시 다음 모델로 폴백).
+// gemini-2.0-flash-exp 는 폐기됨(404). 2.5-flash 가 현재 무료 안정 버전.
+const MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash"];
 
 export async function summarizeMeetingNotes(
   body: string,
@@ -37,14 +39,20 @@ ${body}
 
 [요약]`;
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-  });
-
-  const text = response.text;
-  if (!text) {
-    throw new Error("Gemini 응답이 비어있습니다");
+  let lastError: unknown = null;
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({ model, contents: prompt });
+      const text = response.text;
+      if (text && text.trim()) return text.trim();
+      lastError = new Error(`${model}: 빈 응답`);
+    } catch (e) {
+      lastError = e;
+      // 다음 모델로 폴백 (404=모델없음, 429=쿼터초과 등)
+    }
   }
-  return text.trim();
+
+  const msg =
+    lastError instanceof Error ? lastError.message : String(lastError ?? "알 수 없는 오류");
+  throw new Error(`Gemini 요약 실패 (모든 모델 시도): ${msg}`);
 }

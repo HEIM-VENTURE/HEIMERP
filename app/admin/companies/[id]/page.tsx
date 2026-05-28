@@ -21,6 +21,7 @@ import {
 } from "../../contracts/contract-modals";
 import { EditCompanyModal } from "../../pipeline/company-modals";
 import { FileManager } from "./file-manager";
+import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +111,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
     sub?: string;
     color: string;
     aiSummary?: string | null;
+    meeting?: MeetingRow;
   };
 
   const activities: Activity[] = [
@@ -133,7 +135,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       title: `${m.sequence ?? "미팅"} — ${m.title ?? "회의록"}`,
       sub: m.attendees ?? undefined,
       color: "bg-amber-500",
-      aiSummary: m.ai_summary as string | null,
+      meeting: m as MeetingRow,
     })),
     ...todos.map((t: any) => ({
       when: t.completed_at ?? t.created_at,
@@ -293,12 +295,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                       <span className="text-xs text-zinc-400 shrink-0">{formatRelative(a.when)}</span>
                     </div>
                     {a.sub ? <div className="text-xs text-zinc-500 mt-0.5">{a.sub}</div> : null}
-                    {a.aiSummary ? (
-                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900">
-                        <div className="font-semibold mb-1">✨ AI 요약</div>
-                        <pre className="whitespace-pre-wrap font-sans leading-relaxed">{a.aiSummary}</pre>
-                      </div>
-                    ) : null}
+                    {a.meeting ? <MeetingViewer meeting={a.meeting} /> : null}
                   </div>
                 </div>
               ))}

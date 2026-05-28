@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { summarizeMeetingNotes } from "@/lib/gemini";
 
 type CreateMeetingResult =
-  | { success: true; meetingId: number; aiSummary?: string }
+  | { success: true; meetingId: number; aiSummary?: string; aiError?: string }
   | { error: string };
 
 export async function createMeetingAction(formData: FormData): Promise<CreateMeetingResult> {
@@ -39,6 +39,7 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
   // AI 요약 생성 (옵션)
   let aiSummary: string | null = null;
   let aiSummaryAt: string | null = null;
+  let aiError: string | null = null;
   if (wantAiSummary) {
     try {
       aiSummary = await summarizeMeetingNotes(body, {
@@ -49,7 +50,8 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
       aiSummaryAt = new Date().toISOString();
     } catch (e) {
       console.error("[AI 요약 실패]", e);
-      // 요약 실패해도 미팅은 저장 (요약만 빠짐)
+      // 요약 실패해도 미팅은 저장하되, 실패 사유를 사용자에게 알림
+      aiError = e instanceof Error ? e.message : "AI 요약 생성 실패";
     }
   }
 
@@ -74,7 +76,12 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath(`/hvp/companies/${companyId}`);
-  return { success: true, meetingId: meeting.id, aiSummary: aiSummary ?? undefined };
+  return {
+    success: true,
+    meetingId: meeting.id,
+    aiSummary: aiSummary ?? undefined,
+    aiError: aiError ?? undefined,
+  };
 }
 
 export async function regenerateSummaryAction(meetingId: number): Promise<{ success: true; summary: string } | { error: string }> {
@@ -106,6 +113,7 @@ export async function regenerateSummaryAction(meetingId: number): Promise<{ succ
       .eq("id", meetingId);
 
     revalidatePath(`/admin/companies/${meeting.company_id}`);
+    revalidatePath(`/hvp/companies/${meeting.company_id}`);
     return { success: true, summary };
   } catch (e: any) {
     return { error: `AI 요약 실패: ${e?.message ?? "알 수 없음"}` };
