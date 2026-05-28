@@ -35,36 +35,7 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
 
   const wantAiSummary = formData.get("ai_summary") === "on";
 
-  // 회사 정보 조회 (컨텍스트용)
-  const { data: company } = await supabase
-    .from("companies")
-    .select("name")
-    .eq("id", companyId)
-    .single();
-
-  // AI 요약 생성 (옵션)
-  let aiSummary: string | null = null;
-  let aiSummaryAt: string | null = null;
-  let aiTodos: string[] = [];
-  let aiError: string | null = null;
-  if (wantAiSummary) {
-    try {
-      const result = await summarizeMeetingNotes(body, {
-        companyName: company?.name,
-        meetingType: sequence ?? undefined,
-        attendees: attendees ?? undefined,
-      });
-      aiSummary = result.summary;
-      aiTodos = result.todos;
-      aiSummaryAt = new Date().toISOString();
-    } catch (e) {
-      console.error("[AI 요약 실패]", e);
-      // 요약 실패해도 미팅은 저장하되, 실패 사유를 사용자에게 알림
-      aiError = e instanceof Error ? e.message : "AI 요약 생성 실패";
-    }
-  }
-
-  // INSERT
+  // 1) 미팅을 먼저 저장 (AI보다 먼저 — AI가 느리거나 실패해도 회의록은 보존)
   const { data: meeting, error } = await supabase
     .from("meetings")
     .insert({
@@ -74,15 +45,44 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
       meeting_date: meetingDate,
       attendees,
       body,
-      ai_summary: aiSummary,
-      ai_summary_at: aiSummaryAt,
-      ai_todos: aiTodos,
       author_id: user.id,
     })
     .select("id")
     .single();
 
   if (error) return { error: error.message };
+
+  // 2) AI 요약 생성 (옵션) — 실패해도 미팅은 이미 저장됨
+  let aiSummary: string | null = null;
+  let aiTodos: string[] = [];
+  let aiError: string | null = null;
+  if (wantAiSummary) {
+    const { data: company } = await supabase
+      .from("companies")
+      .select("name")
+      .eq("id", companyId)
+      .single();
+    try {
+      const result = await summarizeMeetingNotes(body, {
+        companyName: company?.name,
+        meetingType: sequence ?? undefined,
+        attendees: attendees ?? undefined,
+      });
+      aiSummary = result.summary;
+      aiTodos = result.todos;
+      await supabase
+        .from("meetings")
+        .update({
+          ai_summary: aiSummary,
+          ai_summary_at: new Date().toISOString(),
+          ai_todos: aiTodos,
+        })
+        .eq("id", meeting.id);
+    } catch (e) {
+      console.error("[AI 요약 실패]", e);
+      aiError = e instanceof Error ? e.message : "AI 요약 생성 실패";
+    }
+  }
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath(`/hvp/companies/${companyId}`);
