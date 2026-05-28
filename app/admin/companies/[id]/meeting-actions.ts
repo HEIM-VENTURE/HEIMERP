@@ -138,6 +138,35 @@ export async function regenerateSummaryAction(
 }
 
 /**
+ * 미팅(회의록) 삭제.
+ */
+export async function deleteMeetingAction(
+  meetingId: number
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인 필요" };
+
+  // company_id 확보 (revalidate용)
+  const { data: meeting } = await supabase
+    .from("meetings")
+    .select("company_id")
+    .eq("id", meetingId)
+    .single();
+
+  const { error } = await supabase.from("meetings").delete().eq("id", meetingId);
+  if (error) return { error: error.message };
+
+  if (meeting?.company_id) {
+    revalidatePath(`/admin/companies/${meeting.company_id}`);
+    revalidatePath(`/hvp/companies/${meeting.company_id}`);
+  }
+  return { success: true };
+}
+
+/**
  * 미팅에서 추출한 To-do 후보들을 todos 테이블에 추가.
  * 대표/HVP가 확인 후 한 번에/개별 추가.
  */

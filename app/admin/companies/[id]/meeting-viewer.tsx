@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { regenerateSummaryAction } from "./meeting-actions";
+import { regenerateSummaryAction, deleteMeetingAction } from "./meeting-actions";
 import { MeetingTodoSuggestions } from "./meeting-todos";
 import { MarkdownView } from "./markdown-view";
 
@@ -26,11 +27,13 @@ export type MeetingRow = {
  * 클릭 시 전체 회의록 + 요약을 모달로.
  */
 export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [summary, setSummary] = useState<string | null>(meeting.ai_summary);
   const [todos, setTodos] = useState<string[]>(meeting.ai_todos ?? []);
   const [error, setError] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState(false);
 
   const onRegenerate = () => {
     setError(null);
@@ -43,6 +46,22 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
       }
     });
   };
+
+  const onDelete = () => {
+    if (!confirm("이 회의록을 삭제할까요? (되돌릴 수 없음)")) return;
+    setError(null);
+    startTransition(async () => {
+      const r = await deleteMeetingAction(meeting.id);
+      if ("error" in r) setError(r.error);
+      else {
+        setOpen(false);
+        setDeleted(true);
+        router.refresh();
+      }
+    });
+  };
+
+  if (deleted) return null;
 
   return (
     <div className="mt-2">
@@ -144,7 +163,15 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
               </pre>
             </div>
 
-            <div className="mt-5 flex justify-end">
+            <div className="mt-5 flex items-center justify-between">
+              <Button
+                onClick={onDelete}
+                variant="outline"
+                disabled={pending}
+                className="text-rose-700 hover:bg-rose-50 border-rose-200"
+              >
+                회의록 삭제
+              </Button>
               <Button onClick={() => setOpen(false)} variant="outline">
                 닫기
               </Button>
