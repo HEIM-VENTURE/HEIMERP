@@ -5,8 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * HVP 신청 승인 + HVP 등록 + Auth 계정 생성.
- * 한 번 클릭으로 다 처리.
+ * HVP 신청 승인 + HVP 등록.
+ * Google 로그인 방식이므로 Auth 계정/비밀번호는 만들지 않는다.
+ * 흐름:
+ *   1) hvp 테이블 등록(이메일 포함)
+ *   2) 같은 이메일로 이미 로그인한 적 있는 프로필이 있으면 즉시 hvp로 승격
+ *   3) 아직 로그인 안 했으면 → 본인 Google 계정으로 로그인 시 트리거(0011)가 자동 매칭
  */
 export async function approveApplicationAction(applicationId: string) {
   // 1. 관리자 권한 확인
@@ -39,94 +43,74 @@ export async function approveApplicationAction(applicationId: string) {
   if (app.status === "approved") {
     return { error: "이미 승인된 신청서입니다" };
   }
+  if (!app.email) {
+    return { error: "신청서에 이메일이 없습니다. Google 로그인 자동 매칭에 이메일이 필요해요." };
+  }
 
   const admin = createAdminClient();
 
-  // 3. hvp 테이블에 INSERT
-  const { data: newHvp, error: hvpErr } = await admin
+  // 3. hvp 테이블에 INSERT (이미 같은 이메일 hvp 있으면 재사용)
+  let hvpId: string;
+  const { data: existingHvp } = await admin
     .from("hvp")
-    .insert({
-      name: app.name,
-      phone: app.phone,
-      email: app.email,
-      organization: app.organization,
-      cohort: app.cohort,
-      channel: app.channel,
-      referrer: app.referrer,
-      applied_at: app.created_at?.split("T")[0] ?? null,
-      completed_at: new Date().toISOString().split("T")[0],
-      status: "active",
-      default_fee_rate: 0.2,
-    })
     .select("id")
-    .single();
+    .ilike("email", app.email)
+    .maybeSingle();
 
-  if (hvpErr || !newHvp) {
-    return { error: `HVP 등록 실패: ${hvpErr?.message ?? "알 수 없음"}` };
-  }
-
-  // 4. Auth 계정 생성 (이메일·임시 비밀번호)
-  // 임시 비밀번호: 랜덤 12자
-  const tempPassword =
-    Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8).toUpperCase();
-
-  const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email: app.email,
-    password: tempPassword,
-    email_confirm: true,
-    user_metadata: { name: app.name },
-  });
-
-  if (authErr || !authData?.user) {
-    // hvp는 만들어졌으니 status만 업데이트하고 user 정보는 전달
-    await admin
-      .from("hvp_applications")
-      .update({
-        status: "approved",
-        approved_hvp_id: newHvp.id,
-        reviewed_at: new Date().toISOString(),
+  if (existingHvp) {
+    hvpId = existingHvp.id;
+  } else {
+    const { data: newHvp, error: hvpErr } = await admin
+      .from("hvp")
+      .insert({
+        name: app.name,
+        phone: app.phone,
+        email: app.email,
+        organization: app.organization,
+        cohort: app.cohort,
+        channel: app.channel,
+        referrer: app.referrer,
+        applied_at: app.created_at?.split("T")[0] ?? null,
+        completed_at: new Date().toISOString().split("T")[0],
+        status: "active",
+        default_fee_rate: 0.2,
       })
-      .eq("id", applicationId);
+      .select("id")
+      .single();
 
-    revalidatePath("/admin/applications");
-
-    return {
-      error: `HVP는 등록됐지만 Auth 계정 생성 실패: ${authErr?.message ?? "알 수 없음"}. 같은 이메일이 이미 있는지 확인하세요.`,
-      hvpId: newHvp.id,
-    };
+    if (hvpErr || !newHvp) {
+      return { error: `HVP 등록 실패: ${hvpErr?.message ?? "알 수 없음"}` };
+    }
+    hvpId = newHvp.id;
   }
 
-  // 5. profiles 업데이트 (trigger가 자동 생성했지만 role/hvp_id 추가)
-  // handle_new_user 트리거가 profiles 행을 생성. 잠시 기다린 후 update.
-  // 또는 직접 update 시도.
-  await admin
+  // 4. 이미 로그인했던 프로필이 있으면 즉시 hvp로 승격 (없으면 트리거가 로그인 시 처리)
+  const { data: linkedProfiles } = await admin
     .from("profiles")
-    .update({
-      role: "hvp",
-      hvp_id: newHvp.id,
-      name: app.name,
-      phone: app.phone,
-    })
-    .eq("id", authData.user.id);
+    .update({ role: "hvp", hvp_id: hvpId })
+    .ilike("email", app.email)
+    .select("id");
+  const alreadyLoggedIn = (linkedProfiles?.length ?? 0) > 0;
 
-  // 6. 신청서 상태 업데이트
+  // 5. 신청서 상태 업데이트
   await admin
     .from("hvp_applications")
     .update({
       status: "approved",
-      approved_hvp_id: newHvp.id,
+      approved_hvp_id: hvpId,
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", applicationId);
 
   revalidatePath("/admin/applications");
+  revalidatePath("/admin/hvp");
 
   return {
     success: true,
-    hvpId: newHvp.id,
+    hvpId,
     email: app.email,
-    tempPassword,
     name: app.name,
+    alreadyLoggedIn,
   };
 }
 

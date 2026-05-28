@@ -141,7 +141,7 @@ export default async function ApplicationsPage({
       </div>
 
       <div className="text-xs text-zinc-400 mt-4">
-        💡 "승인 + 계정 생성" 클릭 시: HVP 등록 → Auth 계정 생성 → 임시 비밀번호 표시. 그 비밀번호를 HVP에게 전달하시면 됩니다.
+        💡 &quot;승인&quot; 클릭 시: HVP 명단에 등록 → HVP가 본인 <b>Google 계정(신청 이메일)</b>으로 로그인하면 자동으로 HVP 권한이 부여됩니다. (비밀번호 발급 불필요)
       </div>
     </>
   );

@@ -12,13 +12,13 @@ type Props = {
 export function ApproveButtons({ applicationId, applicantName }: Props) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<
-    | { type: "success"; email: string; tempPassword: string; name: string }
+    | { type: "success"; email: string; name: string; alreadyLoggedIn: boolean }
     | { type: "error"; message: string }
     | null
   >(null);
 
   const onApprove = () => {
-    if (!confirm(`${applicantName}님을 승인하고 HVP 계정을 생성하시겠어요?`)) return;
+    if (!confirm(`${applicantName}님을 HVP로 승인하시겠어요?`)) return;
 
     startTransition(async () => {
       const r = await approveApplicationAction(applicationId);
@@ -26,8 +26,8 @@ export function ApproveButtons({ applicationId, applicantName }: Props) {
         setResult({
           type: "success",
           email: r.email!,
-          tempPassword: r.tempPassword!,
           name: r.name!,
+          alreadyLoggedIn: !!r.alreadyLoggedIn,
         });
       } else {
         setResult({ type: "error", message: r.error ?? "알 수 없는 오류" });
@@ -51,7 +51,7 @@ export function ApproveButtons({ applicationId, applicantName }: Props) {
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         <Button size="sm" onClick={onApprove} disabled={pending} className="text-xs">
-          {pending ? "처리 중..." : "✓ 승인 + 계정 생성"}
+          {pending ? "처리 중..." : "✓ 승인 (HVP 등록)"}
         </Button>
         <Button
           size="sm"
@@ -66,15 +66,22 @@ export function ApproveButtons({ applicationId, applicantName }: Props) {
 
       {result?.type === "success" ? (
         <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs">
-          <div className="font-semibold text-emerald-900 mb-1">✅ 승인 완료!</div>
+          <div className="font-semibold text-emerald-900 mb-1">✅ HVP 승인·등록 완료!</div>
           <div className="text-emerald-800 space-y-0.5">
             <div>이름: {result.name}</div>
-            <div>로그인 이메일: <span className="font-mono">{result.email}</span></div>
-            <div>임시 비밀번호: <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200">{result.tempPassword}</span></div>
+            <div>이메일: <span className="font-mono">{result.email}</span></div>
           </div>
-          <div className="mt-2 text-amber-700 text-[11px]">
-            ⚠️ 이 비밀번호를 HVP에게 안내해주세요. 다시 확인 불가합니다.
-          </div>
+          {result.alreadyLoggedIn ? (
+            <div className="mt-2 text-emerald-700 text-[11px]">
+              이미 로그인한 계정이 있어 바로 HVP 권한으로 승격됐어요. 재로그인하면 HVP 화면이 보입니다.
+            </div>
+          ) : (
+            <div className="mt-2 text-blue-700 text-[11px] bg-blue-50 border border-blue-100 rounded p-2">
+              📣 HVP에게 안내: <b>위 이메일의 본인 Google 계정</b>으로
+              heimventure.netlify.app 에서 <b>&quot;Google로 로그인&quot;</b> 하면
+              자동으로 HVP 권한이 부여됩니다. (별도 비밀번호 없음)
+            </div>
+          )}
         </div>
       ) : null}
 
