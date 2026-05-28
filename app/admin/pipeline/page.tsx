@@ -48,14 +48,8 @@ export default async function PipelinePage({
 
   const supabase = await createClient();
 
-  // 전체 (KPI·차트용, 필터 무관)
-  const { data: allData } = await supabase
-    .from("companies")
-    .select("id, sales_stage, consulting_stage");
-  const all = (allData as { sales_stage: Company["sales_stage"]; consulting_stage: Company["consulting_stage"] }[]) ?? [];
-
-  // 필터된 (테이블용)
-  let query = supabase
+  // 필터된 (테이블용) 쿼리 구성
+  let listQuery = supabase
     .from("companies")
     .select(
       "id, name, sales_stage, consulting_stage, program_grade, proposal_amount, address, main_item, received_at, started_at, notes"
@@ -66,21 +60,28 @@ export default async function PipelinePage({
 
   if (q) {
     const safe = q.replace(/[%,]/g, "");
-    query = query.or(`name.ilike.%${safe}%,address.ilike.%${safe}%,main_item.ilike.%${safe}%`);
+    listQuery = listQuery.or(`name.ilike.%${safe}%,address.ilike.%${safe}%,main_item.ilike.%${safe}%`);
   }
   if (stage !== "all") {
-    query = query.eq("sales_stage", stage);
+    listQuery = listQuery.eq("sales_stage", stage);
   }
   if (grade !== "all") {
-    if (grade === "none") query = query.is("program_grade", null);
-    else query = query.eq("program_grade", grade);
+    if (grade === "none") listQuery = listQuery.is("program_grade", null);
+    else listQuery = listQuery.eq("program_grade", grade);
   }
   if (consulting !== "all") {
-    if (consulting === "none") query = query.is("consulting_stage", null);
-    else query = query.eq("consulting_stage", consulting);
+    if (consulting === "none") listQuery = listQuery.is("consulting_stage", null);
+    else listQuery = listQuery.eq("consulting_stage", consulting);
   }
 
-  const { data, error } = await query;
+  // KPI용 전체 + 필터된 리스트 동시
+  const [allRes, listRes] = await Promise.all([
+    supabase.from("companies").select("id, sales_stage, consulting_stage"),
+    listQuery,
+  ]);
+
+  const all = (allRes.data as { sales_stage: Company["sales_stage"]; consulting_stage: Company["consulting_stage"] }[]) ?? [];
+  const { data, error } = listRes;
   const list: Company[] = (data as Company[]) ?? [];
 
   // 통계 (전체 기준)

@@ -51,7 +51,7 @@ export default async function HvpCompaniesPage({
     );
   }
 
-  let query = supabase
+  let listQuery = supabase
     .from("companies")
     .select("id, name, sales_stage, consulting_stage, program_grade, proposal_amount, fee_rate, address, main_item, received_at")
     .eq("hvp_id", profile.hvp_id)
@@ -59,21 +59,24 @@ export default async function HvpCompaniesPage({
 
   if (q) {
     const safe = q.replace(/[%,]/g, "");
-    query = query.or(`name.ilike.%${safe}%,address.ilike.%${safe}%,main_item.ilike.%${safe}%`);
+    listQuery = listQuery.or(`name.ilike.%${safe}%,address.ilike.%${safe}%,main_item.ilike.%${safe}%`);
   }
   if (stage !== "all") {
-    query = query.eq("sales_stage", stage);
+    listQuery = listQuery.eq("sales_stage", stage);
   }
 
-  const { data, error } = await query;
-  const list = data ?? [];
+  // list + 전체 통계 동시
+  const [listRes, allRes] = await Promise.all([
+    listQuery,
+    supabase
+      .from("companies")
+      .select("id, sales_stage")
+      .eq("hvp_id", profile.hvp_id),
+  ]);
 
-  // 통계 (필터 무관 전체)
-  const { data: allMine } = await supabase
-    .from("companies")
-    .select("id, sales_stage")
-    .eq("hvp_id", profile.hvp_id);
-  const all = allMine ?? [];
+  const { data, error } = listRes;
+  const list = data ?? [];
+  const all = allRes.data ?? [];
 
   const stageCounts = SALES_STAGES_ORDER.map((s) => ({
     key: s,

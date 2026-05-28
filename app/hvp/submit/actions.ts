@@ -9,7 +9,7 @@ export async function submitCompanyAction(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "로그인 필요" };
+  if (!user) throw new Error("로그인 필요");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -18,12 +18,12 @@ export async function submitCompanyAction(formData: FormData) {
     .single();
 
   if (!profile?.hvp_id && profile?.role !== "admin") {
-    return { error: "HVP만 접수 가능합니다" };
+    throw new Error("HVP만 접수 가능합니다");
   }
 
   // 필수
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "회사명이 비어있습니다" };
+  if (!name) throw new Error("회사명이 비어있습니다");
 
   const insert: any = {
     name,
@@ -47,7 +47,7 @@ export async function submitCompanyAction(formData: FormData) {
     .select("id")
     .single();
 
-  if (error) return { error: error.message };
+  if (error) throw new Error(error.message);
 
   revalidatePath("/hvp/companies");
   revalidatePath("/hvp/dashboard");

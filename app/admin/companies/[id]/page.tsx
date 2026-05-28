@@ -14,6 +14,11 @@ import {
 } from "@/lib/labels";
 import { StageChanger } from "./stage-changer";
 import { NewMeetingModal } from "./new-meeting-modal";
+import {
+  NewContractModal,
+  EditContractRow,
+  PaidToggle,
+} from "../../contracts/contract-modals";
 
 export const dynamic = "force-dynamic";
 
@@ -73,13 +78,14 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, hvpListRes] = await Promise.all([
     supabase.from("companies").select("*, hvp(name, cohort)").eq("id", id).single(),
     supabase.from("company_stage_history").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("meetings").select("*").eq("company_id", id).order("meeting_date", { ascending: false }),
     supabase.from("todos").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("files").select("*").eq("company_id", id).order("created_at", { ascending: false }),
-    supabase.from("contracts").select("*").eq("company_id", id),
+    supabase.from("contracts").select("*, hvp(id, name, cohort)").eq("company_id", id).order("contracted_at", { ascending: false }),
+    supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
   ]);
 
   const company = companyRes.data as Company | null;
@@ -90,6 +96,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const todos = todosRes.data ?? [];
   const files = filesRes.data ?? [];
   const contracts = contractsRes.data ?? [];
+  const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
 
   const currentIdx = getCurrentUnifiedStageIndex(company);
 
@@ -106,7 +113,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const activities: Activity[] = [
     {
       when: company.received_at,
-      type: "received",
+      type: "received" as const,
       title: "기업 접수",
       sub: company.inquiry_purpose ?? undefined,
       color: "bg-zinc-500",
@@ -322,18 +329,78 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           </div>
 
           {/* 계약·수수료 */}
-          {contracts.length > 0 ? (
-            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-zinc-900 mb-2">계약·수수료</h3>
-              <div className="text-lg font-bold text-zinc-900">
-                {contracts.reduce((s, c: any) => s + Number(c.total_amount ?? 0), 0).toLocaleString()}만
-                <span className="text-xs font-normal text-zinc-500"> 컨설팅</span>
-              </div>
-              <div className="text-sm text-emerald-700 font-medium mt-1">
-                → HVP 수수료 {Math.round(totalFee).toLocaleString()}만
-              </div>
+          <div className="bg-white border border-zinc-200 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-zinc-900">계약 · 수수료</h3>
+              <NewContractModal
+                companies={[{
+                  id: company.id,
+                  name: company.name,
+                  hvp_id: company.hvp_id,
+                  proposal_amount: company.proposal_amount,
+                }]}
+                hvps={hvpList}
+                defaultCompanyId={company.id}
+              />
             </div>
-          ) : null}
+
+            {contracts.length === 0 ? (
+              <div className="text-xs text-zinc-400 text-center py-3">
+                계약 없음 — &quot;계약&quot; 단계 진입 시 자동 생성
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 p-3 bg-zinc-50 rounded-lg">
+                  <div className="text-lg font-bold text-zinc-900">
+                    {contracts.reduce((s, c: any) => s + Number(c.total_amount ?? 0), 0).toLocaleString()}만
+                    <span className="text-xs font-normal text-zinc-500"> 컨설팅</span>
+                  </div>
+                  <div className="text-sm text-emerald-700 font-medium mt-1">
+                    → HVP 수수료 {Math.round(totalFee).toLocaleString()}만
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {contracts.map((c: any) => (
+                    <div key={c.id} className="border-t border-zinc-100 pt-3 first:border-0 first:pt-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="text-xs text-zinc-500">{c.contracted_at}</div>
+                        <EditContractRow
+                          contract={{
+                            id: c.id,
+                            company_id: c.company_id,
+                            contracted_at: c.contracted_at,
+                            total_amount: Number(c.total_amount),
+                            hvp_id: c.hvp_id,
+                            hvp_fee_rate: Number(c.hvp_fee_rate),
+                            payment_status: c.payment_status,
+                            notes: c.notes,
+                          }}
+                          hvps={hvpList}
+                          companyName={company.name}
+                        />
+                      </div>
+                      <div className="text-sm font-medium text-zinc-900">
+                        {Number(c.total_amount).toLocaleString()}만원
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-0.5">
+                        {c.hvp?.name ?? "HVP 미지정"} · 수수료 {(Number(c.hvp_fee_rate) * 100).toFixed(1)}%
+                        {" → "}
+                        <span className="text-emerald-700 font-medium">
+                          {Math.round(Number(c.hvp_fee_amount ?? 0)).toLocaleString()}만
+                        </span>
+                      </div>
+                      <div className="mt-1.5">
+                        <PaidToggle contractId={c.id} paid={c.payment_status === "paid"} />
+                      </div>
+                      {c.notes ? (
+                        <div className="text-[11px] text-zinc-400 mt-1.5 italic">{c.notes}</div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>

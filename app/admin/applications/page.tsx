@@ -24,21 +24,23 @@ export default async function ApplicationsPage({
 
   const supabase = await createClient();
 
-  let query = supabase
+  let listQuery = supabase
     .from("hvp_applications")
     .select("*")
     .order("created_at", { ascending: false });
-
   if (filter !== "all") {
-    query = query.eq("status", filter);
+    listQuery = listQuery.eq("status", filter);
   }
 
-  const { data, error } = await query;
-  const list = data ?? [];
+  // 목록 + 통계 동시에
+  const [listRes, countsRes] = await Promise.all([
+    listQuery,
+    supabase.from("hvp_applications").select("status"),
+  ]);
 
-  // 카운트 (필터 무관 전체)
-  const { data: counts } = await supabase.from("hvp_applications").select("status");
-  const all = counts ?? [];
+  const { data, error } = listRes;
+  const list = data ?? [];
+  const all = countsRes.data ?? [];
   const stats = {
     new: all.filter((a) => a.status === "new").length,
     reviewing: all.filter((a) => a.status === "reviewing").length,

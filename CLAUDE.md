@@ -89,6 +89,7 @@ cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\l
 | 0010 | service_role GRANT |
 | 0011 | handle_new_user에 hvp 자동 매칭 |
 | 0012 | @heimvi.com 자동 admin |
+| 0013 | 'contract' 단계 진입 시 contracts row 자동 생성 |
 
 ## 외부 데이터 소스
 
@@ -102,7 +103,8 @@ cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\l
 - ✅ `/admin/pipeline` — 테이블 + 4종 필터 + KPI/차트
 - ✅ `/admin/applications` — HVP 신청자 관리 + 승인+계정생성
 - ✅ `/admin/todos` — To-do 관리 (수동 추가 모달 + 체크박스 완료)
-- ✅ `/admin/companies/[id]` — 12단계 통합 타임라인 + 활동 피드 + 단계 변경 + 미팅·회의록 추가 + AI 요약
+- ✅ `/admin/companies/[id]` — 12단계 통합 타임라인 + 활동 피드 + 단계 변경 + 미팅·회의록 추가 + AI 요약 + 계약·수수료 카드 (추가/편집/지급토글)
+- ✅ `/admin/contracts` — 계약·수수료 목록 + KPI(총액·지급/미지급) + 지급상태/HVP 필터 + 생성/편집/지급 토글
 
 ### HVP
 - ✅ `/hvp/dashboard` — KPI + 깔때기 + 내 기업 요약
@@ -160,7 +162,7 @@ HVP가 Tally 폼 또는 /hvp/submit에서 기업 접수 → companies INSERT
 
 | 순위 | 작업 | 비고 |
 |---|---|---|
-| 1 | `/admin/contracts` (계약·수수료) | 단계 "계약" 진입 시 자동 contracts 생성 + 지급 처리 UI |
+| ~~1~~ | ~~`/admin/contracts` (계약·수수료)~~ | ✅ 완료 (0013 마이그레이션 + 페이지) |
 | 2 | `/hvp/fees` | HVP가 자기 수수료 자세히 |
 | 3 | 자료 업로드 (Supabase Storage) | 사업계획서·IR Deck 등 첨부 |
 | 4 | 이메일 알림 (Resend) | "오늘 마감 To-do" 알림 |

@@ -39,18 +39,17 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("hvp_id, role")
-    .eq("id", user.id)
-    .single();
+  // profile + company + 관련 데이터 전부 동시 (5개 쿼리 한 번에 RTT)
+  const [profileRes, companyRes, meetingsRes, todosRes, contractsRes] = await Promise.all([
+    supabase.from("profiles").select("hvp_id, role").eq("id", user.id).single(),
+    supabase.from("companies").select("*").eq("id", id).single(),
+    supabase.from("meetings").select("*").eq("company_id", id).order("meeting_date", { ascending: false }),
+    supabase.from("todos").select("*").eq("company_id", id).order("created_at", { ascending: false }),
+    supabase.from("contracts").select("*").eq("company_id", id),
+  ]);
 
-  // 회사 조회 + 본인 기업 검증
-  const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const profile = profileRes.data;
+  const company = companyRes.data;
 
   if (!company) notFound();
 
@@ -58,12 +57,6 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
   if (profile?.role !== "admin" && company.hvp_id !== profile?.hvp_id) {
     redirect("/hvp/companies");
   }
-
-  const [meetingsRes, todosRes, contractsRes] = await Promise.all([
-    supabase.from("meetings").select("*").eq("company_id", id).order("meeting_date", { ascending: false }),
-    supabase.from("todos").select("*").eq("company_id", id).order("created_at", { ascending: false }),
-    supabase.from("contracts").select("*").eq("company_id", id),
-  ]);
 
   const meetings = meetingsRes.data ?? [];
   const todos = todosRes.data ?? [];

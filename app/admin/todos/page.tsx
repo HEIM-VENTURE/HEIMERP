@@ -36,7 +36,7 @@ export default async function TodosPage({
 
   const supabase = await createClient();
 
-  let query = supabase
+  let listQuery = supabase
     .from("todos")
     .select("*, companies(id, name)")
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -48,35 +48,31 @@ export default async function TodosPage({
   const weekStr = weekLater.toISOString().split("T")[0];
 
   if (filter === "today") {
-    query = query.eq("due_date", todayStr).neq("status", "done");
+    listQuery = listQuery.eq("due_date", todayStr).neq("status", "done");
   } else if (filter === "overdue") {
-    query = query.lt("due_date", todayStr).neq("status", "done");
+    listQuery = listQuery.lt("due_date", todayStr).neq("status", "done");
   } else if (filter === "this_week") {
-    query = query.lte("due_date", weekStr).neq("status", "done");
+    listQuery = listQuery.lte("due_date", weekStr).neq("status", "done");
   } else if (filter === "done") {
-    query = query.eq("status", "done");
+    listQuery = listQuery.eq("status", "done");
   } else {
-    query = query.neq("status", "done");
+    listQuery = listQuery.neq("status", "done");
   }
 
-  if (auto === "auto") query = query.eq("auto_generated", true);
-  if (auto === "manual") query = query.eq("auto_generated", false);
+  if (auto === "auto") listQuery = listQuery.eq("auto_generated", true);
+  if (auto === "manual") listQuery = listQuery.eq("auto_generated", false);
 
-  const { data, error } = await query;
+  // 3개 쿼리 동시
+  const [listRes, companiesRes, countsRes] = await Promise.all([
+    listQuery,
+    supabase.from("companies").select("id, name").order("name", { ascending: true }),
+    supabase.from("todos").select("id, due_date, status, auto_generated"),
+  ]);
+
+  const { data, error } = listRes;
   const list = (data as Todo[]) ?? [];
-
-  // 회사 목록 (모달의 드롭다운용)
-  const { data: companiesData } = await supabase
-    .from("companies")
-    .select("id, name")
-    .order("name", { ascending: true });
-  const companies = (companiesData as { id: number; name: string }[]) ?? [];
-
-  // 통계
-  const { data: counts } = await supabase
-    .from("todos")
-    .select("id, due_date, status, auto_generated");
-  const all = (counts as Todo[]) ?? [];
+  const companies = (companiesRes.data as { id: number; name: string }[]) ?? [];
+  const all = (countsRes.data as Todo[]) ?? [];
   const overdueCount = all.filter((t) => t.status !== "done" && t.due_date && t.due_date < todayStr).length;
   const todayCount = all.filter((t) => t.status !== "done" && t.due_date === todayStr).length;
   const weekCount = all.filter(

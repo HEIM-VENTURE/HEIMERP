@@ -14,22 +14,32 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  // ===== KPI =====
-  const { data: companies } = await supabase
-    .from("companies")
-    .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at");
+  // 오늘 처리할 일 마감 기준 — 동시 query에 미리 계산해두기
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-  const { data: hvps } = await supabase
-    .from("hvp")
-    .select("id, status");
+  // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
+  const [companiesRes, hvpsRes, contractsRes, todayTodosRes] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
+    supabase.from("hvp").select("id, status"),
+    supabase.from("contracts").select("id, total_amount, hvp_fee_amount, payment_status"),
+    supabase
+      .from("todos")
+      .select("id, title, due_date, status")
+      .neq("status", "done")
+      .lte("due_date", tomorrowStr)
+      .order("due_date", { ascending: true })
+      .limit(5),
+  ]);
 
-  const { data: contracts } = await supabase
-    .from("contracts")
-    .select("id, total_amount, hvp_fee_amount, payment_status");
-
-  const allCompanies = companies ?? [];
-  const allHvps = hvps ?? [];
-  const allContracts = contracts ?? [];
+  const allCompanies = companiesRes.data ?? [];
+  const allHvps = hvpsRes.data ?? [];
+  const allContracts = contractsRes.data ?? [];
+  const todayTodos = todayTodosRes.data ?? [];
 
   const totalCompanies = allCompanies.length;
   const kickoffCount = allCompanies.filter((c) => c.sales_stage === "kickoff").length;
@@ -111,19 +121,6 @@ export default async function AdminDashboardPage() {
   const recentChanges = [...allCompanies]
     .sort((a, b) => new Date((b as any).updated_at ?? b.received_at).getTime() - new Date((a as any).updated_at ?? a.received_at).getTime())
     .slice(0, 6);
-
-  // 오늘 처리할 일 (todos)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const { data: todayTodos } = await supabase
-    .from("todos")
-    .select("id, title, due_date, status")
-    .neq("status", "done")
-    .lte("due_date", tomorrow.toISOString().split("T")[0])
-    .order("due_date", { ascending: true })
-    .limit(5);
 
   // 수수료 합계
   const totalFeeScheduled = allContracts
@@ -280,10 +277,10 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-semibold text-zinc-900">오늘 처리할 일</h2>
             <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium">
-              {todayTodos?.length ?? 0}
+              {todayTodos.length}
             </span>
           </div>
-          {!todayTodos || todayTodos.length === 0 ? (
+          {todayTodos.length === 0 ? (
             <div className="text-sm text-zinc-400 text-center py-6">
               오늘 마감 To-do가 없습니다 ✨
             </div>

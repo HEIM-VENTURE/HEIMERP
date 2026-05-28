@@ -21,7 +21,7 @@ export default async function HvpDashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  // profile
+  // profile 먼저 (hvp_id 확보용)
   const { data: profile } = await supabase
     .from("profiles")
     .select("hvp_id, name")
@@ -30,30 +30,29 @@ export default async function HvpDashboardPage() {
 
   const myHvpId = profile?.hvp_id;
 
-  // hvp info
-  const { data: hvp } = myHvpId
-    ? await supabase.from("hvp").select("name, cohort, default_fee_rate").eq("id", myHvpId).single()
-    : { data: null };
+  // 나머지 3개 쿼리는 동시에 (hvp_id 있을 때만)
+  const [hvpRes, myCompaniesRes, myContractsRes] = myHvpId
+    ? await Promise.all([
+        supabase
+          .from("hvp")
+          .select("name, cohort, default_fee_rate")
+          .eq("id", myHvpId)
+          .single(),
+        supabase
+          .from("companies")
+          .select("id, name, sales_stage, consulting_stage, program_grade, proposal_amount, received_at, started_at")
+          .eq("hvp_id", myHvpId)
+          .order("received_at", { ascending: false }),
+        supabase
+          .from("contracts")
+          .select("id, total_amount, hvp_fee_amount, payment_status")
+          .eq("hvp_id", myHvpId),
+      ])
+    : [{ data: null }, { data: [] }, { data: [] }];
 
-  // 내 기업 (hvp_id 일치)
-  const { data: myCompanies } = myHvpId
-    ? await supabase
-        .from("companies")
-        .select("id, name, sales_stage, consulting_stage, program_grade, proposal_amount, received_at, started_at")
-        .eq("hvp_id", myHvpId)
-        .order("received_at", { ascending: false })
-    : { data: [] };
-
-  // 내 계약 (수수료)
-  const { data: myContracts } = myHvpId
-    ? await supabase
-        .from("contracts")
-        .select("id, total_amount, hvp_fee_amount, payment_status")
-        .eq("hvp_id", myHvpId)
-    : { data: [] };
-
-  const companies = myCompanies ?? [];
-  const contracts = myContracts ?? [];
+  const hvp = hvpRes.data;
+  const companies = myCompaniesRes.data ?? [];
+  const contracts = myContractsRes.data ?? [];
 
   // 통계
   const totalMy = companies.length;
