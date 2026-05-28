@@ -5,15 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { summarizeMeetingNotes } from "@/lib/gemini";
 
 type CreateMeetingResult =
-  | {
-      success: true;
-      meetingId: number;
-      aiSummary?: string;
-      aiTodos?: string[];
-      aiError?: string;
-    }
+  | { success: true; meetingId: number; wantAi: boolean }
   | { error: string };
 
+/**
+ * 미팅(회의록) 저장 — AI 요약은 하지 않는다(빠르게 저장만).
+ * AI 요약은 클라이언트가 저장 직후 별도 요청(regenerateSummaryAction)으로 호출.
+ * → 서버리스 함수 시간제한(~10초) 안에 각 요청이 안전하게 들어감.
+ */
 export async function createMeetingAction(formData: FormData): Promise<CreateMeetingResult> {
   const supabase = await createClient();
   const {
@@ -35,7 +34,6 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
 
   const wantAiSummary = formData.get("ai_summary") === "on";
 
-  // 1) 미팅을 먼저 저장 (AI보다 먼저 — AI가 느리거나 실패해도 회의록은 보존)
   const { data: meeting, error } = await supabase
     .from("meetings")
     .insert({
@@ -52,47 +50,9 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
 
   if (error) return { error: error.message };
 
-  // 2) AI 요약 생성 (옵션) — 실패해도 미팅은 이미 저장됨
-  let aiSummary: string | null = null;
-  let aiTodos: string[] = [];
-  let aiError: string | null = null;
-  if (wantAiSummary) {
-    const { data: company } = await supabase
-      .from("companies")
-      .select("name")
-      .eq("id", companyId)
-      .single();
-    try {
-      const result = await summarizeMeetingNotes(body, {
-        companyName: company?.name,
-        meetingType: sequence ?? undefined,
-        attendees: attendees ?? undefined,
-      });
-      aiSummary = result.summary;
-      aiTodos = result.todos;
-      await supabase
-        .from("meetings")
-        .update({
-          ai_summary: aiSummary,
-          ai_summary_at: new Date().toISOString(),
-          ai_todos: aiTodos,
-        })
-        .eq("id", meeting.id);
-    } catch (e) {
-      console.error("[AI 요약 실패]", e);
-      aiError = e instanceof Error ? e.message : "AI 요약 생성 실패";
-    }
-  }
-
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath(`/hvp/companies/${companyId}`);
-  return {
-    success: true,
-    meetingId: meeting.id,
-    aiSummary: aiSummary ?? undefined,
-    aiTodos,
-    aiError: aiError ?? undefined,
-  };
+  return { success: true, meetingId: meeting.id, wantAi: wantAiSummary };
 }
 
 export async function regenerateSummaryAction(

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createMeetingAction } from "./meeting-actions";
+import { createMeetingAction, regenerateSummaryAction } from "./meeting-actions";
 import { MeetingTodoSuggestions } from "./meeting-todos";
 import { MarkdownView } from "./markdown-view";
 
@@ -13,8 +14,10 @@ type Props = {
 };
 
 export function NewMeetingModal({ companyId }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [phase, setPhase] = useState<"idle" | "saving" | "generating">("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     aiSummary?: string;
@@ -27,14 +30,29 @@ export function NewMeetingModal({ companyId }: Props) {
     setResult(null);
     formData.set("company_id", String(companyId));
     startTransition(async () => {
+      // 1) 미팅 저장 (빠름)
+      setPhase("saving");
       const r = await createMeetingAction(formData);
       if ("error" in r) {
         setError(r.error);
-      } else if (r.aiSummary || r.aiError) {
-        // 요약 성공/실패 결과를 보여주고 사용자가 닫게 함 (미팅은 이미 저장됨)
-        setResult({ aiSummary: r.aiSummary, aiTodos: r.aiTodos, aiError: r.aiError });
-      } else {
+        setPhase("idle");
+        return;
+      }
+      if (!r.wantAi) {
+        setPhase("idle");
         setOpen(false);
+        router.refresh();
+        return;
+      }
+      // 2) AI 정리 (별도 요청 — 저장은 이미 끝남)
+      setPhase("generating");
+      const ai = await regenerateSummaryAction(r.meetingId);
+      setPhase("idle");
+      router.refresh(); // 피드에 새 미팅 반영
+      if ("error" in ai) {
+        setResult({ aiError: ai.error });
+      } else {
+        setResult({ aiSummary: ai.summary, aiTodos: ai.todos });
       }
     });
   };
@@ -169,7 +187,11 @@ export function NewMeetingModal({ companyId }: Props) {
                   취소
                 </Button>
                 <Button type="submit" className="flex-1" disabled={pending}>
-                  {pending ? "저장 중..." : "저장"}
+                  {phase === "saving"
+                    ? "저장 중..."
+                    : phase === "generating"
+                      ? "✨ AI 정리 중..."
+                      : "저장"}
                 </Button>
               </div>
             </form>

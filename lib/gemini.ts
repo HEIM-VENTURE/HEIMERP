@@ -14,8 +14,8 @@
 // thinking off + 빠른 모델 순. 앞 모델 실패 시 다음으로 폴백.
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
 
-// 전체 생성에 허용할 최대 시간 (Netlify 함수 한도보다 안전하게 낮게)
-const OVERALL_DEADLINE_MS = 9000;
+// 전체 생성에 허용할 최대 시간 (Netlify 함수 한도 ~10초보다 안전하게 낮게)
+const OVERALL_DEADLINE_MS = 8000;
 
 export type MeetingSummary = {
   summary: string; // 상세 회의록 마크다운
