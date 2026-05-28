@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { TODO_STATUS_LABELS } from "@/lib/labels";
+import { TODO_STATUS_LABELS, SALES_STAGE_LABELS, CONSULTING_STAGE_LABELS } from "@/lib/labels";
 import { NewTodoModal } from "./new-todo-modal";
 import { TodoCheckbox } from "./todo-checkbox";
+import { TodoFilters } from "./todo-filters";
+
+const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
+const STAGE_LABELS: Record<string, string> = {
+  ...SALES_STAGE_LABELS,
+  ...CONSULTING_STAGE_LABELS,
+  hvp_applied: "HVP 신청",
+  hvp_paid: "HVP 결제",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +27,12 @@ type Todo = {
   category: string | null;
   created_at: string;
   completed_at: string | null;
-  companies?: { id: number; name: string } | null;
+  companies?: {
+    id: number;
+    name: string;
+    hvp_id: string | null;
+    custom_fields?: { pm?: string } | null;
+  } | null;
 };
 
 type Cat = "all" | "hvp_onboarding" | "deal" | "general";
@@ -27,6 +41,10 @@ type SearchParams = {
   filter?: "all" | "today" | "overdue" | "this_week" | "done";
   auto?: "all" | "auto" | "manual";
   cat?: Cat;
+  pm?: string;
+  hvp?: string;
+  company?: string;
+  stage?: string;
 };
 
 const CAT_LABEL: Record<string, string> = {
@@ -49,9 +67,19 @@ export default async function TodosPage({
   const filter = sp.filter ?? "all";
   const auto = sp.auto ?? "all";
   const cat = (sp.cat ?? "all") as Cat;
+  const pm = sp.pm ?? "all";
+  const hvp = sp.hvp ?? "all";
+  const company = sp.company ?? "all";
+  const stage = sp.stage ?? "all";
 
   const qs = (over: Partial<{ filter: string; auto: string; cat: string }>) => {
-    const p = new URLSearchParams({ filter, auto, cat, ...over });
+    const p = new URLSearchParams({ filter, auto, cat });
+    // 차원 필터(pm/hvp/company/stage)는 보존
+    if (pm !== "all") p.set("pm", pm);
+    if (hvp !== "all") p.set("hvp", hvp);
+    if (company !== "all") p.set("company", company);
+    if (stage !== "all") p.set("stage", stage);
+    Object.entries(over).forEach(([k, v]) => p.set(k, v as string));
     return `?${p.toString()}`;
   };
 
@@ -59,7 +87,7 @@ export default async function TodosPage({
 
   let listQuery = supabase
     .from("todos")
-    .select("*, companies(id, name)")
+    .select("*, companies(id, name, hvp_id, custom_fields)")
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
@@ -83,17 +111,26 @@ export default async function TodosPage({
   if (auto === "auto") listQuery = listQuery.eq("auto_generated", true);
   if (auto === "manual") listQuery = listQuery.eq("auto_generated", false);
   if (cat !== "all") listQuery = listQuery.eq("category", cat);
+  if (company !== "all") listQuery = listQuery.eq("company_id", Number(company));
+  if (stage !== "all") listQuery = listQuery.eq("trigger_stage", stage);
 
-  // 3개 쿼리 동시
-  const [listRes, companiesRes, countsRes] = await Promise.all([
+  // 4개 쿼리 동시
+  const [listRes, companiesRes, countsRes, hvpsRes] = await Promise.all([
     listQuery,
     supabase.from("companies").select("id, name").order("name", { ascending: true }),
     supabase.from("todos").select("id, due_date, status, auto_generated, category"),
+    supabase.from("hvp").select("id, name").order("name", { ascending: true }),
   ]);
 
   const { data, error } = listRes;
-  const list = (data as Todo[]) ?? [];
+  let list = (data as Todo[]) ?? [];
+  // PM·HVP는 연결 기업 기준이라 클라이언트 측에서 필터
+  if (pm !== "all") list = list.filter((t) => (t.companies?.custom_fields?.pm ?? "") === pm);
+  if (hvp !== "all") list = list.filter((t) => t.companies?.hvp_id === hvp);
+
   const companies = (companiesRes.data as { id: number; name: string }[]) ?? [];
+  const hvpOpts = (hvpsRes.data as { id: string; name: string }[]) ?? [];
+  const stageOpts = Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label }));
   const all = (countsRes.data as Todo[]) ?? [];
   const activeAll = all.filter((t) => t.status !== "done");
   const catCount = (c: string) => activeAll.filter((t) => (t.category ?? "deal") === c).length;
@@ -133,6 +170,15 @@ export default async function TodosPage({
         <FilterCard active={filter === "all" || !filter} href={qs({ filter: "all" })} label="전체 진행" count={totalActive} tone="zinc" />
         <FilterCard active={filter === "done"} href={qs({ filter: "done" })} label="완료됨" count={doneCount} tone="emerald" />
       </div>
+
+      {/* 다차원 필터 (담당 PM / HVP / 기업 / 단계) */}
+      <TodoFilters
+        pms={PM_OPTIONS}
+        hvps={hvpOpts}
+        companies={companies}
+        stages={stageOpts}
+        current={{ pm, hvp, company, stage }}
+      />
 
       {/* 자동/수동 필터 */}
       <div className="flex gap-2 mb-4 text-xs">
