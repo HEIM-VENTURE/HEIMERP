@@ -96,6 +96,28 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
         ) : null}
       </div>
 
+      {/* 단계 수동 변경 (아무 단계로나 이동) */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] text-zinc-400">단계 수동:</span>
+        <select
+          value={stage}
+          disabled={pending}
+          onChange={(e) => {
+            const next = e.target.value as Stage;
+            if (next === stage) return;
+            if (next === "partner" && !confirm(`${applicantName}님을 파트너 HVP로 등록할까요?`)) return;
+            run(next);
+          }}
+          className="text-[11px] border border-zinc-200 rounded-md px-1.5 py-1 bg-white"
+        >
+          <option value="applied">신청</option>
+          <option value="paid">결제 완료</option>
+          <option value="completed">교육 이수</option>
+          <option value="partner">파트너 등록</option>
+          <option value="rejected">거절/이탈</option>
+        </select>
+      </div>
+
       {/* 결제 입력 */}
       {payOpen ? (
         <form
