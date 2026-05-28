@@ -1,8 +1,10 @@
 /**
  * Google Gemini API 통합 - 회의록 자동 요약 + To-do 추출.
  * 무료 티어: 분 15회 / 일 1500회 (사실상 무제한).
+ *
+ * SDK 대신 REST(fetch)로 직접 호출 — 서버 환경(Netlify)에서 SDK 인증 이슈를
+ * 피하고, API 키의 공백·줄바꿈을 방어적으로 trim 처리하기 위함.
  */
-import { GoogleGenAI } from "@google/genai";
 
 // 우선순위 순서로 시도 (앞 모델 실패 시 다음 모델로 폴백).
 // gemini-2.0-flash-exp 는 폐기됨(404). 2.5-flash 가 현재 무료 안정 버전.
@@ -17,12 +19,12 @@ export async function summarizeMeetingNotes(
   body: string,
   context?: { companyName?: string; meetingType?: string; attendees?: string }
 ): Promise<MeetingSummary> {
-  const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+  // 환경변수에 줄바꿈·따옴표·공백이 섞여 들어오는 경우가 잦아 방어적으로 정리
+  const rawKey = process.env.GOOGLE_GENAI_API_KEY ?? "";
+  const apiKey = rawKey.trim().replace(/^['"]|['"]$/g, "");
   if (!apiKey) {
     throw new Error("GOOGLE_GENAI_API_KEY 환경변수가 없습니다");
   }
-
-  const ai = new GoogleGenAI({ apiKey });
 
   const contextLine = context
     ? `회사: ${context.companyName ?? "—"} | 미팅 유형: ${context.meetingType ?? "—"}${context.attendees ? ` | 참석자: ${context.attendees}` : ""}`
@@ -87,28 +89,51 @@ ${contextLine ? `[회의 컨텍스트]\n${contextLine}\n` : ""}
 [녹취록 원문]
 ${body}`;
 
-  let lastError: unknown = null;
+  // 키 형식 사전 검증 (Google AI Studio 키는 보통 'AIza'로 시작, 39자)
+  const keyHint = `key[len=${apiKey.length},head=${apiKey.slice(0, 4)}]`;
+
+  let lastError = "";
   for (const model of MODELS) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: { responseMimeType: "application/json" },
-      });
-      const text = response.text;
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
+          }),
+        }
+      );
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const apiMsg = data?.error?.message || `(빈 메시지, HTTP ${res.status})`;
+        lastError = `[${model}] HTTP ${res.status}: ${apiMsg}`;
+        continue; // 다음 모델로 폴백
+      }
+
+      const text: string | undefined =
+        data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? undefined;
+
       if (text && text.trim()) {
         return parseSummary(text.trim());
       }
-      lastError = new Error(`${model}: 빈 응답`);
+      lastError = `[${model}] 빈 응답`;
     } catch (e) {
-      lastError = e;
-      // 다음 모델로 폴백 (404=모델없음, 429=쿼터초과 등)
+      lastError = `[${model}] ${e instanceof Error ? e.message : String(e)}`;
     }
   }
 
-  const msg =
-    lastError instanceof Error ? lastError.message : String(lastError ?? "알 수 없는 오류");
-  throw new Error(`Gemini 요약 실패 (모든 모델 시도): ${msg}`);
+  // 401/403 이면 키 문제임을 명확히 안내
+  if (lastError.includes("401") || lastError.includes("403") || lastError.includes("API key")) {
+    throw new Error(
+      `Gemini 인증 실패 — API 키가 잘못되었거나 권한이 없습니다. (${keyHint}) 상세: ${lastError}`
+    );
+  }
+  throw new Error(`Gemini 요약 실패 (모든 모델 시도): ${lastError || "알 수 없는 오류"}`);
 }
 
 /**
