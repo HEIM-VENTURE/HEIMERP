@@ -91,6 +91,7 @@ cmd //c "call C:\Users\laa02\miniconda3\Scripts\activate.bat && cd /d C:\Users\l
 | 0012 | @heimvi.com 자동 admin |
 | 0013 | 'contract' 단계 진입 시 contracts row 자동 생성 |
 | 0014 | Storage 버킷 `company-files` (자료 업로드, 50MB, private) |
+| 0015 | meetings.ai_todos JSONB (AI 추출 To-do 후보 저장) |
 
 ## 외부 데이터 소스
 
