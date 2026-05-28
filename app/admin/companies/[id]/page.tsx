@@ -174,6 +174,16 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
         <span className="text-zinc-600">{company.name}</span>
       </div>
 
+      {company.drop_reason ? (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-900 flex items-center gap-2">
+          <span>⛔</span>
+          <span>
+            <b>드랍된 기업</b> — 사유: {company.drop_reason}
+            <span className="text-rose-500 text-xs ml-2">(단계 변경 → 드랍 취소로 복구 가능)</span>
+          </span>
+        </div>
+      ) : null}
+
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl">
@@ -226,6 +236,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             companyId={company.id}
             currentSalesStage={company.sales_stage}
             currentConsultingStage={company.consulting_stage}
+            currentDropReason={company.drop_reason}
           />
         </div>
       </div>

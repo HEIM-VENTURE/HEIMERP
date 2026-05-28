@@ -72,12 +72,34 @@ export async function dropCompanyAction(companyId: number, reason: string) {
 
   const { error } = await supabase
     .from("companies")
-    .update({ drop_reason: reason })
+    .update({ drop_reason: reason || "중단" })
     .eq("id", companyId);
 
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath("/admin/pipeline");
+  revalidatePath("/admin/dashboard");
+  return { success: true };
+}
+
+/** 드랍 취소(복구) — drop_reason 제거 */
+export async function restoreCompanyAction(companyId: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인 필요" };
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ drop_reason: null })
+    .eq("id", companyId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  revalidatePath("/admin/pipeline");
+  revalidatePath("/admin/dashboard");
   return { success: true };
 }

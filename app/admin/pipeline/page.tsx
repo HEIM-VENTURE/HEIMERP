@@ -26,6 +26,7 @@ type Company = {
   received_at: string;
   started_at: string | null;
   notes: string | null;
+  drop_reason: string | null;
 };
 
 type SearchParams = {
@@ -33,6 +34,7 @@ type SearchParams = {
   stage?: string;
   grade?: string;
   consulting?: string;
+  dropped?: string;
 };
 
 export default async function PipelinePage({
@@ -45,6 +47,7 @@ export default async function PipelinePage({
   const stage = sp.stage ?? "all";
   const grade = sp.grade ?? "all";
   const consulting = sp.consulting ?? "all";
+  const dropped = sp.dropped ?? "active"; // active(드랍 제외) | dropped(드랍만) | all
 
   const supabase = await createClient();
 
@@ -52,11 +55,14 @@ export default async function PipelinePage({
   let listQuery = supabase
     .from("companies")
     .select(
-      "id, name, sales_stage, consulting_stage, program_grade, proposal_amount, address, main_item, received_at, started_at, notes"
+      "id, name, sales_stage, consulting_stage, program_grade, proposal_amount, address, main_item, received_at, started_at, notes, drop_reason"
     )
     .order("sales_stage", { ascending: true })
     .order("consulting_stage", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
+
+  if (dropped === "active") listQuery = listQuery.is("drop_reason", null);
+  else if (dropped === "dropped") listQuery = listQuery.not("drop_reason", "is", null);
 
   if (q) {
     const safe = q.replace(/[%,]/g, "");
@@ -167,6 +173,7 @@ export default async function PipelinePage({
         initialStage={stage}
         initialGrade={grade}
         initialConsulting={consulting}
+        initialDropped={dropped}
         resultCount={list.length}
       />
 
@@ -202,10 +209,15 @@ export default async function PipelinePage({
               const stageColor = SALES_STAGE_COLORS[c.sales_stage];
 
               return (
-                <tr key={c.id} className="hover:bg-zinc-50 group">
+                <tr key={c.id} className={`hover:bg-zinc-50 group ${c.drop_reason ? "opacity-60" : ""}`}>
                   <td className="px-4 py-3">
                     <Link href={`/admin/companies/${c.id}`} className="block">
-                      <div className="font-medium text-zinc-900 group-hover:text-zinc-950 truncate">{c.name}</div>
+                      <div className="font-medium text-zinc-900 group-hover:text-zinc-950 truncate flex items-center gap-1.5">
+                        {c.drop_reason ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 shrink-0">드랍</span>
+                        ) : null}
+                        <span className="truncate">{c.name}</span>
+                      </div>
                       {c.main_item || c.address ? (
                         <div className="text-xs text-zinc-400 truncate">
                           {[c.main_item, c.address].filter(Boolean).join(" · ")}

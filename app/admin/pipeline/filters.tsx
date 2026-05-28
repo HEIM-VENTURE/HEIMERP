@@ -15,6 +15,7 @@ type Props = {
   initialStage: string;
   initialGrade: string;
   initialConsulting: string;
+  initialDropped: string;
   resultCount: number;
 };
 
@@ -23,6 +24,7 @@ export function PipelineFilters({
   initialStage,
   initialGrade,
   initialConsulting,
+  initialDropped,
   resultCount,
 }: Props) {
   const router = useRouter();
@@ -46,7 +48,19 @@ export function PipelineFilters({
   };
 
   const hasActiveFilters =
-    initialQuery || initialStage !== "all" || initialGrade !== "all" || initialConsulting !== "all";
+    initialQuery ||
+    initialStage !== "all" ||
+    initialGrade !== "all" ||
+    initialConsulting !== "all" ||
+    initialDropped !== "active";
+
+  // dropped 파라미터는 기본값 active일 때 URL에서 제거되도록 updateParam이 처리.
+  const updateDropped = (value: string) => {
+    const next = new URLSearchParams(params.toString());
+    if (value === "active") next.delete("dropped");
+    else next.set("dropped", value);
+    startTransition(() => router.push(`${pathname}?${next.toString()}`, { scroll: false }));
+  };
 
   const clearAll = () => {
     startTransition(() => router.push(pathname, { scroll: false }));
@@ -109,6 +123,17 @@ export function PipelineFilters({
           <option value="basic">등급: Basic</option>
           <option value="free">등급: Free</option>
           <option value="none">등급: 미정</option>
+        </select>
+
+        {/* 드랍 표시 */}
+        <select
+          value={initialDropped}
+          onChange={(e) => updateDropped(e.target.value)}
+          className="px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white cursor-pointer"
+        >
+          <option value="active">진행 중만</option>
+          <option value="dropped">드랍만</option>
+          <option value="all">드랍 포함 전체</option>
         </select>
 
         {hasActiveFilters ? (
