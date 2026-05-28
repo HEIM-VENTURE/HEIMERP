@@ -2,6 +2,54 @@
 
 다음 세션에서 이 프로젝트를 이어가기 위한 컨텍스트 문서.
 
+---
+
+## ⚡ 다음 세션 먼저 읽기 (2026-05-28 인수인계)
+
+**상태: 로컬 커밋 19개 쌓임 + Netlify 미배포(의도적). 작업트리 clean.**
+
+### ❗ 배포 정책 (중요)
+- Netlify 무료 크레딧 **75% 소진 경고** 받음 → **빌드 아끼려고 push 안 하는 중**.
+- 모든 작업 **로컬 커밋만** 하고 localhost(`npm run dev`)에서 검증. 사용자가 "배포하자" 하면 그때 **`git push origin main` 1번** (커밋 19개 한 빌드로).
+- 로컬 빌드(`npx next build`)·tsc·lint는 공짜니 검증은 로컬에서.
+
+### 🗄️ 마이그레이션 적용 상태 (Supabase는 localhost·운영 공용 DB)
+- 0013(계약 자동생성), 0014(Storage 버킷), 0015(meeting ai_todos): **적용됨 확인**
+- 0016(HVP 22명), 0017(기업 71개 import): **service_role JS로 데이터 직접 적용함** (SQL 재실행 불필요)
+- 0018(hvp_applications 온보딩 컬럼): **적용됨 확인**
+- 0019(todos.category + HVP온보딩 트리거 + 단계룰): **적용 여부 미확인 → 새 세션에서 확인. 안 됐으면 SQL Editor 실행 필요** (안 하면 To-do 페이지 에러)
+- 새 컬럼/트리거 DDL은 JS로 못 넣음 → 사용자가 SQL Editor에서 실행해야 함. (사용자는 잘 실행해옴)
+
+### 🎨 진행 중: UI/UX 디자인 개편 (로고 톤 + 다크모드)
+- **브랜드 색**: 로고 기반 **스틸블루 `#41566b` + 오렌지 `#e5531f`** (저채도). `app/globals.css`의 `@theme inline`에서 emerald/blue/보라계열→steel, amber→오렌지로 재매핑. rose는 에러용 유지, zinc 중립 유지.
+  - ⚠️ 방금 `:root`→`@theme`로 옮겨 lab() 캐스케이드 문제 해결. **사용자가 강력새로고침(Ctrl+Shift+R)으로 색 적용 확인 중이었음.** 확인 결과 못 받음.
+- **라이트/다크 토글**: `components/theme-toggle.tsx` (사이드바 하단). 다크는 `.dark`에서 zinc/white 변수 반전 → 전 페이지 자동 전환. `app/layout.tsx`에 깜빡임 방지 스크립트 + `suppressHydrationWarning`.
+- 다음: 색 톤 미세조정(단계 구분 명도 등), 사용자 피드백 반영.
+
+### 📋 이번 세션에서 만든 것 (커밋 19개 요약)
+1. 미팅 AI 요약 복구: Gemini `gemini-2.0-flash-exp`(폐기)→`gemini-flash-lite-latest`, JSON→마크다운 출력(따옴표 깨짐 해결), 9초 데드라인(Netlify 타임아웃 회피), 저장/AI 분리. MarkdownView 렌더러. 회의록 전문보기·재생성·삭제. AI가 "대표님 To-do" 추출→ To-do 추가.
+2. +신규/편집 기업 모달, 담당 PM 필드(박대성/강영환/기동현/허유나, custom_fields.pm), 자료 업로드(Storage), /hvp/fees, /admin/contracts.
+3. /admin/hvp 카드형 + 실제 HVP 22명, 기업 71개 import(소개HVP 연결).
+4. 로그인 Google 전용(이메일/비번 제거), HVP 승인 Google 방식(비번 안 만듦, 이메일 자동매칭).
+5. HVP 신청자 4단계 온보딩 퍼널(신청→결제→교육이수→파트너) + 단계 수동 드롭다운. 파트너 단계 = HVP 명단 자동 등록.
+6. 단계별 자동 To-do(카테고리: hvp_onboarding/deal/general) + 대시보드 임박 highlight + HVP 보조힌트(회색 텍스트). To-do 다차원 필터(PM/HVP/기업/단계).
+7. 기업 드랍/복구(파이프라인 기본 '진행중만', 드랍 배지).
+
+### ⏭️ 다음 할 일 (우선순위)
+1. **디자인 색 적용 확인** (Ctrl+Shift+R) → 톤 미세조정
+2. **제안(proposal) 단계부터의 자동 To-do** — 사용자가 항목 정리해서 전달 예정 → 0019 트리거(`generate_sales_stage_todos`)에 추가. 컨설팅 단계(IR Deck 피드백 반영 등)도.
+3. 0019 마이그레이션 적용 확인
+4. 비어있는 메뉴: `/admin/meetings`, `/admin/tips` (사이드바 링크만 있고 페이지 없음)
+5. 준비되면 **Netlify 1회 배포**
+6. **최종: Vercel 이전** (느림·함수 타임아웃 완전 해결 — icn1 서울 리전). 사용자가 "이거 다 하고" 하기로 함.
+
+### 🔑 기타 메모
+- admin@heimvi.com = **Google 계정** (Google 전용 로그인 안전)
+- Google 로그인 운영에서 되려면 Supabase Auth → URL Configuration에 Site URL=`https://heimventure.netlify.app` + Redirect URLs(운영·localhost) 설정 필요 (이전에 localhost 거부 이슈 있었음 — 사용자가 처리했는지 확인)
+- HEIM ADS OS(다른 목업) Firestore: projectId `heim-ads`, 공개 읽기 가능 — HVP/기업 데이터 출처. 추가 데이터 필요 시 거기서 fetch 가능.
+
+---
+
 ## 프로젝트 한 줄 소개
 
 하임벤처투자(스타트업 컨설팅)의 전체 워크플로우 ERP. **클라이언트 스타트업을 TIPS 프로그램에 선정시키는 컨설팅 파이프라인이 핵심.**
