@@ -240,7 +240,7 @@ export default async function PipelinePage({
                         <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                           <div
                             className={`h-full ${
-                              c.consulting_stage === "final_closing" ? "bg-emerald-500" : "bg-blue-500"
+                              c.consulting_stage === "final_closing" ? "bg-green-500" : "bg-blue-500"
                             }`}
                             style={{ width: `${consultingPct}%` }}
                           />

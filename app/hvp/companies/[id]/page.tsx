@@ -130,7 +130,7 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
         </div>
         <div className="relative">
           <div className="absolute top-3 left-0 right-0 h-0.5 bg-zinc-100" />
-          <div className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-zinc-500 via-blue-500 to-emerald-500"
+          <div className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-slate-400 via-[#5a7187] to-green-500"
                style={{ width: `${((currentIdx + 1) / UNIFIED_STAGES.length) * 100}%` }} />
           <div className="relative grid gap-1" style={{ gridTemplateColumns: `repeat(${UNIFIED_STAGES.length}, 1fr)` }}>
             {UNIFIED_STAGES.map((s, i) => {
@@ -139,7 +139,7 @@ export default async function HvpCompanyDetail({ params, searchParams }: { param
               return (
                 <div key={s.key} className="flex flex-col items-center text-center">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs ${
-                    done ? s.color : current ? `${s.color} ring-4 ring-zinc-100` : "bg-white border-2 border-zinc-200"
+                    done ? "bg-[#5a7187]" : current ? "bg-orange-500 ring-4 ring-orange-100" : "bg-white border-2 border-zinc-200"
                   }`}>
                     {done ? "✓" : current ? "●" : ""}
                   </div>
