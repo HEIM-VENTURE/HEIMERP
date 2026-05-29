@@ -14,12 +14,13 @@ const STAGE_LABEL: Record<Stage, string> = {
   partner: "파트너 활동",
   rejected: "거절/이탈",
 };
+// 보라 테마에서 blue/violet/emerald가 모두 보라로 합쳐지므로 서로 다른 계열로 분리
 const STAGE_COLOR: Record<Stage, string> = {
-  applied: "bg-amber-100 text-amber-700",
-  paid: "bg-blue-100 text-blue-700",
-  completed: "bg-violet-100 text-violet-700",
-  partner: "bg-emerald-100 text-emerald-700",
-  rejected: "bg-zinc-100 text-zinc-500",
+  applied: "bg-slate-100 text-slate-600",   // 회색
+  paid: "bg-blue-100 text-blue-700",        // 보라
+  completed: "bg-amber-100 text-amber-700", // 오렌지
+  partner: "bg-green-100 text-green-700",   // 초록
+  rejected: "bg-rose-100 text-rose-700",    // 로즈
 };
 
 type App = {
@@ -86,11 +87,11 @@ export default async function ApplicationsPage({
 
       {/* 단계 퍼널 */}
       <div className="grid grid-cols-6 gap-3 mb-5">
-        <FilterCard active={filter === "applied"} href="?stage=applied" label="신청" count={stats.applied} tone="amber" />
-        <FilterCard active={filter === "paid"} href="?stage=paid" label="결제 완료" count={stats.paid} tone="blue" />
-        <FilterCard active={filter === "completed"} href="?stage=completed" label="교육 이수" count={stats.completed} tone="violet" />
-        <FilterCard active={filter === "partner"} href="?stage=partner" label="파트너" count={stats.partner} tone="emerald" />
-        <FilterCard active={filter === "rejected"} href="?stage=rejected" label="거절/이탈" count={stats.rejected} tone="zinc" />
+        <FilterCard active={filter === "applied"} href="?stage=applied" label="신청" count={stats.applied} tone="slate" />
+        <FilterCard active={filter === "paid"} href="?stage=paid" label="결제 완료" count={stats.paid} tone="brand" />
+        <FilterCard active={filter === "completed"} href="?stage=completed" label="교육 이수" count={stats.completed} tone="orange" />
+        <FilterCard active={filter === "partner"} href="?stage=partner" label="파트너" count={stats.partner} tone="green" />
+        <FilterCard active={filter === "rejected"} href="?stage=rejected" label="거절/이탈" count={stats.rejected} tone="rose" />
         <FilterCard active={filter === "all"} href="?stage=all" label="전체" count={stats.all} tone="zinc" />
       </div>
 
@@ -101,51 +102,51 @@ export default async function ApplicationsPage({
         </div>
       ) : null}
 
-      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
         {list.length === 0 ? (
           <div className="text-center py-10 text-sm text-zinc-400">해당 단계의 신청자가 없습니다</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-xs text-zinc-500 bg-zinc-50">
+            <thead className="text-xs text-zinc-500 bg-zinc-50/80 border-b border-zinc-200">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">이름·소속</th>
-                <th className="text-left px-4 py-3 font-medium w-36">연락처·이메일</th>
-                <th className="text-left px-4 py-3 font-medium w-28">단계</th>
-                <th className="text-left px-4 py-3 font-medium w-32">결제·이수</th>
-                <th className="text-left px-4 py-3 font-medium w-20">신청일</th>
-                <th className="text-left px-4 py-3 font-medium w-72">액션</th>
+                <th className="text-left px-5 py-3.5 font-medium">이름·소속</th>
+                <th className="text-left px-5 py-3.5 font-medium w-36">연락처·이메일</th>
+                <th className="text-left px-5 py-3.5 font-medium w-28">단계</th>
+                <th className="text-left px-5 py-3.5 font-medium w-32">결제·이수</th>
+                <th className="text-left px-5 py-3.5 font-medium w-20">신청일</th>
+                <th className="text-left px-5 py-3.5 font-medium w-72">액션</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {list.map((a) => {
                 const stage = (a.onboarding_stage ?? "applied") as Stage;
                 return (
-                  <tr key={a.id} className="hover:bg-zinc-50 align-top">
-                    <td className="px-4 py-3">
+                  <tr key={a.id} className="hover:bg-zinc-50/70 transition-colors align-top">
+                    <td className="px-5 py-3.5">
                       <div className="font-medium text-zinc-900">{a.name}</div>
                       <div className="text-xs text-zinc-400 mt-0.5">{a.organization ?? "—"}</div>
                       {a.motivation ? (
                         <div className="text-xs text-zinc-500 mt-1.5 line-clamp-2 max-w-xs">💬 {a.motivation}</div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-xs">
+                    <td className="px-5 py-3.5 text-xs">
                       <div className="text-zinc-700">{a.phone ?? "—"}</div>
                       <div className="text-zinc-500 mt-0.5">{a.email}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 text-xs rounded ${STAGE_COLOR[stage]}`}>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-block whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-full ${STAGE_COLOR[stage]}`}>
                         {STAGE_LABEL[stage]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-600">
+                    <td className="px-5 py-3.5 text-xs text-zinc-600">
                       {a.paid_at ? (
                         <div>💳 {a.paid_amount ? `${Number(a.paid_amount).toLocaleString()}만` : ""} · {a.paid_at}</div>
                       ) : null}
                       {a.completed_at ? <div className="mt-0.5">🎓 {a.completed_at}</div> : null}
                       {!a.paid_at && !a.completed_at ? <span className="text-zinc-300">—</span> : null}
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500">{a.created_at?.split("T")[0]}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3.5 text-xs text-zinc-500">{a.created_at?.split("T")[0]}</td>
+                    <td className="px-5 py-3.5">
                       <ApproveButtons applicationId={a.id} applicantName={a.name} stage={stage} />
                     </td>
                   </tr>
@@ -175,20 +176,21 @@ function FilterCard({
   href: string;
   label: string;
   count: number;
-  tone: "amber" | "blue" | "violet" | "emerald" | "zinc";
+  tone: "slate" | "brand" | "orange" | "green" | "rose" | "zinc";
 }) {
   const tones = {
-    amber: "text-amber-600",
-    blue: "text-blue-600",
-    violet: "text-violet-600",
-    emerald: "text-emerald-600",
+    slate: "text-slate-600",
+    brand: "text-brand",
+    orange: "text-orange-600",
+    green: "text-green-600",
+    rose: "text-rose-600",
     zinc: "text-zinc-900",
   };
   return (
     <Link
       href={href}
-      className={`block bg-white rounded-xl p-4 transition border ${
-        active ? "border-zinc-900 ring-2 ring-zinc-900/10" : "border-zinc-200 hover:border-zinc-400"
+      className={`block bg-white rounded-2xl p-4 transition border ${
+        active ? "border-brand ring-2 ring-brand/15" : "border-zinc-200 hover:border-brand/40"
       }`}
     >
       <div className="text-xs text-zinc-500">{label}</div>

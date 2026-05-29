@@ -28,12 +28,12 @@ export const SALES_STAGES_ORDER = [
   "kickoff",
 ] as const;
 
-// 단계 구분 팔레트: 회색→스틸블루→오렌지→그린→로즈.
-// 스틸블루는 globals.css의 @theme override가 blue/emerald 등을 steel로 합쳐버리므로
-// 램프 hex를 직접 써서 다른 단계와 안 겹치게 한다.
+// 단계 구분 팔레트: 회색→블루→오렌지→그린→로즈.
+// blue/emerald/indigo 계열은 @theme override로 모두 블루 램프(steel)에 매핑되므로
+// 단계 구분은 slate/blue/orange/green/rose 처럼 서로 다른 계열을 골라 안 겹치게 한다.
 export const SALES_STAGE_COLORS = {
   received: { dot: "bg-slate-400", badge: "bg-slate-100 text-slate-600" },
-  meeting_1st: { dot: "bg-[#5a7187]", badge: "bg-[#dde5ec] text-[#3b4b5c]" },
+  meeting_1st: { dot: "bg-blue-500", badge: "bg-blue-100 text-blue-700" },
   proposal: { dot: "bg-orange-500", badge: "bg-orange-100 text-orange-700" },
   contract: { dot: "bg-green-500", badge: "bg-green-100 text-green-700" },
   kickoff: { dot: "bg-rose-500", badge: "bg-rose-100 text-rose-700" },

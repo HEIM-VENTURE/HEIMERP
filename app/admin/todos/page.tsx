@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { TODO_STATUS_LABELS, SALES_STAGE_LABELS, CONSULTING_STAGE_LABELS } from "@/lib/labels";
 import { NewTodoModal } from "./new-todo-modal";
@@ -53,9 +54,9 @@ const CAT_LABEL: Record<string, string> = {
   general: "일반",
 };
 const CAT_BADGE: Record<string, string> = {
-  hvp_onboarding: "bg-violet-100 text-violet-700",
-  deal: "bg-blue-100 text-blue-700",
-  general: "bg-zinc-100 text-zinc-600",
+  hvp_onboarding: "bg-violet-100 text-violet-700", // 보라(브랜드)
+  deal: "bg-green-100 text-green-700",             // 초록
+  general: "bg-zinc-100 text-zinc-500",            // 회색
 };
 
 export default async function TodosPage({
@@ -194,29 +195,29 @@ export default async function TodosPage({
       ) : null}
 
       {/* 테이블 */}
-      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="text-xs text-zinc-500 bg-zinc-50">
+          <thead className="text-xs text-zinc-500 bg-zinc-50/80 border-b border-zinc-200">
             <tr>
-              <th className="text-left px-4 py-3 font-medium w-10"></th>
-              <th className="text-left px-4 py-3 font-medium">제목</th>
-              <th className="text-left px-4 py-3 font-medium w-40">관련 기업</th>
-              <th className="text-left px-4 py-3 font-medium w-28">마감일</th>
-              <th className="text-left px-4 py-3 font-medium w-20">상태</th>
-              <th className="text-left px-4 py-3 font-medium w-20">출처</th>
+              <th className="text-left px-5 py-3.5 font-medium w-10"></th>
+              <th className="text-left px-5 py-3.5 font-medium">제목</th>
+              <th className="text-left px-5 py-3.5 font-medium w-40">관련 기업</th>
+              <th className="text-left px-5 py-3.5 font-medium w-32">마감일</th>
+              <th className="text-left px-5 py-3.5 font-medium w-20">상태</th>
+              <th className="text-left px-5 py-3.5 font-medium w-20">출처</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {list.map((t) => {
               const dueClass = getDueClass(t.due_date, t.status);
               return (
-                <tr key={t.id} className="hover:bg-zinc-50">
-                  <td className="px-4 py-3">
+                <tr key={t.id} className="hover:bg-zinc-50/70 transition-colors">
+                  <td className="px-5 py-3.5">
                     <TodoCheckbox todoId={t.id} currentStatus={t.status} />
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`inline-block px-1.5 py-0.5 text-[10px] rounded ${CAT_BADGE[t.category ?? "deal"] ?? CAT_BADGE.deal}`}>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-medium rounded-full ${CAT_BADGE[t.category ?? "deal"] ?? CAT_BADGE.deal}`}>
                         {CAT_LABEL[t.category ?? "deal"] ?? "딜·기업"}
                       </span>
                       <span className={`${t.status === "done" ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
@@ -227,11 +228,11 @@ export default async function TodosPage({
                       <div className="text-[10px] text-zinc-400 mt-0.5">단계 진입: {t.trigger_stage}</div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-xs">
+                  <td className="px-5 py-3.5 text-xs">
                     {t.companies ? (
                       <Link
                         href={`/admin/companies/${t.companies.id}`}
-                        className="text-zinc-700 hover:text-zinc-900 hover:underline"
+                        className="text-zinc-700 hover:text-brand hover:underline"
                       >
                         {t.companies.name}
                       </Link>
@@ -239,23 +240,30 @@ export default async function TodosPage({
                       <span className="text-zinc-300">—</span>
                     )}
                   </td>
-                  <td className={`px-4 py-3 text-xs ${dueClass}`}>
-                    {t.due_date ?? <span className="text-zinc-300">—</span>}
+                  <td className="px-5 py-3.5">
+                    {t.due_date ? (
+                      <span className={`inline-flex items-center gap-1.5 text-xs ${dueClass}`}>
+                        <Clock className="w-3.5 h-3.5 opacity-70" />
+                        {t.due_date}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-zinc-300">—</span>
+                    )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5">
                     <span
-                      className={`inline-block px-2 py-0.5 text-xs rounded ${
+                      className={`inline-block whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-full ${
                         t.status === "done"
-                          ? "bg-emerald-100 text-emerald-700"
+                          ? "bg-green-100 text-green-700"
                           : t.status === "in_progress"
                             ? "bg-blue-100 text-blue-700"
-                            : "bg-zinc-100 text-zinc-700"
+                            : "bg-zinc-100 text-zinc-600"
                       }`}
                     >
                       {TODO_STATUS_LABELS[t.status]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs">
+                  <td className="px-5 py-3.5 text-xs">
                     {t.auto_generated ? (
                       <span className="text-amber-700">⚙ 자동</span>
                     ) : (
@@ -291,7 +299,7 @@ function CatTab({ active, href, label, count }: { active: boolean; href: string;
     <Link
       href={href}
       className={`px-3 py-2 -mb-px border-b-2 font-medium ${
-        active ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-400 hover:text-zinc-700"
+        active ? "border-brand text-brand" : "border-transparent text-zinc-400 hover:text-zinc-700"
       }`}
     >
       {label} <span className="text-xs">{count}</span>
@@ -315,15 +323,15 @@ function FilterCard({
   const tones = {
     rose: "text-rose-600",
     amber: "text-amber-600",
-    blue: "text-blue-600",
+    blue: "text-brand",
     zinc: "text-zinc-900",
-    emerald: "text-emerald-600",
+    emerald: "text-green-600",
   };
   return (
     <Link
       href={href}
-      className={`block bg-white rounded-xl p-4 transition border ${
-        active ? "border-zinc-900 ring-2 ring-zinc-900/10" : "border-zinc-200 hover:border-zinc-400"
+      className={`block bg-white rounded-2xl p-4 transition border ${
+        active ? "border-brand ring-2 ring-brand/15" : "border-zinc-200 hover:border-brand/40"
       }`}
     >
       <div className="text-xs text-zinc-500">{label}</div>
@@ -337,7 +345,7 @@ function FilterPill({ active, href, label }: { active: boolean; href: string; la
     <Link
       href={href}
       className={`px-3 py-1.5 rounded-full ${
-        active ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+        active ? "bg-brand text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
       }`}
     >
       {label}

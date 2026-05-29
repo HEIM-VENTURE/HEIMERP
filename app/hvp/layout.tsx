@@ -36,7 +36,7 @@ export default async function HvpLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen">
       <HvpSidebar profile={profile} hvpInfo={hvpInfo} />
-      <main className="flex-1 px-8 py-7 overflow-x-auto">{children}</main>
+      <main className="flex-1 px-8 py-7 overflow-x-auto bg-[#f6f4fc] dark:bg-[#141121]">{children}</main>
     </div>
   );
 }

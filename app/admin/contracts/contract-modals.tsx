@@ -399,9 +399,9 @@ export function PaidToggle({
     <button
       onClick={onClick}
       disabled={pending}
-      className={`inline-block px-2 py-0.5 text-xs rounded transition ${
+      className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-full transition ${
         paid
-          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+          ? "bg-green-100 text-green-700 hover:bg-green-200"
           : "bg-amber-100 text-amber-700 hover:bg-amber-200"
       } ${pending ? "opacity-50" : ""}`}
       title="클릭으로 지급 상태 토글"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { NewContractModal, EditContractRow, PaidToggle } from "./contract-modals";
 
@@ -124,28 +125,28 @@ export default async function ContractsPage({
       ) : null}
 
       {/* 테이블 */}
-      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="text-xs text-zinc-500 bg-zinc-50">
+          <thead className="text-xs text-zinc-500 bg-zinc-50/80 border-b border-zinc-200">
             <tr>
-              <th className="text-left px-4 py-3 font-medium">기업</th>
-              <th className="text-left px-4 py-3 font-medium w-28">계약일</th>
-              <th className="text-right px-4 py-3 font-medium w-28">총 금액</th>
-              <th className="text-left px-4 py-3 font-medium w-40">HVP</th>
-              <th className="text-right px-4 py-3 font-medium w-20">수수료율</th>
-              <th className="text-right px-4 py-3 font-medium w-28">수수료 금액</th>
-              <th className="text-left px-4 py-3 font-medium w-28">지급 상태</th>
-              <th className="text-left px-4 py-3 font-medium w-20"></th>
+              <th className="text-left px-5 py-3.5 font-medium">기업</th>
+              <th className="text-left px-5 py-3.5 font-medium w-32">계약일</th>
+              <th className="text-right px-5 py-3.5 font-medium w-28">총 금액</th>
+              <th className="text-left px-5 py-3.5 font-medium w-40">HVP</th>
+              <th className="text-right px-5 py-3.5 font-medium w-20">수수료율</th>
+              <th className="text-right px-5 py-3.5 font-medium w-28">수수료 금액</th>
+              <th className="text-left px-5 py-3.5 font-medium w-28">지급 상태</th>
+              <th className="text-left px-5 py-3.5 font-medium w-20"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {list.map((c) => (
-              <tr key={c.id} className="hover:bg-zinc-50">
-                <td className="px-4 py-3">
+              <tr key={c.id} className="hover:bg-zinc-50/70 transition-colors">
+                <td className="px-5 py-3.5">
                   {c.companies ? (
                     <Link
                       href={`/admin/companies/${c.companies.id}`}
-                      className="text-zinc-900 hover:underline font-medium"
+                      className="text-zinc-900 hover:text-brand hover:underline font-medium"
                     >
                       {c.companies.name}
                     </Link>
@@ -158,11 +159,20 @@ export default async function ContractsPage({
                     </div>
                   ) : null}
                 </td>
-                <td className="px-4 py-3 text-xs text-zinc-700">{c.contracted_at}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-zinc-900 font-medium">
+                <td className="px-5 py-3.5">
+                  {c.contracted_at ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
+                      <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                      {c.contracted_at}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-zinc-300">—</span>
+                  )}
+                </td>
+                <td className="px-5 py-3.5 text-right tabular-nums text-zinc-900 font-medium">
                   {Number(c.total_amount).toLocaleString()}만
                 </td>
-                <td className="px-4 py-3 text-xs">
+                <td className="px-5 py-3.5 text-xs">
                   {c.hvp ? (
                     <span className="text-zinc-700">
                       {c.hvp.name}
@@ -172,19 +182,19 @@ export default async function ContractsPage({
                     <span className="text-zinc-300">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right text-xs text-zinc-500 tabular-nums">
+                <td className="px-5 py-3.5 text-right text-xs text-zinc-500 tabular-nums">
                   {(Number(c.hvp_fee_rate) * 100).toFixed(1)}%
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-emerald-700 font-medium">
+                <td className="px-5 py-3.5 text-right tabular-nums text-green-700 font-medium">
                   {Math.round(Number(c.hvp_fee_amount ?? 0)).toLocaleString()}만
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-5 py-3.5">
                   <PaidToggle contractId={c.id} paid={c.payment_status === "paid"} />
                   {c.payment_status === "paid" && c.paid_at ? (
                     <div className="text-[10px] text-zinc-400 mt-0.5">{c.paid_at}</div>
                   ) : null}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-5 py-3.5">
                   <EditContractRow
                     contract={{
                       id: c.id,
@@ -244,12 +254,12 @@ function Kpi({
 }) {
   const tones = {
     zinc: "text-zinc-900",
-    blue: "text-blue-600",
-    emerald: "text-emerald-600",
+    blue: "text-brand",
+    emerald: "text-green-600",
     amber: "text-amber-600",
   };
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl p-4">
+    <div className="bg-white border border-zinc-200 rounded-2xl p-4">
       <div className="text-xs text-zinc-500">{label}</div>
       <div className={`text-2xl font-bold mt-0.5 ${tones[tone]}`}>{value}</div>
       <div className="text-xs text-zinc-400 mt-0.5">{sub}</div>
@@ -262,7 +272,7 @@ function FilterPill({ active, href, label }: { active: boolean; href: string; la
     <Link
       href={href}
       className={`px-3 py-1 rounded-full ${
-        active ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+        active ? "bg-brand text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
       }`}
     >
       {label}

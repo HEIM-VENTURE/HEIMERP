@@ -3,19 +3,31 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Workflow,
+  ListChecks,
+  Inbox,
+  Users,
+  Receipt,
+  CalendarDays,
+  Landmark,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "./logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const navItems = [
-  { href: "/admin/dashboard", label: "대시보드" },
-  { href: "/admin/pipeline", label: "기업 파이프라인" },
-  { href: "/admin/todos", label: "할 일 (To-do)" },
-  { href: "/admin/applications", label: "신청자 / 접수" },
-  { href: "/admin/hvp", label: "HVP 관리" },
-  { href: "/admin/contracts", label: "계약 · 수수료" },
-  { href: "/admin/meetings", label: "미팅 · 회의록" },
-  { href: "/admin/tips", label: "TIPS 운영사" },
+const navItems: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/admin/dashboard", label: "대시보드", icon: LayoutDashboard },
+  { href: "/admin/pipeline", label: "기업 파이프라인", icon: Workflow },
+  { href: "/admin/todos", label: "할 일 (To-do)", icon: ListChecks },
+  { href: "/admin/applications", label: "신청자 / 접수", icon: Inbox },
+  { href: "/admin/hvp", label: "HVP 관리", icon: Users },
+  { href: "/admin/contracts", label: "계약 · 수수료", icon: Receipt },
+  { href: "/admin/meetings", label: "미팅 · 회의록", icon: CalendarDays },
+  { href: "/admin/tips", label: "TIPS 운영사", icon: Landmark },
 ];
 
 type Props = {
@@ -44,18 +56,19 @@ export function AdminSidebar({ profile }: Props) {
       <nav className="space-y-0.5 text-sm">
         {navItems.map((item) => {
           const active = pathname.startsWith(item.href);
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-lg",
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors",
                 active
-                  ? "bg-zinc-100 text-zinc-900 font-medium"
-                  : "text-zinc-600 hover:bg-zinc-50"
+                  ? "bg-brand/10 text-brand font-semibold"
+                  : "text-zinc-600 hover:bg-zinc-100"
               )}
             >
-              <span className={cn("w-1.5 h-1.5 rounded-full", active ? "bg-zinc-900" : "bg-zinc-300")} />
+              <Icon className={cn("w-[18px] h-[18px] shrink-0", active ? "text-brand" : "text-zinc-400")} />
               <span>{item.label}</span>
             </Link>
           );
@@ -64,9 +77,14 @@ export function AdminSidebar({ profile }: Props) {
         <div className="border-t border-zinc-100 my-3" />
         <Link
           href="/admin/settings"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-zinc-600 hover:bg-zinc-50"
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors",
+            pathname.startsWith("/admin/settings")
+              ? "bg-brand/10 text-brand font-semibold"
+              : "text-zinc-600 hover:bg-zinc-100"
+          )}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+          <Settings className={cn("w-[18px] h-[18px] shrink-0", pathname.startsWith("/admin/settings") ? "text-brand" : "text-zinc-400")} />
           <span>설정</span>
         </Link>
       </nav>

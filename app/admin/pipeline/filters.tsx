@@ -67,7 +67,7 @@ export function PipelineFilters({
   };
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl p-3 mb-3">
+    <div className="bg-white border border-zinc-200 rounded-2xl p-3 mb-3">
       <div className="flex items-center gap-2 flex-wrap">
         {/* 검색 */}
         <div className="relative flex-1 min-w-[200px]">
@@ -76,9 +76,9 @@ export function PipelineFilters({
             placeholder="회사명·아이템·소재지 검색…"
             defaultValue={initialQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40"
           />
-          <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
           </svg>
         </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Building2, Rocket, Award, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { NewCompanyModal } from "../pipeline/company-modals";
@@ -11,8 +12,16 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// KPI 카드 아이콘 (kpis 배열 순서와 일치)
+const KPI_ICONS = [Building2, Rocket, Award, Users];
+// 단계별 분포 깔때기 — 보라 단일 램프 (연 → 진)
+const FUNNEL_COLORS = ["#d0c8f0", "#b4a6e7", "#9580dc", "#6d5dd3", "#4d3ca8"];
+
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 임박 To-do 기준 (이번 주까지)
   const todayStr0 = new Date().toISOString().split("T")[0];
@@ -21,7 +30,7 @@ export default async function AdminDashboardPage() {
   const weekStr0 = weekLater0.toISOString().split("T")[0];
 
   // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
-  const [companiesRes, hvpsRes, contractsRes, imminentRes, hvpListRes] = await Promise.all([
+  const [companiesRes, hvpsRes, contractsRes, imminentRes, hvpListRes, profileRes] = await Promise.all([
     supabase
       .from("companies")
       .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
@@ -36,7 +45,10 @@ export default async function AdminDashboardPage() {
       .order("due_date", { ascending: true })
       .limit(12),
     supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
+    supabase.from("profiles").select("name").eq("id", user?.id ?? "").single(),
   ]);
+
+  const adminName = (profileRes.data as { name: string } | null)?.name ?? "관리자";
 
   const allCompanies = companiesRes.data ?? [];
   const allHvps = hvpsRes.data ?? [];
@@ -144,9 +156,9 @@ export default async function AdminDashboardPage() {
     <>
       <div className="flex items-center justify-between mb-7">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">대시보드</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">안녕하세요, {adminName}님 👋</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {now.getFullYear()}년 {now.getMonth() + 1}월 · 전체 운영 현황
+            {now.getFullYear()}년 {now.getMonth() + 1}월 · 오늘의 운영 현황을 확인하세요
           </p>
         </div>
         <div className="flex gap-2">
@@ -159,70 +171,120 @@ export default async function AdminDashboardPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        {kpis.map((k) => (
-          <div key={k.label} className="bg-white border border-zinc-200 rounded-xl p-5">
-            <div className="text-xs text-zinc-500 mb-1.5">{k.label}</div>
-            <div className="text-2xl font-bold text-zinc-900">{k.value}</div>
-            <div className={`text-xs mt-2 ${k.positive ? "text-emerald-600" : "text-zinc-400"}`}>{k.delta}</div>
-          </div>
-        ))}
+        {kpis.map((k, i) => {
+          const Icon = KPI_ICONS[i] ?? Building2;
+          if (i === 0) {
+            return (
+              <div
+                key={k.label}
+                className="rounded-2xl p-5 bg-gradient-to-br from-brand to-[#4d3ca8] text-white shadow-sm"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="text-xs text-white/75">{k.label}</div>
+                  <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                    <Icon className="w-[18px] h-[18px]" />
+                  </span>
+                </div>
+                <div className="text-3xl font-bold mt-2">{k.value}</div>
+                <div className="inline-flex items-center mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/15">
+                  {k.delta}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={k.label} className="bg-white border border-zinc-200 rounded-2xl p-5">
+              <div className="flex items-start justify-between">
+                <div className="text-xs text-zinc-500">{k.label}</div>
+                <span className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+                  <Icon className="w-[18px] h-[18px]" />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-zinc-900 mt-2">{k.value}</div>
+              <div
+                className={`inline-flex items-center mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                  k.positive ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"
+                }`}
+              >
+                {k.delta}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-3 gap-6">
         {/* 단계별 분포 */}
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-xl p-6">
+        <div className="col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-semibold text-zinc-900">단계별 분포</h2>
             <Link href="/admin/pipeline" className="text-xs text-zinc-500 hover:text-zinc-900">
               파이프라인 →
             </Link>
           </div>
-          <div className="space-y-3">
-            {stageDist.map((s) => (
-              <div key={s.stage}>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-zinc-600">{s.name}</span>
-                  <span className="text-zinc-900 font-medium">{s.count}</span>
+          <div className="space-y-3.5">
+            {stageDist.map((s, i) => {
+              const pctOfTotal = totalCompanies > 0 ? Math.round((s.count / totalCompanies) * 100) : 0;
+              const widthPct = maxStageCount > 0 ? Math.max((s.count / maxStageCount) * 100, 3) : 3;
+              return (
+                <div key={s.stage} className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-xs text-zinc-600">{s.name}</span>
+                  <div className="flex-1 h-6 bg-zinc-100/70 rounded-lg overflow-hidden">
+                    <div
+                      className="h-full rounded-lg transition-all"
+                      style={{ width: `${widthPct}%`, backgroundColor: FUNNEL_COLORS[i] ?? "#6d5dd3" }}
+                    />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-xs">
+                    <b className="text-zinc-900 font-semibold">{s.count}</b>{" "}
+                    <span className="text-zinc-400">{pctOfTotal}%</span>
+                  </span>
                 </div>
-                <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${s.color}`}
-                    style={{ width: `${(s.count / maxStageCount) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* 월별 신규 접수 */}
-        <div className="bg-white border border-zinc-200 rounded-xl p-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-semibold text-zinc-900">월별 신규 접수</h2>
             <span className="text-xs text-zinc-400">최근 6개월</span>
           </div>
-          <div className="flex items-end justify-between gap-2 h-40 mb-3">
+          <div className="flex items-end gap-2.5 h-52">
             {months.map((mo, i) => {
-              const heightPct = maxMonthly > 0 ? Math.max((mo.count / maxMonthly) * 100, 4) : 4;
+              const heightPct = maxMonthly > 0 ? Math.max((mo.count / maxMonthly) * 85, 6) : 6;
               return (
-                <div key={`${mo.year}-${i}`} className="flex-1 flex flex-col items-center gap-1.5">
+                <div
+                  key={`${mo.year}-${i}`}
+                  className="flex-1 h-full flex flex-col items-center justify-end gap-1.5"
+                >
                   <div
-                    className={`text-xs ${mo.isCurrent ? "text-emerald-600 font-semibold" : "text-zinc-600"}`}
+                    className={`text-sm font-semibold ${mo.isCurrent ? "text-blue-600" : "text-zinc-700"}`}
                   >
                     {mo.count}
                   </div>
                   <div
-                    className={`w-full rounded-t ${mo.isCurrent ? "bg-emerald-500" : "bg-zinc-300"}`}
+                    className={`w-full rounded-lg transition-all ${
+                      mo.isCurrent ? "bg-gradient-to-t from-blue-600 to-blue-400" : "bg-blue-100"
+                    }`}
                     style={{ height: `${heightPct}%` }}
                   />
-                  <div
-                    className={`text-[10px] ${mo.isCurrent ? "text-zinc-700 font-medium" : "text-zinc-400"}`}
-                  >
-                    {mo.label}
-                  </div>
                 </div>
               );
             })}
+          </div>
+          <div className="flex gap-2.5 mt-2 mb-1">
+            {months.map((mo, i) => (
+              <div
+                key={`lbl-${mo.year}-${i}`}
+                className={`flex-1 text-center text-[11px] ${
+                  mo.isCurrent ? "text-zinc-900 font-semibold" : "text-zinc-400"
+                }`}
+              >
+                {mo.label}
+              </div>
+            ))}
           </div>
           <div className="pt-3 mt-1 border-t border-zinc-100 grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -249,7 +311,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 최근 활동 */}
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-xl p-6">
+        <div className="col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
           <h2 className="font-semibold text-zinc-900 mb-5">최근 활동</h2>
           {recentChanges.length === 0 ? (
             <div className="text-sm text-zinc-400 text-center py-6">아직 활동 기록이 없습니다</div>
@@ -286,7 +348,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 임박 To-do (놓치면 안 되는 것) */}
-        <div className="bg-white border border-zinc-200 rounded-xl p-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-zinc-900">⏰ 임박 To-do</h2>
             <Link href="/admin/todos" className="text-xs text-zinc-500 hover:text-zinc-900">
