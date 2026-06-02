@@ -27,18 +27,18 @@ export function HvpSidebar({ profile, hvpInfo }: Props) {
 
   return (
     <aside className="w-60 min-h-screen bg-white border-r border-zinc-200 px-3 py-5 flex flex-col shrink-0">
-      <div className="px-1 mb-7">
-        <span className="block rounded-lg px-3 py-2.5" style={{ backgroundColor: "#fff" }}>
+      <div className="px-2 mb-7">
+        <div className="relative w-full h-11 overflow-hidden">
           <Image
             src="/heim-logo-horizontal.jpg"
             alt="HEIM VENTURE INVESTMENT"
-            width={240}
-            height={48}
-            className="h-11 w-auto"
+            fill
+            sizes="200px"
             priority
+            className="object-cover object-center"
           />
-        </span>
-        <div className="text-[10px] text-zinc-400 mt-2 ml-1">
+        </div>
+        <div className="text-[10px] text-zinc-400 mt-2.5">
           ERP · HVP{cohort ? ` · ${cohort}` : ""}
         </div>
       </div>
