@@ -161,7 +161,7 @@ export default async function ContractsPage({
                 </td>
                 <td className="px-5 py-3.5">
                   {c.contracted_at ? (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
                       <Clock className="w-3.5 h-3.5 text-zinc-400" />
                       {c.contracted_at}
                     </span>
@@ -191,7 +191,7 @@ export default async function ContractsPage({
                 <td className="px-5 py-3.5">
                   <PaidToggle contractId={c.id} paid={c.payment_status === "paid"} />
                   {c.payment_status === "paid" && c.paid_at ? (
-                    <div className="text-[10px] text-zinc-400 mt-0.5">{c.paid_at}</div>
+                    <div className="text-[10px] text-zinc-400 mt-0.5 whitespace-nowrap">{c.paid_at}</div>
                   ) : null}
                 </td>
                 <td className="px-5 py-3.5">

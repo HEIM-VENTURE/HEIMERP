@@ -101,7 +101,7 @@ export default async function MeetingsPage({
             >
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
                     <Clock className="w-3.5 h-3.5 text-zinc-400" />
                     {m.meeting_date}
                   </span>

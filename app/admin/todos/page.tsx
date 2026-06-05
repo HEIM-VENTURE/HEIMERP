@@ -202,7 +202,7 @@ export default async function TodosPage({
               <th className="text-left px-5 py-3.5 font-medium w-10"></th>
               <th className="text-left px-5 py-3.5 font-medium">제목</th>
               <th className="text-left px-5 py-3.5 font-medium w-40">관련 기업</th>
-              <th className="text-left px-5 py-3.5 font-medium w-32">마감일</th>
+              <th className="text-left px-5 py-3.5 font-medium w-40">마감일</th>
               <th className="text-left px-5 py-3.5 font-medium w-20">상태</th>
               <th className="text-left px-5 py-3.5 font-medium w-20">출처</th>
             </tr>
@@ -242,7 +242,7 @@ export default async function TodosPage({
                   </td>
                   <td className="px-5 py-3.5">
                     {t.due_date ? (
-                      <span className={`inline-flex items-center gap-1.5 text-xs ${dueClass}`}>
+                      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-xs ${dueClass}`}>
                         <Clock className="w-3.5 h-3.5 opacity-70" />
                         {t.due_date}
                       </span>

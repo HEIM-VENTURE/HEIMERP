@@ -145,7 +145,7 @@ export default async function ApplicationsPage({
                       {a.completed_at ? <div className="mt-0.5">🎓 {a.completed_at}</div> : null}
                       {!a.paid_at && !a.completed_at ? <span className="text-zinc-300">—</span> : null}
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-zinc-500">{a.created_at?.split("T")[0]}</td>
+                    <td className="px-5 py-3.5 text-xs text-zinc-500 whitespace-nowrap">{a.created_at?.split("T")[0]}</td>
                     <td className="px-5 py-3.5">
                       <ApproveButtons applicationId={a.id} applicantName={a.name} stage={stage} />
                     </td>
