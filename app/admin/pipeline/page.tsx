@@ -220,7 +220,7 @@ export default async function PipelinePage({
               <th className="text-left px-5 py-3.5 w-28"><SortableHeader column="program_grade" label="등급" /></th>
               <th className="text-right px-5 py-3.5 w-28"><SortableHeader column="proposal_amount" label="금액" align="right" /></th>
               <th className="text-left px-5 py-3.5 w-32"><SortableHeader column="started_at" label="착수일" /></th>
-              <th className="text-left px-5 py-3.5 w-36 font-medium text-zinc-500">메모</th>
+              <th className="text-left px-5 py-3.5 w-56 font-medium text-zinc-500">메모</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -315,8 +315,14 @@ export default async function PipelinePage({
                       <span className="text-xs text-zinc-300">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-zinc-500 truncate max-w-[140px]" title={c.notes ?? ""}>
-                    {c.notes ?? <span className="text-zinc-300">—</span>}
+                  <td className="px-5 py-3.5 text-xs text-zinc-500 align-top" title={c.notes ?? ""}>
+                    {c.notes ? (
+                      <div className="line-clamp-3 max-w-[220px] whitespace-pre-wrap break-words">
+                        {c.notes}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-300">—</span>
+                    )}
                   </td>
                 </tr>
               );
