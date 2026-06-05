@@ -55,7 +55,6 @@ export function StageChanger({
 
   const changeSales = (newStage: string) => {
     if (newStage === currentSalesStage) return;
-    if (!confirm(`영업 단계를 "${SALES_STAGE_LABELS[newStage as keyof typeof SALES_STAGE_LABELS]}"로 변경하시겠어요?\n(자동 To-do가 생성됩니다)`)) return;
     setError(null);
     startTransition(async () => {
       const r = await changeSalesStageAction(companyId, newStage);
@@ -66,8 +65,6 @@ export function StageChanger({
 
   const changeConsulting = (newStage: string | null) => {
     if (newStage === currentConsultingStage) return;
-    const label = newStage ? CONSULTING_STAGE_LABELS[newStage as keyof typeof CONSULTING_STAGE_LABELS] : "(없음)";
-    if (!confirm(`컨설팅 단계를 "${label}"로 변경하시겠어요?`)) return;
     setError(null);
     startTransition(async () => {
       const r = await changeConsultingStageAction(companyId, newStage);
