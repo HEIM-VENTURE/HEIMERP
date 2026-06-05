@@ -198,6 +198,7 @@ export function EditContractRow({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const ratePercent = (Number(contract.hvp_fee_rate) * 100).toFixed(1);
 
@@ -221,7 +222,6 @@ export function EditContractRow({
   };
 
   const onDelete = () => {
-    if (!confirm("이 계약을 삭제할까요? (되돌릴 수 없음)")) return;
     startTransition(async () => {
       const result = await deleteContractAction(contract.id);
       if (result.error) setError(result.error);
@@ -347,15 +347,38 @@ export function EditContractRow({
               ) : null}
 
               <div className="flex gap-2 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onDelete}
-                  className="text-rose-700 hover:bg-rose-50"
-                  disabled={pending}
-                >
-                  삭제
-                </Button>
+                {confirmingDelete ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={pending}
+                      className="text-xs"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onDelete}
+                      disabled={pending}
+                      className="text-rose-700 hover:bg-rose-50 border-rose-300"
+                    >
+                      {pending ? "삭제 중..." : "정말 삭제"}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setConfirmingDelete(true)}
+                    className="text-rose-700 hover:bg-rose-50"
+                    disabled={pending}
+                  >
+                    삭제
+                  </Button>
+                )}
                 <div className="flex-1" />
                 <Button
                   type="button"

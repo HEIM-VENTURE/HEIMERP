@@ -30,6 +30,7 @@ export function FileManager({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string>("");
@@ -57,7 +58,7 @@ export function FileManager({
   };
 
   const onDelete = (file: FileRow) => {
-    if (!confirm(`"${file.filename}" 파일을 삭제할까요?`)) return;
+    setConfirmingDeleteId(null);
     startTransition(async () => {
       const result = await deleteCompanyFileAction(file.id, companyId);
       if (result.error) setError(result.error);
@@ -135,13 +136,31 @@ export function FileManager({
                   {f.size_bytes ? ` · ${formatSize(f.size_bytes)}` : ""}
                 </div>
               </div>
-              <button
-                onClick={() => onDelete(f)}
-                className="text-zinc-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"
-                title="삭제"
-              >
-                ×
-              </button>
+              {confirmingDeleteId === f.id ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => onDelete(f)}
+                    disabled={pending}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 hover:bg-rose-200"
+                  >
+                    정말 삭제
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDeleteId(null)}
+                    className="text-[10px] px-1.5 py-0.5 rounded text-zinc-500 hover:text-zinc-900"
+                  >
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmingDeleteId(f.id)}
+                  className="text-zinc-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"
+                  title="삭제"
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>

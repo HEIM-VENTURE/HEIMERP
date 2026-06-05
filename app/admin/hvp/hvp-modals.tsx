@@ -128,8 +128,9 @@ export function EditHvpButton({ hvp }: { hvp: HvpValues & { id: string } }) {
     });
   };
 
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   const onDelete = () => {
-    if (!confirm(`${hvp.name} HVP를 삭제할까요? (담당 기업 연결이 해제됩니다)`)) return;
     startTransition(async () => {
       const r = await deleteHvpAction(hvp.id);
       if (r.error) setError(r.error);
@@ -151,15 +152,37 @@ export function EditHvpButton({ hvp }: { hvp: HvpValues & { id: string } }) {
             <Fields v={hvp} />
             {error ? <ErrBox msg={error} /> : null}
             <div className="flex gap-2 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onDelete}
-                disabled={pending}
-                className="text-rose-700 hover:bg-rose-50 border-rose-200"
-              >
-                삭제
-              </Button>
+              {confirmingDelete ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={pending}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onDelete}
+                    disabled={pending}
+                    className="text-rose-700 hover:bg-rose-50 border-rose-300"
+                  >
+                    {pending ? "삭제 중..." : `정말 ${hvp.name} 삭제`}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmingDelete(true)}
+                  disabled={pending}
+                  className="text-rose-700 hover:bg-rose-50 border-rose-200"
+                >
+                  삭제
+                </Button>
+              )}
               <div className="flex-1" />
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={pending}>
                 취소

@@ -7,7 +7,6 @@ import {
   Shield,
   Languages,
   HelpCircle,
-  ChevronRight,
   Camera,
   type LucideIcon,
 } from "lucide-react";
@@ -117,10 +116,9 @@ function AccountPanel({ profile }: { profile: Profile }) {
 
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-4 group">
+    <div className="flex items-center justify-between py-4">
       <span className="text-sm text-zinc-500 w-32 shrink-0">{label}</span>
       <span className={cn("flex-1 text-sm truncate", muted ? "text-zinc-400" : "text-zinc-900")}>{value}</span>
-      <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-zinc-400 shrink-0" />
     </div>
   );
 }

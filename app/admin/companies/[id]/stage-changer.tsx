@@ -31,20 +31,23 @@ export function StageChanger({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [dropForm, setDropForm] = useState(false);
+  const [dropReason, setDropReason] = useState("");
 
-  const drop = () => {
-    const reason = prompt("드랍/중단 사유를 입력하세요 (예: 단계 미진행, 연락 두절, 부적합)");
-    if (reason === null) return;
+  const submitDrop = () => {
     setError(null);
     startTransition(async () => {
-      const r = await dropCompanyAction(companyId, reason);
+      const r = await dropCompanyAction(companyId, dropReason);
       if (r.error) setError(r.error);
-      else setOpen(false);
+      else {
+        setDropForm(false);
+        setDropReason("");
+        setOpen(false);
+      }
     });
   };
 
   const restore = () => {
-    if (!confirm("드랍을 취소하고 다시 진행 상태로 되돌릴까요?")) return;
     setError(null);
     startTransition(async () => {
       const r = await restoreCompanyAction(companyId);
@@ -173,6 +176,40 @@ export function StageChanger({
                     드랍 취소 (복구)
                   </Button>
                 </div>
+              ) : dropForm ? (
+                <div className="space-y-2">
+                  <div className="text-xs text-zinc-700 font-medium">드랍/중단 사유</div>
+                  <textarea
+                    value={dropReason}
+                    onChange={(e) => setDropReason(e.target.value)}
+                    rows={2}
+                    placeholder="예: 단계 미진행, 연락 두절, 부적합"
+                    className="w-full px-2.5 py-1.5 text-xs border border-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand/20"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDropForm(false);
+                        setDropReason("");
+                      }}
+                      disabled={pending}
+                      className="text-xs"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={submitDrop}
+                      disabled={pending}
+                      className="text-xs text-rose-600 hover:bg-rose-50 border-rose-200"
+                    >
+                      {pending ? "처리 중..." : "드랍 확정"}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs text-zinc-500">
@@ -181,7 +218,7 @@ export function StageChanger({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={drop}
+                    onClick={() => setDropForm(true)}
                     disabled={pending}
                     className="text-xs text-rose-600 hover:bg-rose-50 border-rose-200"
                   >

@@ -34,6 +34,7 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
   const [todos, setTodos] = useState<string[]>(meeting.ai_todos ?? []);
   const [error, setError] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const onRegenerate = () => {
     setError(null);
@@ -48,7 +49,6 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
   };
 
   const onDelete = () => {
-    if (!confirm("이 회의록을 삭제할까요? (되돌릴 수 없음)")) return;
     setError(null);
     startTransition(async () => {
       const r = await deleteMeetingAction(meeting.id);
@@ -164,14 +164,34 @@ export function MeetingViewer({ meeting }: { meeting: MeetingRow }) {
             </div>
 
             <div className="mt-5 flex items-center justify-between">
-              <Button
-                onClick={onDelete}
-                variant="outline"
-                disabled={pending}
-                className="text-rose-700 hover:bg-rose-50 border-rose-200"
-              >
-                회의록 삭제
-              </Button>
+              {confirmingDelete ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setConfirmingDelete(false)}
+                    variant="outline"
+                    disabled={pending}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={onDelete}
+                    variant="outline"
+                    disabled={pending}
+                    className="text-rose-700 hover:bg-rose-50 border-rose-300"
+                  >
+                    {pending ? "삭제 중..." : "정말 삭제"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setConfirmingDelete(true)}
+                  variant="outline"
+                  disabled={pending}
+                  className="text-rose-700 hover:bg-rose-50 border-rose-200"
+                >
+                  회의록 삭제
+                </Button>
+              )}
               <Button onClick={() => setOpen(false)} variant="outline">
                 닫기
               </Button>

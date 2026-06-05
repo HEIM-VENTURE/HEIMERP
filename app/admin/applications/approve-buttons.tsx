@@ -23,6 +23,8 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
   >(null);
   const [payOpen, setPayOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   // 클릭 즉시 이 행만 반영 (서버 재검증 전 낙관적 표시 — 다른 행과 절대 안 섞임)
   const [optimisticStage, setOptimisticStage] = useState<Stage | null>(null);
   const shownStage = optimisticStage ?? stage;
@@ -46,10 +48,10 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
     });
   };
 
-  const onReject = () => {
-    const reason = prompt(`${applicantName}님을 거절/이탈 처리하는 사유 (선택)`);
-    if (reason === null) return;
-    run("rejected", { reason });
+  const submitReject = () => {
+    setRejectOpen(false);
+    run("rejected", { reason: rejectReason });
+    setRejectReason("");
   };
 
   return (
@@ -68,9 +70,7 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
         {shownStage === "completed" ? (
           <Button
             size="sm"
-            onClick={() => {
-              if (confirm(`${applicantName}님을 파트너 HVP로 등록할까요?`)) run("partner");
-            }}
+            onClick={() => run("partner")}
             disabled={pending}
             className="text-xs"
           >
@@ -88,7 +88,7 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
           <Button
             size="sm"
             variant="outline"
-            onClick={onReject}
+            onClick={() => setRejectOpen(true)}
             disabled={pending}
             className="text-xs text-rose-600 hover:bg-rose-50"
           >
@@ -111,7 +111,6 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
           onChange={(e) => {
             const next = e.target.value as Stage;
             if (next === shownStage) return;
-            if (next === "partner" && !confirm(`${applicantName}님을 파트너 HVP로 등록할까요?`)) return;
             run(next);
           }}
           className="text-[11px] border border-zinc-200 rounded-md px-1.5 py-1 bg-white"
@@ -159,6 +158,38 @@ export function ApproveButtons({ applicationId, applicantName, stage }: Props) {
             </Button>
           </div>
         </form>
+      ) : null}
+
+      {/* 거절 사유 입력 */}
+      {rejectOpen ? (
+        <div className="p-2.5 bg-zinc-50 border border-zinc-200 rounded-lg space-y-2">
+          <Label className="text-[10px] text-zinc-500 mb-0.5 block">
+            {applicantName}님 거절/이탈 사유 (선택)
+          </Label>
+          <Input
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="예: 부적합, 본인 취소"
+            className="h-8 text-xs"
+          />
+          <div className="flex gap-1.5">
+            <Button type="button" size="sm" onClick={submitReject} disabled={pending} className="text-xs h-7 flex-1">
+              {pending ? "처리 중..." : "거절 확정"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setRejectOpen(false);
+                setRejectReason("");
+              }}
+              className="text-xs h-7"
+            >
+              취소
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {/* 교육 이수일 입력 */}
