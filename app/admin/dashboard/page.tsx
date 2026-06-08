@@ -235,10 +235,10 @@ export default async function AdminDashboardPage() {
                       style={{ width: `${widthPct}%`, backgroundColor: FUNNEL_COLORS[i] ?? "#6d5dd3" }}
                     />
                   </div>
-                  <span className="w-16 shrink-0 text-right text-xs">
-                    <b className="text-zinc-900 font-semibold">{s.count}</b>{" "}
-                    <span className="text-zinc-400">{pctOfTotal}%</span>
-                  </span>
+                  <div className="flex items-baseline gap-2 shrink-0 tabular-nums">
+                    <span className="w-7 text-right text-zinc-900 font-semibold text-sm">{s.count}</span>
+                    <span className="w-10 text-right text-zinc-400 text-xs">{pctOfTotal}%</span>
+                  </div>
                 </div>
               );
             })}
