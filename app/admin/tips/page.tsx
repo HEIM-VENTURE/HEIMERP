@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { NewOperatorModal, EditOperatorRow } from "./operator-modals";
+import { MatchedCompanies } from "./matched-companies";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +63,6 @@ export default async function TipsOperatorsPage() {
     });
     matchedByOp.set(m.tips_operator_id, arr);
   }
-
-  const fmtEok = (mil: number | null) => {
-    if (mil == null) return null;
-    const e = mil / 100;
-    return Number.isInteger(e) ? `${e}억` : `${e.toFixed(1).replace(/\.0$/, "")}억`;
-  };
 
   return (
     <>
@@ -157,55 +151,7 @@ export default async function TipsOperatorsPage() {
                     )}
                   </td>
                   <td className="px-5 py-3.5 align-top">
-                    {(matchedByOp.get(o.id)?.length ?? 0) > 0 ? (
-                      <div>
-                        <div className="text-xs font-medium text-zinc-500 mb-2">
-                          {matchedByOp.get(o.id)?.length}곳 매칭
-                        </div>
-                        <ul className="space-y-1.5 list-none">
-                          {matchedByOp.get(o.id)?.map((c) => {
-                            const val = fmtEok(c.valuation);
-                            const inv = fmtEok(c.investment);
-                            const cond =
-                              val && inv
-                                ? `${val} 밸류 / ${inv} 투자`
-                                : val
-                                  ? `${val} 밸류`
-                                  : inv
-                                    ? `${inv} 투자`
-                                    : "";
-                            return (
-                              <li key={`${c.id}-${c.program}`} className="text-xs flex items-baseline gap-1.5">
-                                <span className="text-zinc-300 select-none shrink-0">·</span>
-                                <div className="min-w-0">
-                                  <span
-                                    className={
-                                      "inline-block whitespace-nowrap px-1.5 py-0.5 text-[10px] font-medium rounded mr-1.5 " +
-                                      (c.program === "LIPS"
-                                        ? "bg-orange-100 text-orange-700"
-                                        : "bg-brand/10 text-brand")
-                                    }
-                                  >
-                                    {c.program}
-                                  </span>
-                                  <Link
-                                    href={`/admin/companies/${c.id}`}
-                                    className="text-zinc-800 hover:text-brand hover:underline font-medium"
-                                  >
-                                    {c.name}
-                                  </Link>
-                                  {cond ? (
-                                    <span className="text-zinc-500 ml-1.5">— {cond}</span>
-                                  ) : null}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-zinc-300">—</span>
-                    )}
+                    <MatchedCompanies items={matchedByOp.get(o.id) ?? []} />
                   </td>
                   <td
                     className="px-5 py-3.5 text-xs text-zinc-500 truncate max-w-[260px]"
