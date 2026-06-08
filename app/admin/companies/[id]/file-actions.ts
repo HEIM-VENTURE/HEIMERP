@@ -59,9 +59,18 @@ export async function uploadCompanyFileAction(
   const kindRaw = String(formData.get("kind") ?? "other").trim();
   const kind = kindRaw || "other";
 
-  // 경로: {companyId}/{timestamp}-{원본명}  (한글·공백 정리)
-  const safeName = file.name.replace(/[^\w.\-가-힣]/g, "_");
-  const path = `${companyId}/${Date.now()}-${safeName}`;
+  // 경로: {companyId}/{timestamp}-{ASCII만 정리된 파일명}.{ext}
+  // Supabase Storage 가 한글 등 non-ASCII key 를 거부하므로 storage key 는 ASCII 만,
+  // DB 에는 원본 파일명(한글 포함) 그대로 저장해서 화면 표시용으로 유지.
+  const ext = file.name.match(/\.[a-zA-Z0-9]+$/)?.[0]?.toLowerCase() ?? "";
+  const slug =
+    file.name
+      .replace(/\.[^.]+$/, "")             // 확장자 제거
+      .replace(/[^a-zA-Z0-9._-]/g, "_")    // ASCII 외 문자 → _
+      .replace(/_+/g, "_")                 // 연속 _ 압축
+      .replace(/^_+|_+$/g, "")             // 앞뒤 _ 정리
+      .slice(0, 50) || "file";
+  const path = `${companyId}/${Date.now()}-${slug}${ext}`;
 
   const admin = createAdminClient();
 
