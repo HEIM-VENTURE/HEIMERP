@@ -54,6 +54,8 @@ type Company = {
   hvp?: { name: string; cohort: string | null } | null;
   tips_operator_id: string | null;
   tips_operators?: { id: string; name: string; assigned_pm: string | null; focus_area: string | null } | null;
+  tips_match_valuation: number | null;
+  tips_match_investment: number | null;
 };
 
 // 통합 단계 정의 (영업 5 + 컨설팅 8 - 'kickoff' 중복 제거 = 12개)
@@ -369,6 +371,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             <TipsOperatorMatch
               companyId={company.id}
               currentId={company.tips_operator_id}
+              currentValuation={company.tips_match_valuation}
+              currentInvestment={company.tips_match_investment}
               operators={tipsList}
             />
           </div>

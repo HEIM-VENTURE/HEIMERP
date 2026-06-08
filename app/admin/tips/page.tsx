@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { NewOperatorModal, EditOperatorRow } from "./operator-modals";
@@ -28,19 +29,34 @@ export default async function TipsOperatorsPage() {
       .order("name", { ascending: true }),
     supabase
       .from("companies")
-      .select("tips_operator_id")
-      .not("tips_operator_id", "is", null),
+      .select("id, name, tips_operator_id, tips_match_valuation, tips_match_investment")
+      .not("tips_operator_id", "is", null)
+      .order("name", { ascending: true }),
   ]);
 
   const { data, error } = opRes;
   const list = (data as Operator[]) ?? [];
-  const matches = (matchRes.data as { tips_operator_id: string | null }[]) ?? [];
-  const matchCount = new Map<string, number>();
+  type MatchedCo = {
+    id: number;
+    name: string;
+    tips_operator_id: string | null;
+    tips_match_valuation: number | null;
+    tips_match_investment: number | null;
+  };
+  const matches = (matchRes.data as MatchedCo[]) ?? [];
+  const matchedByOp = new Map<string, MatchedCo[]>();
   for (const m of matches) {
-    if (m.tips_operator_id) {
-      matchCount.set(m.tips_operator_id, (matchCount.get(m.tips_operator_id) ?? 0) + 1);
-    }
+    if (!m.tips_operator_id) continue;
+    const arr = matchedByOp.get(m.tips_operator_id) ?? [];
+    arr.push(m);
+    matchedByOp.set(m.tips_operator_id, arr);
   }
+
+  const fmtEok = (mil: number | null) => {
+    if (mil == null) return null;
+    const e = mil / 100;
+    return Number.isInteger(e) ? `${e}억` : `${e.toFixed(1).replace(/\.0$/, "")}억`;
+  };
 
   return (
     <>
@@ -81,7 +97,7 @@ export default async function TipsOperatorsPage() {
                 <th className="text-left px-5 py-3.5 font-medium w-28">담당 심사역</th>
                 <th className="text-left px-5 py-3.5 font-medium w-40">관심 분야</th>
                 <th className="text-left px-5 py-3.5 font-medium w-36">미팅 이력</th>
-                <th className="text-left px-5 py-3.5 font-medium w-24">매칭 기업</th>
+                <th className="text-left px-5 py-3.5 font-medium w-64">매칭 기업</th>
                 <th className="text-left px-5 py-3.5 font-medium">메모</th>
                 <th className="text-left px-5 py-3.5 font-medium w-16"></th>
               </tr>
@@ -128,11 +144,40 @@ export default async function TipsOperatorsPage() {
                       <span className="text-xs text-zinc-300">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
-                    {(matchCount.get(o.id) ?? 0) > 0 ? (
-                      <span className="inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700">
-                        {matchCount.get(o.id)}곳 매칭
-                      </span>
+                  <td className="px-5 py-3.5 align-top">
+                    {(matchedByOp.get(o.id)?.length ?? 0) > 0 ? (
+                      <div className="space-y-1.5">
+                        <span className="inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700">
+                          {matchedByOp.get(o.id)?.length}곳 매칭
+                        </span>
+                        <div className="space-y-0.5">
+                          {matchedByOp.get(o.id)?.map((c) => {
+                            const val = fmtEok(c.tips_match_valuation);
+                            const inv = fmtEok(c.tips_match_investment);
+                            const cond =
+                              val && inv
+                                ? `${val} 밸류 / ${inv} 투자`
+                                : val
+                                  ? `${val} 밸류`
+                                  : inv
+                                    ? `${inv} 투자`
+                                    : "";
+                            return (
+                              <div key={c.id} className="text-xs">
+                                <Link
+                                  href={`/admin/companies/${c.id}`}
+                                  className="text-zinc-700 hover:text-brand hover:underline font-medium"
+                                >
+                                  {c.name}
+                                </Link>
+                                {cond ? (
+                                  <span className="text-zinc-400 ml-1.5">· {cond}</span>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ) : (
                       <span className="text-xs text-zinc-300">—</span>
                     )}
