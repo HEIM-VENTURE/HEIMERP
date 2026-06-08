@@ -80,9 +80,12 @@ export default async function PipelinePage({
       .order(sortCol, { ascending, nullsFirst: false })
       .order("name", { ascending: true });
   } else {
+    // 기본 정렬: 가장 진행된 단계가 위로
+    //   sales_stage DESC (kickoff > contract > proposal > meeting_1st > received)
+    //   같은 sales_stage 안에서 consulting_stage DESC (final_closing > ... > kickoff)
     listQuery = listQuery
-      .order("sales_stage", { ascending: true })
-      .order("consulting_stage", { ascending: true, nullsFirst: false })
+      .order("sales_stage", { ascending: false })
+      .order("consulting_stage", { ascending: false, nullsFirst: false })
       .order("name", { ascending: true });
   }
 
@@ -220,7 +223,6 @@ export default async function PipelinePage({
               <th className="text-left px-5 py-3.5 w-28"><SortableHeader column="program_grade" label="등급" /></th>
               <th className="text-right px-5 py-3.5 w-28"><SortableHeader column="proposal_amount" label="금액" align="right" /></th>
               <th className="text-left px-5 py-3.5 w-32"><SortableHeader column="started_at" label="착수일" /></th>
-              <th className="text-left px-5 py-3.5 w-56 font-medium text-zinc-500">메모</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -313,15 +315,6 @@ export default async function PipelinePage({
                       </span>
                     ) : (
                       <span className="text-xs text-zinc-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-xs text-zinc-500 align-top" title={c.notes ?? ""}>
-                    {c.notes ? (
-                      <div className="line-clamp-3 max-w-[220px] whitespace-pre-wrap break-words">
-                        {c.notes}
-                      </div>
-                    ) : (
-                      <span className="text-zinc-300">—</span>
                     )}
                   </td>
                 </tr>
