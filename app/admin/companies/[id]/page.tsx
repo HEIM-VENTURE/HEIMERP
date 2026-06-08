@@ -98,7 +98,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
     supabase.from("tips_operators").select("id, name, assigned_pm, focus_area").order("name", { ascending: true }),
     supabase
       .from("company_tips_matches")
-      .select("id, tips_operator_id, valuation, investment")
+      .select("id, tips_operator_id, valuation, investment, program")
       .eq("company_id", id)
       .order("created_at", { ascending: true }),
   ]);
@@ -113,7 +113,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const contracts = contractsRes.data ?? [];
   const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
-  const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null }[]) ?? [];
+  const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null; program: "TIPS" | "LIPS" }[]) ?? [];
 
   const currentIdx = getCurrentUnifiedStageIndex(company);
 

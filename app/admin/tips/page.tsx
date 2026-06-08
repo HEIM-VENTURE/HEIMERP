@@ -29,7 +29,7 @@ export default async function TipsOperatorsPage() {
       .order("name", { ascending: true }),
     supabase
       .from("company_tips_matches")
-      .select("id, tips_operator_id, valuation, investment, companies(id, name)"),
+      .select("id, tips_operator_id, valuation, investment, program, companies(id, name)"),
   ]);
 
   const { data, error } = opRes;
@@ -39,10 +39,17 @@ export default async function TipsOperatorsPage() {
     tips_operator_id: string;
     valuation: number | null;
     investment: number | null;
+    program: "TIPS" | "LIPS";
     companies: { id: number; name: string } | null;
   };
   const matches = (matchRes.data as unknown as MatchRow[]) ?? [];
-  type MatchedCo = { id: number; name: string; valuation: number | null; investment: number | null };
+  type MatchedCo = {
+    id: number;
+    name: string;
+    valuation: number | null;
+    investment: number | null;
+    program: "TIPS" | "LIPS";
+  };
   const matchedByOp = new Map<string, MatchedCo[]>();
   for (const m of matches) {
     if (!m.companies) continue;
@@ -52,6 +59,7 @@ export default async function TipsOperatorsPage() {
       name: m.companies.name,
       valuation: m.valuation,
       investment: m.investment,
+      program: m.program ?? "TIPS",
     });
     matchedByOp.set(m.tips_operator_id, arr);
   }
@@ -167,9 +175,19 @@ export default async function TipsOperatorsPage() {
                                     ? `${inv} 투자`
                                     : "";
                             return (
-                              <li key={c.id} className="text-xs flex items-baseline gap-1.5">
+                              <li key={`${c.id}-${c.program}`} className="text-xs flex items-baseline gap-1.5">
                                 <span className="text-zinc-300 select-none shrink-0">·</span>
                                 <div className="min-w-0">
+                                  <span
+                                    className={
+                                      "inline-block whitespace-nowrap px-1.5 py-0.5 text-[10px] font-medium rounded mr-1.5 " +
+                                      (c.program === "LIPS"
+                                        ? "bg-orange-100 text-orange-700"
+                                        : "bg-brand/10 text-brand")
+                                    }
+                                  >
+                                    {c.program}
+                                  </span>
                                   <Link
                                     href={`/admin/companies/${c.id}`}
                                     className="text-zinc-800 hover:text-brand hover:underline font-medium"

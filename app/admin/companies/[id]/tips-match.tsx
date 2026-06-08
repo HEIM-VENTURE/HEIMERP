@@ -18,12 +18,46 @@ type Operator = {
   focus_area: string | null;
 };
 
+export type Program = "TIPS" | "LIPS";
+
 export type Match = {
   id: number;
   tips_operator_id: string;
   valuation: number | null; // 백만원
   investment: number | null; // 백만원
+  program: Program;
 };
+
+function ProgramToggle({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Program;
+  onChange: (v: Program) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="inline-flex border border-zinc-200 rounded-md overflow-hidden">
+      {(["TIPS", "LIPS"] as Program[]).map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onChange(p)}
+          disabled={disabled}
+          className={
+            "px-2.5 py-1 text-[11px] font-medium transition-colors " +
+            (value === p
+              ? "bg-brand text-white"
+              : "bg-white text-zinc-500 hover:bg-zinc-50")
+          }
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function TipsMatches({
   companyId,
@@ -34,9 +68,6 @@ export function TipsMatches({
   matches: Match[];
   operators: Operator[];
 }) {
-  const usedIds = new Set(matches.map((m) => m.tips_operator_id));
-  const available = operators.filter((o) => !usedIds.has(o.id));
-
   return (
     <div className="space-y-3">
       {matches.length === 0 ? (
@@ -57,10 +88,10 @@ export function TipsMatches({
         </div>
       )}
 
-      {available.length > 0 ? (
-        <AddMatchForm companyId={companyId} operators={available} />
+      {operators.length > 0 ? (
+        <AddMatchForm companyId={companyId} operators={operators} />
       ) : (
-        <div className="text-xs text-zinc-400 italic">모든 운영사가 매칭됐습니다</div>
+        <div className="text-xs text-zinc-400 italic">먼저 TIPS 운영사를 등록해주세요</div>
       )}
     </div>
   );
@@ -78,16 +109,17 @@ function MatchRow({
   const router = useRouter();
   const valFromDb = match.valuation != null ? String(match.valuation / 100) : "";
   const invFromDb = match.investment != null ? String(match.investment / 100) : "";
+  const progFromDb: Program = match.program ?? "TIPS";
   const [val, setVal] = useState(valFromDb);
   const [inv, setInv] = useState(invFromDb);
+  const [prog, setProg] = useState<Program>(progFromDb);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  // 부모가 새 data 로 재렌더 되면(다른 매칭 추가 등) 이 행 input 도 DB 값으로 sync
-  // — 단, 사용자가 편집 중이면 덮어쓰지 않도록 마지막 저장 시점 이후 prop 변경만 반영
-  const lastSyncRef = useRef({ val: valFromDb, inv: invFromDb });
+  // 부모 재렌더 시 prop 변경분만 input 에 sync (사용자 편집 중엔 덮어쓰지 않음)
+  const lastSyncRef = useRef({ val: valFromDb, inv: invFromDb, prog: progFromDb });
   useEffect(() => {
     if (valFromDb !== lastSyncRef.current.val) {
       setVal(valFromDb);
@@ -97,31 +129,41 @@ function MatchRow({
       setInv(invFromDb);
       lastSyncRef.current.inv = invFromDb;
     }
-  }, [valFromDb, invFromDb]);
+    if (progFromDb !== lastSyncRef.current.prog) {
+      setProg(progFromDb);
+      lastSyncRef.current.prog = progFromDb;
+    }
+  }, [valFromDb, invFromDb, progFromDb]);
 
-  // closure 정합성 — 최신 val/inv 를 ref 에 항상 보관
-  const latest = useRef({ val, inv });
+  const latest = useRef({ val, inv, prog });
   useEffect(() => {
-    latest.current = { val, inv };
+    latest.current = { val, inv, prog };
   });
 
-  const save = () => {
+  const save = (override?: { prog?: Program }) => {
     const v = latest.current.val;
     const i = latest.current.inv;
+    const p = override?.prog ?? latest.current.prog;
     setError(null);
     startTransition(async () => {
       const r = await updateTipsMatchAction(
         match.id,
         companyId,
         v === "" ? null : Number(v),
-        i === "" ? null : Number(i)
+        i === "" ? null : Number(i),
+        p
       );
       if (r.error) setError(r.error);
       else {
         setSavedAt(Date.now());
-        lastSyncRef.current = { val: v, inv: i };
+        lastSyncRef.current = { val: v, inv: i, prog: p };
       }
     });
+  };
+
+  const onProgramChange = (next: Program) => {
+    setProg(next);
+    save({ prog: next });
   };
 
   const onDelete = () => {
@@ -136,8 +178,11 @@ function MatchRow({
     <div className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/30">
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-zinc-900 truncate">
-            {operator?.name ?? "(알 수 없는 운영사)"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-sm font-semibold text-zinc-900 truncate">
+              {operator?.name ?? "(알 수 없는 운영사)"}
+            </div>
+            <ProgramToggle value={prog} onChange={onProgramChange} disabled={pending} />
           </div>
           {operator ? (
             <div className="text-[11px] text-zinc-500 truncate">
@@ -187,7 +232,7 @@ function MatchRow({
             step="0.1"
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            onBlur={save}
+            onBlur={() => save()}
             placeholder="예: 80"
             className="h-8 text-xs"
             disabled={pending}
@@ -201,7 +246,7 @@ function MatchRow({
             step="0.1"
             value={inv}
             onChange={(e) => setInv(e.target.value)}
-            onBlur={save}
+            onBlur={() => save()}
             placeholder="예: 5"
             className="h-8 text-xs"
             disabled={pending}
@@ -229,6 +274,7 @@ function AddMatchForm({
   const [opId, setOpId] = useState("");
   const [val, setVal] = useState("");
   const [inv, setInv] = useState("");
+  const [prog, setProg] = useState<Program>("TIPS");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -243,13 +289,15 @@ function AddMatchForm({
         companyId,
         opId,
         val === "" ? null : Number(val),
-        inv === "" ? null : Number(inv)
+        inv === "" ? null : Number(inv),
+        prog
       );
       if (r.error) setError(r.error);
       else {
         setOpId("");
         setVal("");
         setInv("");
+        setProg("TIPS");
         router.refresh();
       }
     });
@@ -257,7 +305,10 @@ function AddMatchForm({
 
   return (
     <div className="border-2 border-dashed border-zinc-200 rounded-xl p-3 space-y-2">
-      <div className="text-[11px] font-medium text-zinc-500">+ 운영사 매칭 추가</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] font-medium text-zinc-500">+ 운영사 매칭 추가</div>
+        <ProgramToggle value={prog} onChange={setProg} disabled={pending} />
+      </div>
       <select
         value={opId}
         onChange={(e) => setOpId(e.target.value)}

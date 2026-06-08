@@ -83,12 +83,13 @@ export async function dropCompanyAction(companyId: number, reason: string) {
   return { success: true };
 }
 
-/** 새 TIPS 매칭 추가 (한 기업이 같은 운영사에 두 번 매칭 불가 — UNIQUE 제약). */
+/** 새 TIPS/LIPS 매칭 추가. (company_id, tips_operator_id, program) UNIQUE. */
 export async function addTipsMatchAction(
   companyId: number,
   operatorId: string,
   valuationEok: number | null = null,
-  investmentEok: number | null = null
+  investmentEok: number | null = null,
+  program: "TIPS" | "LIPS" = "TIPS"
 ): Promise<{ error?: string; id?: number }> {
   const supabase = await createClient();
   const {
@@ -115,12 +116,19 @@ export async function addTipsMatchAction(
 
   const { data, error } = await supabase
     .from("company_tips_matches")
-    .insert({ company_id: companyId, tips_operator_id: operatorId, valuation, investment })
+    .insert({
+      company_id: companyId,
+      tips_operator_id: operatorId,
+      valuation,
+      investment,
+      program,
+    })
     .select("id")
     .single();
 
   if (error) {
-    if (error.code === "23505") return { error: "이미 매칭된 운영사입니다" };
+    if (error.code === "23505")
+      return { error: `이미 ${program}으로 매칭된 운영사입니다` };
     return { error: error.message };
   }
 
@@ -129,12 +137,13 @@ export async function addTipsMatchAction(
   return { id: data.id as number };
 }
 
-/** 기존 매칭의 밸류·투자금액 갱신 (운영사는 못 바꿈 — 바꾸려면 삭제 후 추가) */
+/** 기존 매칭의 밸류·투자금액·program 갱신 (운영사는 못 바꿈 — 바꾸려면 삭제 후 추가) */
 export async function updateTipsMatchAction(
   matchId: number,
   companyId: number,
   valuationEok: number | null,
-  investmentEok: number | null
+  investmentEok: number | null,
+  program?: "TIPS" | "LIPS"
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
@@ -157,9 +166,15 @@ export async function updateTipsMatchAction(
       ? Math.round(investmentEok * 100)
       : null;
 
+  const update: { valuation: number | null; investment: number | null; program?: "TIPS" | "LIPS" } = {
+    valuation,
+    investment,
+  };
+  if (program) update.program = program;
+
   const { error } = await supabase
     .from("company_tips_matches")
-    .update({ valuation, investment })
+    .update(update)
     .eq("id", matchId);
 
   if (error) return { error: error.message };
