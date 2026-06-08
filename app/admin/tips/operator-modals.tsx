@@ -16,8 +16,12 @@ type Operator = {
   email: string | null;
   contact_person: string | null;
   focus_area: string | null;
+  assigned_pm: string | null;
+  last_meeting_at: string | null;
   notes: string | null;
 };
+
+const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
 
 export function NewOperatorModal() {
   const [open, setOpen] = useState(false);
@@ -149,25 +153,53 @@ function Fields({ v }: { v: Partial<Operator> }) {
         <Input name="name" required defaultValue={v.name ?? ""} placeholder="예: 한국과학기술지주" />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="담당자">
-          <Input name="contact_person" defaultValue={v.contact_person ?? ""} />
+        <Field label="담당 심사역 (HEIM)">
+          <select
+            name="assigned_pm"
+            defaultValue={v.assigned_pm ?? ""}
+            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
+          >
+            <option value="">— 미지정 —</option>
+            {PM_OPTIONS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
         </Field>
-        <Field label="분야">
+        <Field label="관심 분야">
           <Input
             name="focus_area"
             defaultValue={v.focus_area ?? ""}
-            placeholder="예: 바이오, ICT"
+            placeholder="예: 딥테크, 컨텐츠"
           />
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="연락처">
-          <Input name="phone" defaultValue={v.phone ?? ""} placeholder="02-0000-0000" />
-        </Field>
-        <Field label="이메일">
-          <Input name="email" type="email" defaultValue={v.email ?? ""} />
-        </Field>
+      <Field label="미팅 이력">
+        <Input
+          name="last_meeting_at"
+          type="date"
+          defaultValue={v.last_meeting_at ?? ""}
+        />
+      </Field>
+
+      <div className="pt-3 mt-3 border-t border-zinc-100">
+        <div className="text-xs font-medium text-zinc-500 mb-2">추가 정보 (선택)</div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="운영사 담당자">
+            <Input name="contact_person" defaultValue={v.contact_person ?? ""} />
+          </Field>
+          <Field label="연락처">
+            <Input name="phone" defaultValue={v.phone ?? ""} placeholder="02-0000-0000" />
+          </Field>
+        </div>
+        <div className="mt-3">
+          <Field label="이메일">
+            <Input name="email" type="email" defaultValue={v.email ?? ""} />
+          </Field>
+        </div>
       </div>
+
       <Field label="메모">
         <textarea
           name="notes"

@@ -20,21 +20,26 @@ async function requireAdmin(): Promise<{ error?: string; supabase?: Awaited<Retu
   return { supabase };
 }
 
+function buildRow(formData: FormData) {
+  const meetingRaw = String(formData.get("last_meeting_at") ?? "").trim();
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    assigned_pm: String(formData.get("assigned_pm") ?? "").trim() || null,
+    focus_area: String(formData.get("focus_area") ?? "").trim() || null,
+    last_meeting_at: meetingRaw || null,
+    contact_person: String(formData.get("contact_person") ?? "").trim() || null,
+    phone: String(formData.get("phone") ?? "").trim() || null,
+    email: String(formData.get("email") ?? "").trim() || null,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  };
+}
+
 export async function createTipsOperatorAction(formData: FormData): Promise<Result> {
   const { error: authErr, supabase } = await requireAdmin();
   if (authErr || !supabase) return { error: authErr ?? "권한 없음" };
 
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "기관명은 필수입니다" };
-
-  const row = {
-    name,
-    phone: String(formData.get("phone") ?? "").trim() || null,
-    email: String(formData.get("email") ?? "").trim() || null,
-    contact_person: String(formData.get("contact_person") ?? "").trim() || null,
-    focus_area: String(formData.get("focus_area") ?? "").trim() || null,
-    notes: String(formData.get("notes") ?? "").trim() || null,
-  };
+  const row = buildRow(formData);
+  if (!row.name) return { error: "기관명은 필수입니다" };
 
   const { data, error } = await supabase
     .from("tips_operators")
@@ -55,17 +60,8 @@ export async function updateTipsOperatorAction(
   const { error: authErr, supabase } = await requireAdmin();
   if (authErr || !supabase) return { error: authErr ?? "권한 없음" };
 
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "기관명은 필수입니다" };
-
-  const row = {
-    name,
-    phone: String(formData.get("phone") ?? "").trim() || null,
-    email: String(formData.get("email") ?? "").trim() || null,
-    contact_person: String(formData.get("contact_person") ?? "").trim() || null,
-    focus_area: String(formData.get("focus_area") ?? "").trim() || null,
-    notes: String(formData.get("notes") ?? "").trim() || null,
-  };
+  const row = buildRow(formData);
+  if (!row.name) return { error: "기관명은 필수입니다" };
 
   const { error } = await supabase.from("tips_operators").update(row).eq("id", id);
   if (error) return { error: error.message };
