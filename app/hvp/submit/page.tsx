@@ -44,8 +44,8 @@ export default function SubmitPage() {
               <Input id="founded_at" name="founded_at" type="date" />
             </div>
             <div>
-              <Label htmlFor="last_year_revenue" className="text-xs font-medium text-zinc-700 mb-1 block">직전년도 매출 (백만원)</Label>
-              <Input id="last_year_revenue" name="last_year_revenue" type="number" placeholder="120" />
+              <Label htmlFor="last_year_revenue_eok" className="text-xs font-medium text-zinc-700 mb-1 block">직전년도 매출 (억)</Label>
+              <Input id="last_year_revenue_eok" name="last_year_revenue_eok" type="number" min={0} step="0.1" placeholder="예: 1.2" />
             </div>
           </div>
         </div>

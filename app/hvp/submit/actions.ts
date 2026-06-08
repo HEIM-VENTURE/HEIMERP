@@ -33,7 +33,8 @@ export async function submitCompanyAction(formData: FormData) {
     email: nullIfEmpty(formData.get("email")),
     main_item: nullIfEmpty(formData.get("main_item")),
     founded_at: nullIfEmpty(formData.get("founded_at")),
-    last_year_revenue: numOrNull(formData.get("last_year_revenue")),
+    // 입력은 억 단위, DB는 백만원 단위로 저장
+    last_year_revenue: eokToMan(formData.get("last_year_revenue_eok") ?? formData.get("last_year_revenue")),
     inquiry_purpose: nullIfEmpty(formData.get("inquiry_purpose")),
     sales_stage: "received",
     source: "hvp_self",
@@ -66,4 +67,11 @@ function numOrNull(v: FormDataEntryValue | null): number | null {
   if (!s) return null;
   const n = Number(s.replace(/,/g, ""));
   return Number.isFinite(n) ? n : null;
+}
+
+/** 입력은 억(소수 가능), DB는 백만원 단위. × 100 후 반올림. */
+function eokToMan(v: FormDataEntryValue | null): number | null {
+  const eok = numOrNull(v);
+  if (eok == null) return null;
+  return Math.round(eok * 100);
 }

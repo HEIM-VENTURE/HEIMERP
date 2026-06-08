@@ -34,6 +34,13 @@ function numOrNull(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** 입력은 억(소수 가능), DB는 백만원 단위. × 100 후 반올림. */
+function eokToMan(v: FormDataEntryValue | null): number | null {
+  const eok = numOrNull(v);
+  if (eok == null) return null;
+  return Math.round(eok * 100);
+}
+
 function pmOrNull(v: FormDataEntryValue | null): string | null {
   const s = String(v ?? "").trim();
   return s && s !== "none" ? s : null;
@@ -60,7 +67,8 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     email: nullIfEmpty(formData.get("email")),
     main_item: nullIfEmpty(formData.get("main_item")),
     founded_at: nullIfEmpty(formData.get("founded_at")),
-    last_year_revenue: numOrNull(formData.get("last_year_revenue")),
+    // 입력은 억 단위, DB는 백만원 단위로 저장 (× 100)
+    last_year_revenue: eokToMan(formData.get("last_year_revenue_eok") ?? formData.get("last_year_revenue")),
     inquiry_purpose: nullIfEmpty(formData.get("inquiry_purpose")),
     proposal_amount: numOrNull(formData.get("proposal_amount")),
     program_grade: programGrade,
@@ -119,7 +127,8 @@ export async function updateCompanyAction(
     email: nullIfEmpty(formData.get("email")),
     main_item: nullIfEmpty(formData.get("main_item")),
     founded_at: nullIfEmpty(formData.get("founded_at")),
-    last_year_revenue: numOrNull(formData.get("last_year_revenue")),
+    // 입력은 억 단위, DB는 백만원 단위로 저장 (× 100)
+    last_year_revenue: eokToMan(formData.get("last_year_revenue_eok") ?? formData.get("last_year_revenue")),
     inquiry_purpose: nullIfEmpty(formData.get("inquiry_purpose")),
     proposal_amount: numOrNull(formData.get("proposal_amount")),
     program_grade: programGrade,

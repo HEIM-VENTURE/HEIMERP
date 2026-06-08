@@ -88,13 +88,18 @@ function CompanyFormFields({
         <Field label="설립일자">
           <Input name="founded_at" type="date" defaultValue={values.founded_at ?? ""} />
         </Field>
-        <Field label="직전년도 매출 (백만원)">
+        <Field label="직전년도 매출 (억)">
           <Input
-            name="last_year_revenue"
+            name="last_year_revenue_eok"
             type="number"
             min={0}
-            defaultValue={values.last_year_revenue ?? ""}
-            placeholder="120"
+            step="0.1"
+            defaultValue={
+              values.last_year_revenue != null
+                ? String(values.last_year_revenue / 100)
+                : ""
+            }
+            placeholder="예: 1.2 (단위: 억)"
           />
         </Field>
       </div>

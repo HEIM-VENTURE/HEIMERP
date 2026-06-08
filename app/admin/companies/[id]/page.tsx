@@ -472,16 +472,13 @@ function formatDate(iso: string | null): string {
   return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** DB는 백만원 단위로 저장. 표시는 억 우선, 1억 미만이면 백만 단위로. */
+/** DB는 백만원 단위로 저장. 표시는 항상 억 단위(소수 최대 1자리). */
 function formatRevenue(millions: number | null): string | null {
   if (millions == null) return null;
-  if (millions >= 100) {
-    const eok = millions / 100;
-    // 정수면 정수, 소수면 1자리
-    const display = Number.isInteger(eok) ? eok.toString() : eok.toFixed(1).replace(/\.0$/, "");
-    return `${display}억`;
-  }
-  return `${millions}백만`;
+  const eok = millions / 100;
+  // 정수면 정수, 소수면 1자리, 끝의 .0 제거
+  const display = Number.isInteger(eok) ? eok.toString() : eok.toFixed(1).replace(/\.0$/, "");
+  return `${display}억`;
 }
 
 function formatRelative(iso: string): string {
