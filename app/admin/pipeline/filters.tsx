@@ -16,8 +16,11 @@ type Props = {
   initialGrade: string;
   initialConsulting: string;
   initialDropped: string;
+  initialPm: string;
   resultCount: number;
 };
+
+const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
 
 export function PipelineFilters({
   initialQuery,
@@ -25,6 +28,7 @@ export function PipelineFilters({
   initialGrade,
   initialConsulting,
   initialDropped,
+  initialPm,
   resultCount,
 }: Props) {
   const router = useRouter();
@@ -52,6 +56,7 @@ export function PipelineFilters({
     initialStage !== "all" ||
     initialGrade !== "all" ||
     initialConsulting !== "all" ||
+    initialPm !== "all" ||
     initialDropped !== "active";
 
   // dropped 파라미터는 기본값 active일 때 URL에서 제거되도록 updateParam이 처리.
@@ -123,6 +128,21 @@ export function PipelineFilters({
           <option value="basic">등급: Basic</option>
           <option value="free">등급: Free</option>
           <option value="none">등급: 미정</option>
+        </select>
+
+        {/* 담당 PM */}
+        <select
+          value={initialPm}
+          onChange={(e) => updateParam("pm", e.target.value)}
+          className="px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white cursor-pointer"
+        >
+          <option value="all">PM: 전체</option>
+          <option value="none">PM: 미지정</option>
+          {PM_OPTIONS.map((p) => (
+            <option key={p} value={p}>
+              PM: {p}
+            </option>
+          ))}
         </select>
 
         {/* 드랍 표시 */}

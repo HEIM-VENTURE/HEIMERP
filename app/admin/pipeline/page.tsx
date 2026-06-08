@@ -38,6 +38,7 @@ type SearchParams = {
   grade?: string;
   consulting?: string;
   dropped?: string;
+  pm?: string;
   sort?: string;
   dir?: string;
 };
@@ -53,6 +54,7 @@ export default async function PipelinePage({
   const grade = sp.grade ?? "all";
   const consulting = sp.consulting ?? "all";
   const dropped = sp.dropped ?? "active"; // active(드랍 제외) | dropped(드랍만) | all
+  const pm = sp.pm ?? "all"; // all | none | <PM 이름>
   const sort = sp.sort ?? "";
   const dir = sp.dir ?? "asc";
 
@@ -106,6 +108,14 @@ export default async function PipelinePage({
   if (consulting !== "all") {
     if (consulting === "none") listQuery = listQuery.is("consulting_stage", null);
     else listQuery = listQuery.eq("consulting_stage", consulting);
+  }
+  if (pm !== "all") {
+    if (pm === "none") {
+      // PM 미지정: custom_fields 에 pm 키 없거나 빈 문자열
+      listQuery = listQuery.or("custom_fields->>pm.is.null,custom_fields->>pm.eq.");
+    } else {
+      listQuery = listQuery.eq("custom_fields->>pm", pm);
+    }
   }
 
   // KPI용 전체 + 필터된 리스트 + HVP 목록 동시
@@ -202,6 +212,7 @@ export default async function PipelinePage({
         initialGrade={grade}
         initialConsulting={consulting}
         initialDropped={dropped}
+        initialPm={pm}
         resultCount={list.length}
       />
 
