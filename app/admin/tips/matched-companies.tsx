@@ -64,24 +64,28 @@ export function MatchedCompanies({ items }: { items: MatchedCompany[] }) {
               >
                 <span className="text-zinc-300 select-none shrink-0">·</span>
                 <div className="min-w-0">
-                  <span
-                    className={
-                      "inline-block whitespace-nowrap px-1.5 py-0.5 text-[10px] font-medium rounded mr-1.5 " +
-                      (c.program === "LIPS"
-                        ? "bg-orange-100 text-orange-700"
-                        : "bg-brand/10 text-brand")
-                    }
-                  >
-                    {c.program}
-                  </span>
-                  <Link
-                    href={`/admin/companies/${c.id}`}
-                    className="text-zinc-800 hover:text-brand hover:underline font-medium"
-                  >
-                    {c.name}
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={
+                        "inline-block whitespace-nowrap px-1.5 py-0.5 text-[10px] font-medium rounded shrink-0 " +
+                        (c.program === "LIPS"
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-brand/10 text-brand")
+                      }
+                    >
+                      {c.program}
+                    </span>
+                    <Link
+                      href={`/admin/companies/${c.id}`}
+                      className="text-zinc-800 hover:text-brand hover:underline font-medium"
+                    >
+                      {c.name}
+                    </Link>
+                  </div>
                   {cond ? (
-                    <span className="text-zinc-500 ml-1.5">— {cond}</span>
+                    <div className="text-[11px] text-zinc-500 whitespace-nowrap mt-0.5">
+                      {cond}
+                    </div>
                   ) : null}
                 </div>
               </li>
