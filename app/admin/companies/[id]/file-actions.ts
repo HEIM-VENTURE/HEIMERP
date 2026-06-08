@@ -41,56 +41,67 @@ async function authorizeCompany(companyId: number) {
   return { error: "권한 없음" as const, userId: null };
 }
 
-export async function uploadCompanyFileAction(
+/**
+ * 1단계: 클라이언트에서 Supabase Storage 로 직접 PUT 할 수 있는 signed URL 생성.
+ * Vercel Server Action body limit(~4.5MB) 우회 — 큰 파일도 50MB까지 가능.
+ */
+export async function createUploadUrlAction(
   companyId: number,
-  formData: FormData
-): Promise<ActionResult> {
-  const { error: authError, userId } = await authorizeCompany(companyId);
+  filename: string
+): Promise<{ error?: string; path?: string; signedUrl?: string; token?: string }> {
+  const { error: authError } = await authorizeCompany(companyId);
   if (authError) return { error: authError };
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: "파일을 선택하세요" };
-  }
-  if (file.size > 52428800) {
-    return { error: "파일이 너무 큽니다 (최대 50MB)" };
-  }
-
-  const kindRaw = String(formData.get("kind") ?? "other").trim();
-  const kind = kindRaw || "other";
+  if (!filename) return { error: "파일명 누락" };
 
   // 경로: {companyId}/{timestamp}-{ASCII만 정리된 파일명}.{ext}
-  // Supabase Storage 가 한글 등 non-ASCII key 를 거부하므로 storage key 는 ASCII 만,
-  // DB 에는 원본 파일명(한글 포함) 그대로 저장해서 화면 표시용으로 유지.
-  const ext = file.name.match(/\.[a-zA-Z0-9]+$/)?.[0]?.toLowerCase() ?? "";
+  const ext = filename.match(/\.[a-zA-Z0-9]+$/)?.[0]?.toLowerCase() ?? "";
   const slug =
-    file.name
-      .replace(/\.[^.]+$/, "")             // 확장자 제거
-      .replace(/[^a-zA-Z0-9._-]/g, "_")    // ASCII 외 문자 → _
-      .replace(/_+/g, "_")                 // 연속 _ 압축
-      .replace(/^_+|_+$/g, "")             // 앞뒤 _ 정리
+    filename
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "")
       .slice(0, 50) || "file";
   const path = `${companyId}/${Date.now()}-${slug}${ext}`;
 
   const admin = createAdminClient();
-
-  const arrayBuffer = await file.arrayBuffer();
-  const { error: uploadError } = await admin.storage
+  const { data, error } = await admin.storage
     .from(BUCKET)
-    .upload(path, arrayBuffer, {
-      contentType: file.type || "application/octet-stream",
-      upsert: false,
-    });
+    .createSignedUploadUrl(path);
 
-  if (uploadError) return { error: "업로드 실패: " + uploadError.message };
+  if (error) return { error: "업로드 URL 생성 실패: " + error.message };
+  return { path: data.path, signedUrl: data.signedUrl, token: data.token };
+}
 
-  // files 테이블에 메타 기록 (url 컬럼엔 버킷 내 경로 저장)
+/**
+ * 2단계: 클라이언트가 Storage 업로드 완료 후 호출 — files 테이블에 메타만 INSERT (작은 페이로드).
+ */
+export async function recordCompanyFileAction(
+  companyId: number,
+  path: string,
+  filename: string,
+  kind: string,
+  size: number
+): Promise<ActionResult> {
+  const { error: authError, userId } = await authorizeCompany(companyId);
+  if (authError) return { error: authError };
+
+  if (!path || !filename) return { error: "경로/파일명 누락" };
+  if (size > 52428800) return { error: "파일이 너무 큽니다 (최대 50MB)" };
+
+  const admin = createAdminClient();
+
+  // 파일이 실제 업로드됐는지 확인 (보안 — 누군가 임의 경로 INSERT 못하게)
+  const folder = path.split("/")[0];
+  if (folder !== String(companyId)) return { error: "경로 검증 실패" };
+
   const { error: insertError } = await admin.from("files").insert({
     company_id: companyId,
-    filename: file.name,
+    filename,
     url: path,
-    kind,
-    size_bytes: file.size,
+    kind: kind || "other",
+    size_bytes: size,
     uploader_id: userId,
   });
 

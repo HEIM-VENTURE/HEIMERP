@@ -4,7 +4,8 @@ import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { FILE_KIND_LABELS } from "@/lib/labels";
 import {
-  uploadCompanyFileAction,
+  createUploadUrlAction,
+  recordCompanyFileAction,
   deleteCompanyFileAction,
   getFileSignedUrlAction,
 } from "./file-actions";
@@ -37,13 +38,57 @@ export function FileManager({
 
   const onSubmit = (formData: FormData) => {
     setError(null);
+    const file = formData.get("file");
+    const kind = String(formData.get("kind") ?? "other");
+
+    if (!(file instanceof File) || file.size === 0) {
+      setError("파일을 선택하세요");
+      return;
+    }
+    if (file.size > 52428800) {
+      setError("파일이 너무 큽니다 (최대 50MB)");
+      return;
+    }
+
     startTransition(async () => {
-      const result = await uploadCompanyFileAction(companyId, formData);
-      if (result.error) setError(result.error);
-      else {
-        formRef.current?.reset();
-        setFileName("");
+      // 1) 서명된 업로드 URL 요청
+      const urlRes = await createUploadUrlAction(companyId, file.name);
+      if (urlRes.error || !urlRes.signedUrl || !urlRes.path) {
+        setError(urlRes.error || "업로드 URL 생성 실패");
+        return;
       }
+
+      // 2) 클라이언트 → Supabase Storage 직접 PUT (Vercel 함수 우회)
+      try {
+        const res = await fetch(urlRes.signedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+        });
+        if (!res.ok) {
+          setError(`업로드 실패 (${res.status})`);
+          return;
+        }
+      } catch (e) {
+        setError("네트워크 오류: " + (e instanceof Error ? e.message : "unknown"));
+        return;
+      }
+
+      // 3) 메타데이터 DB 기록 (작은 페이로드 — Server Action 안전)
+      const rec = await recordCompanyFileAction(
+        companyId,
+        urlRes.path,
+        file.name,
+        kind,
+        file.size
+      );
+      if (rec.error) {
+        setError(rec.error);
+        return;
+      }
+
+      formRef.current?.reset();
+      setFileName("");
     });
   };
 
