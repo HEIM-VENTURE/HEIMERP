@@ -345,7 +345,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
               <Info label="접수일" value={company.received_at} />
               <Info label="계약일" value={company.contracted_at} />
-              <Info label="착수일" value={company.started_at} />
             </div>
 
             {company.inquiry_purpose ? (
