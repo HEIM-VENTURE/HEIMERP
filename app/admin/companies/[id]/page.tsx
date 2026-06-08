@@ -327,7 +327,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               <Info label="연락처" value={company.phone} />
               <Info label="이메일" value={company.email} />
               <Info label="설립일" value={company.founded_at} />
-              <Info label="매출(전년)" value={company.last_year_revenue ? `${company.last_year_revenue}백만` : null} />
+              <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
               <Info label="접수일" value={company.received_at} />
               {company.contracted_at ? <Info label="계약일" value={company.contracted_at} /> : null}
               {company.started_at ? <Info label="착수일" value={company.started_at} /> : null}
@@ -470,6 +470,18 @@ function formatDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** DB는 백만원 단위로 저장. 표시는 억 우선, 1억 미만이면 백만 단위로. */
+function formatRevenue(millions: number | null): string | null {
+  if (millions == null) return null;
+  if (millions >= 100) {
+    const eok = millions / 100;
+    // 정수면 정수, 소수면 1자리
+    const display = Number.isInteger(eok) ? eok.toString() : eok.toFixed(1).replace(/\.0$/, "");
+    return `${display}억`;
+  }
+  return `${millions}백만`;
 }
 
 function formatRelative(iso: string): string {
