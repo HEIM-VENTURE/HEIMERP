@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   SALES_STAGE_LABELS,
@@ -233,7 +232,6 @@ export default async function PipelinePage({
               <th className="text-left px-5 py-3.5 w-56 font-medium text-zinc-500">컨설팅 진행</th>
               <th className="text-left px-5 py-3.5 w-28"><SortableHeader column="program_grade" label="등급" /></th>
               <th className="text-right px-5 py-3.5 w-28"><SortableHeader column="proposal_amount" label="금액" align="right" /></th>
-              <th className="text-left px-5 py-3.5 w-32"><SortableHeader column="started_at" label="착수일" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -318,16 +316,6 @@ export default async function PipelinePage({
                       <span className="text-zinc-300">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
-                    {c.started_at ? (
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
-                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                        {formatDate(c.started_at)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-zinc-300">—</span>
-                    )}
-                  </td>
                 </tr>
               );
             })}
@@ -350,7 +338,3 @@ export default async function PipelinePage({
   );
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear().toString().slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-}

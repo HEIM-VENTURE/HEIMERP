@@ -150,11 +150,11 @@ export default async function TipsOperatorsPage() {
                   </td>
                   <td className="px-5 py-3.5 align-top">
                     {(matchedByOp.get(o.id)?.length ?? 0) > 0 ? (
-                      <div className="space-y-1.5">
-                        <span className="inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700">
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-2">
                           {matchedByOp.get(o.id)?.length}곳 매칭
-                        </span>
-                        <div className="space-y-0.5">
+                        </div>
+                        <ul className="space-y-1.5 list-none">
                           {matchedByOp.get(o.id)?.map((c) => {
                             const val = fmtEok(c.valuation);
                             const inv = fmtEok(c.investment);
@@ -167,20 +167,23 @@ export default async function TipsOperatorsPage() {
                                     ? `${inv} 투자`
                                     : "";
                             return (
-                              <div key={c.id} className="text-xs">
-                                <Link
-                                  href={`/admin/companies/${c.id}`}
-                                  className="text-zinc-700 hover:text-brand hover:underline font-medium"
-                                >
-                                  {c.name}
-                                </Link>
-                                {cond ? (
-                                  <span className="text-zinc-400 ml-1.5">· {cond}</span>
-                                ) : null}
-                              </div>
+                              <li key={c.id} className="text-xs flex items-baseline gap-1.5">
+                                <span className="text-zinc-300 select-none shrink-0">·</span>
+                                <div className="min-w-0">
+                                  <Link
+                                    href={`/admin/companies/${c.id}`}
+                                    className="text-zinc-800 hover:text-brand hover:underline font-medium"
+                                  >
+                                    {c.name}
+                                  </Link>
+                                  {cond ? (
+                                    <span className="text-zinc-500 ml-1.5">— {cond}</span>
+                                  ) : null}
+                                </div>
+                              </li>
                             );
                           })}
-                        </div>
+                        </ul>
                       </div>
                     ) : (
                       <span className="text-xs text-zinc-300">—</span>
