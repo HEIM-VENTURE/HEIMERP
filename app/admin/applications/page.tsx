@@ -86,7 +86,7 @@ export default async function ApplicationsPage({
       </div>
 
       {/* 단계 퍼널 */}
-      <div className="grid grid-cols-6 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <FilterCard active={filter === "applied"} href="?stage=applied" label="신청" count={stats.applied} tone="slate" />
         <FilterCard active={filter === "paid"} href="?stage=paid" label="결제 완료" count={stats.paid} tone="brand" />
         <FilterCard active={filter === "completed"} href="?stage=completed" label="교육 이수" count={stats.completed} tone="orange" />

@@ -91,7 +91,7 @@ export default async function ContractsPage({
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <Kpi label="총 계약" value={`${totalCount}건`} sub={`${Math.round(totalAmount).toLocaleString()}만`} tone="zinc" />
         <Kpi label="HVP 수수료 총액" value={`${Math.round(totalFee).toLocaleString()}만`} sub={`${totalCount > 0 ? Math.round((totalFee / totalAmount) * 100) : 0}% 평균`} tone="blue" />
         <Kpi label="지급 완료" value={`${Math.round(paidFee).toLocaleString()}만`} sub={`${all.length - unpaidContracts.length}건`} tone="emerald" />

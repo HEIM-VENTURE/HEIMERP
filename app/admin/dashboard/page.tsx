@@ -170,7 +170,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
         {kpis.map((k, i) => {
           const Icon = KPI_ICONS[i] ?? Building2;
           if (i === 0) {
@@ -213,9 +213,9 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* 단계별 분포 */}
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
+        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-semibold text-zinc-900">단계별 분포</h2>
             <Link href="/admin/pipeline" className="text-xs text-zinc-500 hover:text-zinc-900">
@@ -246,7 +246,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 월별 신규 접수 */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-semibold text-zinc-900">월별 신규 접수</h2>
             <span className="text-xs text-zinc-400">최근 6개월</span>
@@ -311,7 +311,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 최근 활동 */}
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
+        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
           <h2 className="font-semibold text-zinc-900 mb-5">최근 활동</h2>
           {recentChanges.length === 0 ? (
             <div className="text-sm text-zinc-400 text-center py-6">아직 활동 기록이 없습니다</div>
@@ -348,7 +348,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 임박 To-do (놓치면 안 되는 것) */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-zinc-900">⏰ 임박 To-do</h2>
             <Link href="/admin/todos" className="text-xs text-zinc-500 hover:text-zinc-900">

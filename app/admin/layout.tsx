@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AdminSidebar } from "@/components/sidebar/admin-sidebar";
+import { AdminShell } from "@/components/sidebar/admin-shell";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +22,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <AdminSidebar profile={profile} />
-      <main className="flex-1 px-8 py-7 overflow-x-auto bg-[#f6f4fc] dark:bg-[#141121]">{children}</main>
-    </div>
-  );
+  return <AdminShell profile={profile}>{children}</AdminShell>;
 }

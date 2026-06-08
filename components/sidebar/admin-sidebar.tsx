@@ -32,9 +32,11 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
 
 type Props = {
   profile: { name: string; email: string; role: string };
+  /** 모바일 드로어에서 메뉴 클릭 시 자동 닫기용 */
+  onNavigate?: () => void;
 };
 
-export function AdminSidebar({ profile }: Props) {
+export function AdminSidebar({ profile, onNavigate }: Props) {
   const pathname = usePathname();
 
   return (
@@ -61,6 +63,7 @@ export function AdminSidebar({ profile }: Props) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors",
                 active
@@ -77,6 +80,7 @@ export function AdminSidebar({ profile }: Props) {
         <div className="border-t border-zinc-100 my-3" />
         <Link
           href="/admin/settings"
+          onClick={onNavigate}
           className={cn(
             "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors",
             pathname.startsWith("/admin/settings")

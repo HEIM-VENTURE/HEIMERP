@@ -164,7 +164,7 @@ export default async function TodosPage({
       </div>
 
       {/* 빠른 필터 카드 */}
-      <div className="grid grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
         <FilterCard active={filter === "overdue"} href={qs({ filter: "overdue" })} label="지난 마감" count={overdueCount} tone="rose" />
         <FilterCard active={filter === "today"} href={qs({ filter: "today" })} label="오늘 마감" count={todayCount} tone="amber" />
         <FilterCard active={filter === "this_week"} href={qs({ filter: "this_week" })} label="이번 주" count={weekCount} tone="blue" />

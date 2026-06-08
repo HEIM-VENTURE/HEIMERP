@@ -146,19 +146,19 @@ export default async function PipelinePage({
 
       {/* KPI */}
       <div className="grid grid-cols-12 gap-3 mb-6">
-        <div className="col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
+        <div className="col-span-6 sm:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
           <div className="text-xs text-zinc-500">전체 기업</div>
           <div className="text-2xl font-bold text-zinc-900 mt-0.5">{total}</div>
         </div>
-        <div className="col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
+        <div className="col-span-6 sm:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
           <div className="text-xs text-zinc-500">영업 진행 중</div>
           <div className="text-2xl font-bold text-blue-600 mt-0.5">{inProgress}</div>
         </div>
-        <div className="col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
+        <div className="col-span-6 sm:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
           <div className="text-xs text-zinc-500">컨설팅 진행 중</div>
           <div className="text-2xl font-bold text-emerald-600 mt-0.5">{consultingCount}</div>
         </div>
-        <div className="col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
+        <div className="col-span-6 sm:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4">
           <div className="text-xs text-zinc-500">Final Closing</div>
           <div className="text-2xl font-bold text-zinc-900 mt-0.5">{closed}</div>
         </div>

@@ -18,9 +18,11 @@ const navItems = [
 type Props = {
   profile: { name: string; email: string; role: string };
   hvpInfo: { name: string; cohort: string | null } | null;
+  /** 모바일 드로어에서 메뉴 클릭 시 자동 닫기용 */
+  onNavigate?: () => void;
 };
 
-export function HvpSidebar({ profile, hvpInfo }: Props) {
+export function HvpSidebar({ profile, hvpInfo, onNavigate }: Props) {
   const pathname = usePathname();
   const displayName = hvpInfo?.name ?? profile.name;
   const cohort = hvpInfo?.cohort ?? "";
@@ -50,6 +52,7 @@ export function HvpSidebar({ profile, hvpInfo }: Props) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-lg",
                 active
@@ -66,6 +69,7 @@ export function HvpSidebar({ profile, hvpInfo }: Props) {
         <div className="border-t border-zinc-100 my-3" />
         <Link
           href="/hvp/profile"
+          onClick={onNavigate}
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-zinc-600 hover:bg-zinc-50"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />

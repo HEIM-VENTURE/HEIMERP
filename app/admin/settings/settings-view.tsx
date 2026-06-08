@@ -44,11 +44,11 @@ export function SettingsView({ profile }: { profile: Profile }) {
 
       <h1 className="text-2xl font-bold text-zinc-900 mb-5">설정</h1>
 
-      <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden flex min-h-[560px] shadow-sm">
-        {/* 좌측 서브내비 */}
-        <aside className="w-56 shrink-0 border-r border-zinc-100 p-5 bg-zinc-50/40">
-          <div className="text-lg font-bold text-zinc-900 px-2 mb-4">Settings</div>
-          <nav className="space-y-1">
+      <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden flex flex-col lg:flex-row lg:min-h-[560px] shadow-sm">
+        {/* 좌측(데스크탑) / 상단(모바일) 서브내비 */}
+        <aside className="lg:w-56 shrink-0 lg:border-r border-b lg:border-b-0 border-zinc-100 p-4 lg:p-5 bg-zinc-50/40">
+          <div className="text-lg font-bold text-zinc-900 px-2 mb-4 hidden lg:block">Settings</div>
+          <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible -mx-1 px-1 lg:mx-0 lg:px-0">
             {NAV.map((n) => {
               const Icon = n.icon;
               const active = tab === n.key;
@@ -57,7 +57,7 @@ export function SettingsView({ profile }: { profile: Profile }) {
                   key={n.key}
                   onClick={() => setTab(n.key)}
                   className={cn(
-                    "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors text-left",
+                    "shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors text-left whitespace-nowrap",
                     active
                       ? "bg-brand/10 text-brand font-semibold"
                       : "text-zinc-600 hover:bg-zinc-100"
@@ -77,7 +77,7 @@ export function SettingsView({ profile }: { profile: Profile }) {
         </aside>
 
         {/* 우측 콘텐츠 */}
-        <section className="flex-1 p-8 min-w-0">
+        <section className="flex-1 p-6 lg:p-8 min-w-0">
           {tab === "account" ? (
             <AccountPanel profile={profile} />
           ) : (
