@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -76,24 +76,51 @@ function MatchRow({
   operator: Operator | undefined;
 }) {
   const router = useRouter();
-  const [val, setVal] = useState(
-    match.valuation != null ? String(match.valuation / 100) : ""
-  );
-  const [inv, setInv] = useState(
-    match.investment != null ? String(match.investment / 100) : ""
-  );
+  const valFromDb = match.valuation != null ? String(match.valuation / 100) : "";
+  const invFromDb = match.investment != null ? String(match.investment / 100) : "";
+  const [val, setVal] = useState(valFromDb);
+  const [inv, setInv] = useState(invFromDb);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  // 부모가 새 data 로 재렌더 되면(다른 매칭 추가 등) 이 행 input 도 DB 값으로 sync
+  // — 단, 사용자가 편집 중이면 덮어쓰지 않도록 마지막 저장 시점 이후 prop 변경만 반영
+  const lastSyncRef = useRef({ val: valFromDb, inv: invFromDb });
+  useEffect(() => {
+    if (valFromDb !== lastSyncRef.current.val) {
+      setVal(valFromDb);
+      lastSyncRef.current.val = valFromDb;
+    }
+    if (invFromDb !== lastSyncRef.current.inv) {
+      setInv(invFromDb);
+      lastSyncRef.current.inv = invFromDb;
+    }
+  }, [valFromDb, invFromDb]);
+
+  // closure 정합성 — 최신 val/inv 를 ref 에 항상 보관
+  const latest = useRef({ val, inv });
+  useEffect(() => {
+    latest.current = { val, inv };
+  });
 
   const save = () => {
+    const v = latest.current.val;
+    const i = latest.current.inv;
+    setError(null);
     startTransition(async () => {
       const r = await updateTipsMatchAction(
         match.id,
         companyId,
-        val === "" ? null : Number(val),
-        inv === "" ? null : Number(inv)
+        v === "" ? null : Number(v),
+        i === "" ? null : Number(i)
       );
-      if (r.error) alert(r.error);
+      if (r.error) setError(r.error);
+      else {
+        setSavedAt(Date.now());
+        lastSyncRef.current = { val: v, inv: i };
+      }
     });
   };
 
@@ -181,6 +208,12 @@ function MatchRow({
           />
         </div>
       </div>
+      {error ? (
+        <div className="text-[11px] text-rose-700 mt-2">{error}</div>
+      ) : null}
+      {!error && savedAt && !pending ? (
+        <div className="text-[11px] text-green-700 mt-2">✓ 저장됨</div>
+      ) : null}
     </div>
   );
 }
