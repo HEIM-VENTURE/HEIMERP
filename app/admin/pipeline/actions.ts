@@ -77,6 +77,8 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     source: "manual",
     notes: nullIfEmpty(formData.get("notes")),
     custom_fields: pmOrNull(formData.get("pm")) ? { pm: pmOrNull(formData.get("pm")) } : {},
+    ...(nullIfEmpty(formData.get("received_at")) ? { received_at: nullIfEmpty(formData.get("received_at")) } : {}),
+    ...(nullIfEmpty(formData.get("contracted_at")) ? { contracted_at: nullIfEmpty(formData.get("contracted_at")) } : {}),
   };
 
   const { data, error } = await supabase
@@ -135,6 +137,8 @@ export async function updateCompanyAction(
     hvp_id: hvpId,
     notes: nullIfEmpty(formData.get("notes")),
     custom_fields: customFields,
+    received_at: nullIfEmpty(formData.get("received_at")),
+    contracted_at: nullIfEmpty(formData.get("contracted_at")),
     updated_at: new Date().toISOString(),
   };
 

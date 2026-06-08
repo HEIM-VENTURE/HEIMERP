@@ -65,16 +65,6 @@ export function HvpSidebar({ profile, hvpInfo, onNavigate }: Props) {
             </Link>
           );
         })}
-
-        <div className="border-t border-zinc-100 my-3" />
-        <Link
-          href="/hvp/profile"
-          onClick={onNavigate}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-zinc-600 hover:bg-zinc-50"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
-          <span>내 프로필</span>
-        </Link>
       </nav>
 
       <div className="mt-auto pt-4 border-t border-zinc-100 px-2">

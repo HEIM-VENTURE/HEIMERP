@@ -25,6 +25,8 @@ type CompanyValues = {
   hvp_id?: string | null;
   pm?: string | null;
   notes?: string | null;
+  received_at?: string | null;
+  contracted_at?: string | null;
 };
 
 const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
@@ -175,6 +177,23 @@ function CompanyFormFields({
           ))}
         </select>
       </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="접수일">
+          <Input
+            name="received_at"
+            type="date"
+            defaultValue={values.received_at ?? ""}
+          />
+        </Field>
+        <Field label="계약일">
+          <Input
+            name="contracted_at"
+            type="date"
+            defaultValue={values.contracted_at ?? ""}
+          />
+        </Field>
+      </div>
 
       <Field label="접수 목적 / 메모">
         <textarea

@@ -238,6 +238,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               hvp_id: company.hvp_id,
               pm: company.custom_fields?.pm ?? null,
               notes: company.notes,
+              received_at: company.received_at,
+              contracted_at: company.contracted_at,
             }}
           />
           <NewMeetingModal companyId={company.id} />
@@ -338,9 +340,27 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               <Info label="설립일" value={company.founded_at} />
               <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
               <Info label="접수일" value={company.received_at} />
-              {company.contracted_at ? <Info label="계약일" value={company.contracted_at} /> : null}
-              {company.started_at ? <Info label="착수일" value={company.started_at} /> : null}
+              <Info label="계약일" value={company.contracted_at} />
+              <Info label="착수일" value={company.started_at} />
             </div>
+
+            {company.inquiry_purpose ? (
+              <div className="mt-4 pt-3 border-t border-zinc-100">
+                <div className="text-xs text-zinc-500 mb-1.5">접수 목적 / 메모</div>
+                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
+                  {company.inquiry_purpose}
+                </div>
+              </div>
+            ) : null}
+
+            {company.notes ? (
+              <div className="mt-3 pt-3 border-t border-zinc-100">
+                <div className="text-xs text-zinc-500 mb-1.5">추가 메모</div>
+                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
+                  {company.notes}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* TIPS 운영사 매칭 */}
