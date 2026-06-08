@@ -19,14 +19,28 @@ type Operator = {
 export default async function TipsOperatorsPage() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("tips_operators")
-    .select(
-      "id, name, phone, email, contact_person, focus_area, assigned_pm, last_meeting_at, notes"
-    )
-    .order("name", { ascending: true });
+  const [opRes, matchRes] = await Promise.all([
+    supabase
+      .from("tips_operators")
+      .select(
+        "id, name, phone, email, contact_person, focus_area, assigned_pm, last_meeting_at, notes"
+      )
+      .order("name", { ascending: true }),
+    supabase
+      .from("companies")
+      .select("tips_operator_id")
+      .not("tips_operator_id", "is", null),
+  ]);
 
+  const { data, error } = opRes;
   const list = (data as Operator[]) ?? [];
+  const matches = (matchRes.data as { tips_operator_id: string | null }[]) ?? [];
+  const matchCount = new Map<string, number>();
+  for (const m of matches) {
+    if (m.tips_operator_id) {
+      matchCount.set(m.tips_operator_id, (matchCount.get(m.tips_operator_id) ?? 0) + 1);
+    }
+  }
 
   return (
     <>
@@ -67,6 +81,7 @@ export default async function TipsOperatorsPage() {
                 <th className="text-left px-5 py-3.5 font-medium w-28">담당 심사역</th>
                 <th className="text-left px-5 py-3.5 font-medium w-40">관심 분야</th>
                 <th className="text-left px-5 py-3.5 font-medium w-36">미팅 이력</th>
+                <th className="text-left px-5 py-3.5 font-medium w-24">매칭 기업</th>
                 <th className="text-left px-5 py-3.5 font-medium">메모</th>
                 <th className="text-left px-5 py-3.5 font-medium w-16"></th>
               </tr>
@@ -108,6 +123,15 @@ export default async function TipsOperatorsPage() {
                       <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
                         <Clock className="w-3.5 h-3.5 text-zinc-400" />
                         {o.last_meeting_at}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-zinc-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {(matchCount.get(o.id) ?? 0) > 0 ? (
+                      <span className="inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700">
+                        {matchCount.get(o.id)}곳 매칭
                       </span>
                     ) : (
                       <span className="text-xs text-zinc-300">—</span>
