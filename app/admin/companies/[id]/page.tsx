@@ -13,7 +13,7 @@ import {
   FILE_KIND_LABELS,
 } from "@/lib/labels";
 import { StageChanger } from "./stage-changer";
-import { TipsOperatorMatch } from "./tips-match";
+import { TipsMatches } from "./tips-match";
 import { NewMeetingModal } from "./new-meeting-modal";
 import {
   NewContractModal,
@@ -52,10 +52,6 @@ type Company = {
   notes: string | null;
   custom_fields?: { pm?: string } | null;
   hvp?: { name: string; cohort: string | null } | null;
-  tips_operator_id: string | null;
-  tips_operators?: { id: string; name: string; assigned_pm: string | null; focus_area: string | null } | null;
-  tips_match_valuation: number | null;
-  tips_match_investment: number | null;
 };
 
 // 통합 단계 정의 (영업 5 + 컨설팅 8 - 'kickoff' 중복 제거 = 12개)
@@ -87,10 +83,10 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, hvpListRes, tipsListRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, hvpListRes, tipsListRes, matchesRes] = await Promise.all([
     supabase
       .from("companies")
-      .select("*, hvp(name, cohort), tips_operators(id, name, assigned_pm, focus_area)")
+      .select("*, hvp(name, cohort)")
       .eq("id", id)
       .single(),
     supabase.from("company_stage_history").select("*").eq("company_id", id).order("created_at", { ascending: false }),
@@ -100,6 +96,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
     supabase.from("contracts").select("*, hvp(id, name, cohort)").eq("company_id", id).order("contracted_at", { ascending: false }),
     supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
     supabase.from("tips_operators").select("id, name, assigned_pm, focus_area").order("name", { ascending: true }),
+    supabase
+      .from("company_tips_matches")
+      .select("id, tips_operator_id, valuation, investment")
+      .eq("company_id", id)
+      .order("created_at", { ascending: true }),
   ]);
 
   const company = companyRes.data as Company | null;
@@ -112,6 +113,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const contracts = contractsRes.data ?? [];
   const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
+  const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null }[]) ?? [];
 
   const currentIdx = getCurrentUnifiedStageIndex(company);
 
@@ -365,14 +367,12 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             ) : null}
           </div>
 
-          {/* TIPS 운영사 매칭 */}
+          {/* TIPS 운영사 매칭 (여러 곳 가능) */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-zinc-900 mb-3">TIPS 운영사 매칭</h3>
-            <TipsOperatorMatch
+            <TipsMatches
               companyId={company.id}
-              currentId={company.tips_operator_id}
-              currentValuation={company.tips_match_valuation}
-              currentInvestment={company.tips_match_investment}
+              matches={tipsMatches}
               operators={tipsList}
             />
           </div>

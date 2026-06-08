@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { updateTipsOperatorMatchAction } from "./actions";
+import { Button } from "@/components/ui/button";
+import {
+  addTipsMatchAction,
+  updateTipsMatchAction,
+  deleteTipsMatchAction,
+} from "./actions";
 
 type Operator = {
   id: string;
@@ -12,128 +18,253 @@ type Operator = {
   focus_area: string | null;
 };
 
-export function TipsOperatorMatch({
+export type Match = {
+  id: number;
+  tips_operator_id: string;
+  valuation: number | null; // 백만원
+  investment: number | null; // 백만원
+};
+
+export function TipsMatches({
   companyId,
-  currentId,
-  currentValuation,
-  currentInvestment,
+  matches,
   operators,
 }: {
   companyId: number;
-  currentId: string | null;
-  /** DB 백만원 단위 */
-  currentValuation: number | null;
-  currentInvestment: number | null;
+  matches: Match[];
   operators: Operator[];
 }) {
-  const [operatorId, setOperatorId] = useState<string>(currentId ?? "");
-  const [valEok, setValEok] = useState<string>(
-    currentValuation != null ? String(currentValuation / 100) : ""
+  const usedIds = new Set(matches.map((m) => m.tips_operator_id));
+  const available = operators.filter((o) => !usedIds.has(o.id));
+
+  return (
+    <div className="space-y-3">
+      {matches.length === 0 ? (
+        <div className="text-xs text-zinc-400">아직 매칭된 운영사가 없습니다</div>
+      ) : (
+        <div className="space-y-2.5">
+          {matches.map((m) => {
+            const op = operators.find((o) => o.id === m.tips_operator_id);
+            return (
+              <MatchRow
+                key={m.id}
+                companyId={companyId}
+                match={m}
+                operator={op}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {available.length > 0 ? (
+        <AddMatchForm companyId={companyId} operators={available} />
+      ) : (
+        <div className="text-xs text-zinc-400 italic">모든 운영사가 매칭됐습니다</div>
+      )}
+    </div>
   );
-  const [invEok, setInvEok] = useState<string>(
-    currentInvestment != null ? String(currentInvestment / 100) : ""
+}
+
+function MatchRow({
+  companyId,
+  match,
+  operator,
+}: {
+  companyId: number;
+  match: Match;
+  operator: Operator | undefined;
+}) {
+  const router = useRouter();
+  const [val, setVal] = useState(
+    match.valuation != null ? String(match.valuation / 100) : ""
+  );
+  const [inv, setInv] = useState(
+    match.investment != null ? String(match.investment / 100) : ""
   );
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  const save = (overrides?: { operatorId?: string; val?: string; inv?: string }) => {
-    const op = overrides?.operatorId ?? operatorId;
-    const v = overrides?.val ?? valEok;
-    const i = overrides?.inv ?? invEok;
-    setError(null);
+  const save = () => {
     startTransition(async () => {
-      const r = await updateTipsOperatorMatchAction(
+      const r = await updateTipsMatchAction(
+        match.id,
         companyId,
-        op || null,
-        v === "" || v == null ? null : Number(v),
-        i === "" || i == null ? null : Number(i)
+        val === "" ? null : Number(val),
+        inv === "" ? null : Number(inv)
       );
-      if (r.error) setError(r.error);
-      else setSavedAt(Date.now());
+      if (r.error) alert(r.error);
     });
   };
 
-  const onOperatorChange = (v: string) => {
-    setOperatorId(v);
-    if (v === "") {
-      // 매칭 해제 시 조건도 초기화
-      setValEok("");
-      setInvEok("");
-      save({ operatorId: "", val: "", inv: "" });
-    } else {
-      save({ operatorId: v });
-    }
+  const onDelete = () => {
+    startTransition(async () => {
+      const r = await deleteTipsMatchAction(match.id, companyId);
+      if (r.error) alert(r.error);
+      else router.refresh();
+    });
   };
 
-  const matched = operators.find((o) => o.id === operatorId);
+  return (
+    <div className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/30">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-zinc-900 truncate">
+            {operator?.name ?? "(알 수 없는 운영사)"}
+          </div>
+          {operator ? (
+            <div className="text-[11px] text-zinc-500 truncate">
+              {operator.assigned_pm ? `${operator.assigned_pm}` : ""}
+              {operator.assigned_pm && operator.focus_area ? " · " : ""}
+              {operator.focus_area ?? ""}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {pending ? <Loader2 className="w-4 h-4 animate-spin text-zinc-400" /> : null}
+          {confirming ? (
+            <>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={pending}
+                className="text-[11px] px-2 py-1 rounded text-zinc-500 hover:text-zinc-900"
+              >
+                취소
+              </button>
+              <button
+                onClick={onDelete}
+                disabled={pending}
+                className="text-[11px] px-2 py-1 rounded bg-rose-100 text-rose-700 hover:bg-rose-200"
+              >
+                정말 삭제
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirming(true)}
+              disabled={pending}
+              className="text-zinc-300 hover:text-rose-600 p-1"
+              title="매칭 해제"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] text-zinc-500 mb-0.5 block">밸류 (억)</label>
+          <Input
+            type="number"
+            min={0}
+            step="0.1"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onBlur={save}
+            placeholder="예: 80"
+            className="h-8 text-xs"
+            disabled={pending}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-zinc-500 mb-0.5 block">투자금액 (억)</label>
+          <Input
+            type="number"
+            min={0}
+            step="0.1"
+            value={inv}
+            onChange={(e) => setInv(e.target.value)}
+            onBlur={save}
+            placeholder="예: 5"
+            className="h-8 text-xs"
+            disabled={pending}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddMatchForm({
+  companyId,
+  operators,
+}: {
+  companyId: number;
+  operators: Operator[];
+}) {
+  const router = useRouter();
+  const [opId, setOpId] = useState("");
+  const [val, setVal] = useState("");
+  const [inv, setInv] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const onAdd = () => {
+    if (!opId) {
+      setError("운영사를 선택하세요");
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const r = await addTipsMatchAction(
+        companyId,
+        opId,
+        val === "" ? null : Number(val),
+        inv === "" ? null : Number(inv)
+      );
+      if (r.error) setError(r.error);
+      else {
+        setOpId("");
+        setVal("");
+        setInv("");
+        router.refresh();
+      }
+    });
+  };
 
   return (
-    <div className="text-sm space-y-3">
-      <div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={operatorId}
-            onChange={(e) => onOperatorChange(e.target.value)}
-            disabled={pending}
-            className="flex-1 min-w-0 px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white disabled:opacity-50"
-          >
-            <option value="">— 매칭 안 됨 —</option>
-            {operators.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-                {o.focus_area ? ` (${o.focus_area})` : ""}
-              </option>
-            ))}
-          </select>
-          {pending ? <Loader2 className="w-4 h-4 animate-spin text-zinc-400" /> : null}
-        </div>
-        {matched ? (
-          <div className="text-xs text-zinc-500 mt-1.5">
-            담당 심사역:{" "}
-            <span className="text-zinc-700 font-medium">{matched.assigned_pm ?? "—"}</span>
-            {matched.focus_area ? (
-              <span className="text-zinc-400"> · {matched.focus_area}</span>
-            ) : null}
-          </div>
-        ) : null}
+    <div className="border-2 border-dashed border-zinc-200 rounded-xl p-3 space-y-2">
+      <div className="text-[11px] font-medium text-zinc-500">+ 운영사 매칭 추가</div>
+      <select
+        value={opId}
+        onChange={(e) => setOpId(e.target.value)}
+        disabled={pending}
+        className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
+      >
+        <option value="">— 운영사 선택 —</option>
+        {operators.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.name}
+            {o.focus_area ? ` (${o.focus_area})` : ""}
+          </option>
+        ))}
+      </select>
+      <div className="grid grid-cols-2 gap-2">
+        <Input
+          type="number"
+          min={0}
+          step="0.1"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          placeholder="밸류 (억)"
+          className="h-8 text-xs"
+          disabled={pending}
+        />
+        <Input
+          type="number"
+          min={0}
+          step="0.1"
+          value={inv}
+          onChange={(e) => setInv(e.target.value)}
+          placeholder="투자금액 (억)"
+          className="h-8 text-xs"
+          disabled={pending}
+        />
       </div>
-
-      {operatorId ? (
-        <div className="pt-2 border-t border-zinc-100 grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[11px] text-zinc-500 mb-1 block">밸류 (억)</label>
-            <Input
-              type="number"
-              min={0}
-              step="0.1"
-              value={valEok}
-              onChange={(e) => setValEok(e.target.value)}
-              onBlur={() => save()}
-              placeholder="예: 80"
-              className="text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] text-zinc-500 mb-1 block">투자금액 (억)</label>
-            <Input
-              type="number"
-              min={0}
-              step="0.1"
-              value={invEok}
-              onChange={(e) => setInvEok(e.target.value)}
-              onBlur={() => save()}
-              placeholder="예: 5"
-              className="text-sm"
-            />
-          </div>
-        </div>
-      ) : null}
-
       {error ? <div className="text-xs text-rose-700">{error}</div> : null}
-      {!error && savedAt && !pending ? (
-        <div className="text-xs text-green-700">✓ 저장됨</div>
-      ) : null}
+      <Button size="sm" onClick={onAdd} disabled={pending || !opId} className="w-full text-xs h-8">
+        {pending ? "추가 중..." : "추가"}
+      </Button>
     </div>
   );
 }

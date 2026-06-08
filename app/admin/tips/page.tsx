@@ -28,27 +28,31 @@ export default async function TipsOperatorsPage() {
       )
       .order("name", { ascending: true }),
     supabase
-      .from("companies")
-      .select("id, name, tips_operator_id, tips_match_valuation, tips_match_investment")
-      .not("tips_operator_id", "is", null)
-      .order("name", { ascending: true }),
+      .from("company_tips_matches")
+      .select("id, tips_operator_id, valuation, investment, companies(id, name)"),
   ]);
 
   const { data, error } = opRes;
   const list = (data as Operator[]) ?? [];
-  type MatchedCo = {
+  type MatchRow = {
     id: number;
-    name: string;
-    tips_operator_id: string | null;
-    tips_match_valuation: number | null;
-    tips_match_investment: number | null;
+    tips_operator_id: string;
+    valuation: number | null;
+    investment: number | null;
+    companies: { id: number; name: string } | null;
   };
-  const matches = (matchRes.data as MatchedCo[]) ?? [];
+  const matches = (matchRes.data as unknown as MatchRow[]) ?? [];
+  type MatchedCo = { id: number; name: string; valuation: number | null; investment: number | null };
   const matchedByOp = new Map<string, MatchedCo[]>();
   for (const m of matches) {
-    if (!m.tips_operator_id) continue;
+    if (!m.companies) continue;
     const arr = matchedByOp.get(m.tips_operator_id) ?? [];
-    arr.push(m);
+    arr.push({
+      id: m.companies.id,
+      name: m.companies.name,
+      valuation: m.valuation,
+      investment: m.investment,
+    });
     matchedByOp.set(m.tips_operator_id, arr);
   }
 
@@ -152,8 +156,8 @@ export default async function TipsOperatorsPage() {
                         </span>
                         <div className="space-y-0.5">
                           {matchedByOp.get(o.id)?.map((c) => {
-                            const val = fmtEok(c.tips_match_valuation);
-                            const inv = fmtEok(c.tips_match_investment);
+                            const val = fmtEok(c.valuation);
+                            const inv = fmtEok(c.investment);
                             const cond =
                               val && inv
                                 ? `${val} 밸류 / ${inv} 투자`
