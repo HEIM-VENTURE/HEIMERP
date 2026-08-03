@@ -19,9 +19,8 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     .eq("id", user.id)
     .single();
 
-  // role이 admin이거나 hvp면 그쪽으로
+  // role이 admin이면 그쪽으로
   if (profile?.role === "admin") redirect("/admin/dashboard");
-  if (profile?.role === "hvp") redirect("/hvp/dashboard");
 
   return (
     <div className="flex min-h-screen">

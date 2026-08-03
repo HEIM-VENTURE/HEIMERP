@@ -7,7 +7,6 @@
 // ===== 사용자 역할 =====
 export const ROLE_LABELS = {
   admin: "관리자",
-  hvp: "HVP",
   company_member: "기업",
 } as const;
 
@@ -75,29 +74,6 @@ export const PROGRAM_GRADE_COLORS = {
   free: "bg-green-50 text-green-700",
 } as const;
 
-// ===== HVP 상태 =====
-export const HVP_STATUS_LABELS = {
-  applied: "신청",
-  training: "교육중",
-  active: "활동",
-  inactive: "휴면",
-} as const;
-
-export const HVP_STATUS_COLORS = {
-  applied: "bg-amber-100 text-amber-700",
-  training: "bg-blue-100 text-blue-700",
-  active: "bg-emerald-100 text-emerald-700",
-  inactive: "bg-zinc-100 text-zinc-600",
-} as const;
-
-// ===== HVP 신청 상태 =====
-export const HVP_APPLICATION_STATUS_LABELS = {
-  new: "신규",
-  reviewing: "검토",
-  approved: "승인",
-  rejected: "거절",
-} as const;
-
 // ===== To-do 상태 =====
 export const TODO_STATUS_LABELS = {
   pending: "대기",
@@ -110,34 +86,6 @@ export const CONTRACT_PAYMENT_LABELS = {
   scheduled: "지급 예정",
   paid: "지급 완료",
 } as const;
-
-// ===== HVP 보조 힌트 (단계 기반 회색 안내문) =====
-// HVP에게는 실제 To-do 대신 "지금 내 기업이 뭐 하는 단계인지" 가벼운 안내만.
-const HVP_STAGE_HINTS: Record<string, string> = {
-  received: "검토 대기 중",
-  meeting_1st: "미팅 일정 조율 필요",
-  proposal: "제안 검토 중",
-  contract: "계약 진행 중",
-  kickoff: "착수 준비 중",
-  initial_review: "초기 검토 중",
-  dev_advisory: "사업계획 작업 중",
-  ir_deck: "IR 피드백 진행 중",
-  tips_operator_ir: "TIPS IR 준비 중",
-  tips_review: "TIPS 심사 결과 대기",
-  fund_closing: "투자 절차 진행 중",
-  final_closing: "마무리 단계",
-};
-
-export function hvpStageHint(
-  salesStage: string | null,
-  consultingStage: string | null
-): string {
-  if (salesStage === "kickoff" && consultingStage) {
-    return HVP_STAGE_HINTS[consultingStage] ?? "진행 중";
-  }
-  if (salesStage) return HVP_STAGE_HINTS[salesStage] ?? "진행 중";
-  return "진행 중";
-}
 
 // ===== 파일 종류 =====
 export const FILE_KIND_LABELS = {
@@ -179,16 +127,3 @@ export const COMPANY_FIELD_LABELS = {
   started_at: "착수일",
 } as const;
 
-export const HVP_FIELD_LABELS = {
-  name: "이름",
-  phone: "연락처",
-  email: "이메일",
-  organization: "소속",
-  cohort: "기수",
-  channel: "유입경로",
-  referrer: "추천인",
-  applied_at: "신청일",
-  completed_at: "교육이수일",
-  status: "상태",
-  default_fee_rate: "수수료율",
-} as const;

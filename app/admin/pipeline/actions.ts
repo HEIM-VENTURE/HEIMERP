@@ -53,9 +53,6 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "회사명을 입력하세요" };
 
-  const hvpIdRaw = String(formData.get("hvp_id") ?? "").trim();
-  const hvpId = hvpIdRaw && hvpIdRaw !== "none" ? hvpIdRaw : null;
-
   const gradeRaw = String(formData.get("program_grade") ?? "").trim();
   const programGrade = gradeRaw && gradeRaw !== "none" ? gradeRaw : null;
 
@@ -72,7 +69,6 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     inquiry_purpose: nullIfEmpty(formData.get("inquiry_purpose")),
     proposal_amount: numOrNull(formData.get("proposal_amount")),
     program_grade: programGrade,
-    hvp_id: hvpId,
     sales_stage: String(formData.get("sales_stage") ?? "received"),
     source: "manual",
     notes: nullIfEmpty(formData.get("notes")),
@@ -104,9 +100,6 @@ export async function updateCompanyAction(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "회사명을 입력하세요" };
 
-  const hvpIdRaw = String(formData.get("hvp_id") ?? "").trim();
-  const hvpId = hvpIdRaw && hvpIdRaw !== "none" ? hvpIdRaw : null;
-
   const gradeRaw = String(formData.get("program_grade") ?? "").trim();
   const programGrade = gradeRaw && gradeRaw !== "none" ? gradeRaw : null;
 
@@ -134,7 +127,6 @@ export async function updateCompanyAction(
     inquiry_purpose: nullIfEmpty(formData.get("inquiry_purpose")),
     proposal_amount: numOrNull(formData.get("proposal_amount")),
     program_grade: programGrade,
-    hvp_id: hvpId,
     notes: nullIfEmpty(formData.get("notes")),
     custom_fields: customFields,
     received_at: nullIfEmpty(formData.get("received_at")),

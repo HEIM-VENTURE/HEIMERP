@@ -18,7 +18,6 @@ import { NewMeetingModal } from "./new-meeting-modal";
 import {
   NewContractModal,
   EditContractRow,
-  PaidToggle,
 } from "../../contracts/contract-modals";
 import { EditCompanyModal } from "../../pipeline/company-modals";
 import { FileManager } from "./file-manager";
@@ -39,7 +38,6 @@ type Company = {
   founded_at: string | null;
   last_year_revenue: number | null;
   inquiry_purpose: string | null;
-  hvp_id: string | null;
   sales_stage: keyof typeof SALES_STAGE_LABELS;
   consulting_stage: keyof typeof CONSULTING_STAGE_LABELS | null;
   program_grade: keyof typeof PROGRAM_GRADE_LABELS | null;
@@ -51,7 +49,6 @@ type Company = {
   started_at: string | null;
   notes: string | null;
   custom_fields?: { pm?: string } | null;
-  hvp?: { name: string; cohort: string | null } | null;
 };
 
 // 통합 단계 정의 (영업 5 + 컨설팅 8 - 'kickoff' 중복 제거 = 12개)
@@ -83,18 +80,17 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, hvpListRes, tipsListRes, matchesRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes] = await Promise.all([
     supabase
       .from("companies")
-      .select("*, hvp(name, cohort)")
+      .select("*")
       .eq("id", id)
       .single(),
     supabase.from("company_stage_history").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("meetings").select("*").eq("company_id", id).order("meeting_date", { ascending: false }),
     supabase.from("todos").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("files").select("*").eq("company_id", id).order("created_at", { ascending: false }),
-    supabase.from("contracts").select("*, hvp(id, name, cohort)").eq("company_id", id).order("contracted_at", { ascending: false }),
-    supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
+    supabase.from("contracts").select("*").eq("company_id", id).order("contracted_at", { ascending: false }),
     supabase.from("tips_operators").select("id, name, assigned_pm, focus_area").order("name", { ascending: true }),
     supabase
       .from("company_tips_matches")
@@ -111,7 +107,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const todos = todosRes.data ?? [];
   const files = filesRes.data ?? [];
   const contracts = contractsRes.data ?? [];
-  const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
   const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null; program: "TIPS" | "LIPS" }[]) ?? [];
 
@@ -169,14 +164,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       when: c.contracted_at,
       type: "contract" as const,
       title: `📜 계약 — ${Number(c.total_amount).toLocaleString()}만원`,
-      sub: `HVP 수수료 ${Math.round(Number(c.hvp_fee_amount ?? 0)).toLocaleString()}만 · ${c.payment_status === "paid" ? "지급 완료" : "지급 예정"}`,
+      sub: c.payment_status === "paid" ? "지급 완료" : "지급 예정",
       color: "bg-purple-500",
     })),
   ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
 
   // 미완료 To-do
   const openTodos = todos.filter((t: any) => t.status !== "done");
-  const totalFee = contracts.reduce((s, c: any) => s + Number(c.hvp_fee_amount ?? 0), 0);
 
   return (
     <>
@@ -218,14 +212,10 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             <p className="text-sm text-zinc-500">
               {[company.main_item, company.address, company.ceo_name && `대표 ${company.ceo_name}`].filter(Boolean).join(" · ") || "추가 정보 없음"}
             </p>
-            {company.hvp ? (
-              <p className="text-xs text-zinc-400 mt-1">담당 HVP: {company.hvp.name} {company.hvp.cohort ? `(${company.hvp.cohort})` : ""}</p>
-            ) : null}
           </div>
         </div>
         <div className="flex gap-2">
           <EditCompanyModal
-            hvps={hvpList}
             company={{
               id: company.id,
               name: company.name,
@@ -239,7 +229,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               inquiry_purpose: company.inquiry_purpose,
               proposal_amount: company.proposal_amount,
               program_grade: company.program_grade,
-              hvp_id: company.hvp_id,
               pm: company.custom_fields?.pm ?? null,
               notes: company.notes,
               received_at: company.received_at,
@@ -402,18 +391,16 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             )}
           </div>
 
-          {/* 계약·수수료 */}
+          {/* 계약 */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-zinc-900">계약 · 수수료</h3>
+              <h3 className="text-sm font-semibold text-zinc-900">계약</h3>
               <NewContractModal
                 companies={[{
                   id: company.id,
                   name: company.name,
-                  hvp_id: company.hvp_id,
                   proposal_amount: company.proposal_amount,
                 }]}
-                hvps={hvpList}
                 defaultCompanyId={company.id}
               />
             </div>
@@ -429,9 +416,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                     {contracts.reduce((s, c: any) => s + Number(c.total_amount ?? 0), 0).toLocaleString()}만
                     <span className="text-xs font-normal text-zinc-500"> 컨설팅</span>
                   </div>
-                  <div className="text-sm text-emerald-700 font-medium mt-1">
-                    → HVP 수수료 {Math.round(totalFee).toLocaleString()}만
-                  </div>
                 </div>
                 <div className="space-y-3">
                   {contracts.map((c: any) => (
@@ -444,27 +428,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                             company_id: c.company_id,
                             contracted_at: c.contracted_at,
                             total_amount: Number(c.total_amount),
-                            hvp_id: c.hvp_id,
-                            hvp_fee_rate: Number(c.hvp_fee_rate),
-                            payment_status: c.payment_status,
                             notes: c.notes,
                           }}
-                          hvps={hvpList}
                           companyName={company.name}
                         />
                       </div>
                       <div className="text-sm font-medium text-zinc-900">
                         {Number(c.total_amount).toLocaleString()}만원
-                      </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">
-                        {c.hvp?.name ?? "HVP 미지정"} · 수수료 {(Number(c.hvp_fee_rate) * 100).toFixed(1)}%
-                        {" → "}
-                        <span className="text-emerald-700 font-medium">
-                          {Math.round(Number(c.hvp_fee_amount ?? 0)).toLocaleString()}만
-                        </span>
-                      </div>
-                      <div className="mt-1.5">
-                        <PaidToggle contractId={c.id} paid={c.payment_status === "paid"} />
                       </div>
                       {c.notes ? (
                         <div className="text-[11px] text-zinc-400 mt-1.5 italic">{c.notes}</div>

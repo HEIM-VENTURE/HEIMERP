@@ -7,21 +7,16 @@ import { Label } from "@/components/ui/label";
 import {
   createContractAction,
   updateContractAction,
-  markContractPaidAction,
   deleteContractAction,
 } from "./actions";
 
-type Company = { id: number; name: string; hvp_id: string | null; proposal_amount: number | null };
-type Hvp = { id: string; name: string; cohort: string | null };
+type Company = { id: number; name: string; proposal_amount: number | null };
 
 type ContractRow = {
   id: number;
   company_id: number;
   contracted_at: string;
   total_amount: number;
-  hvp_id: string | null;
-  hvp_fee_rate: number;
-  payment_status: "scheduled" | "paid";
   notes: string | null;
 };
 
@@ -30,11 +25,9 @@ type ContractRow = {
 // ============================================================
 export function NewContractModal({
   companies,
-  hvps,
   defaultCompanyId,
 }: {
   companies: Company[];
-  hvps: Hvp[];
   defaultCompanyId?: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -69,7 +62,7 @@ export function NewContractModal({
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">새 계약 추가</h3>
-                <p className="text-xs text-zinc-500 mt-1">컨설팅 계약 금액·HVP 수수료 정보</p>
+                <p className="text-xs text-zinc-500 mt-1">컨설팅 계약 기본 정보</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -119,33 +112,6 @@ export function NewContractModal({
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="HVP 담당자">
-                  <select
-                    name="hvp_id"
-                    defaultValue={selectedCompany?.hvp_id ?? "none"}
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
-                  >
-                    <option value="none">— 없음</option>
-                    {hvps.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.name} {h.cohort ? `(${h.cohort})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="수수료율 (%)">
-                  <Input
-                    name="hvp_fee_rate"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    defaultValue={20}
-                  />
-                </Field>
-              </div>
-
               <Field label="메모 (선택)">
                 <textarea
                   name="notes"
@@ -188,11 +154,9 @@ export function NewContractModal({
 // ============================================================
 export function EditContractRow({
   contract,
-  hvps,
   companyName,
 }: {
   contract: ContractRow;
-  hvps: Hvp[];
   companyName: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -200,24 +164,12 @@ export function EditContractRow({
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const ratePercent = (Number(contract.hvp_fee_rate) * 100).toFixed(1);
-
   const onSubmit = (formData: FormData) => {
     setError(null);
     startTransition(async () => {
       const result = await updateContractAction(contract.id, formData);
       if (result.error) setError(result.error);
       else setOpen(false);
-    });
-  };
-
-  const onTogglePaid = () => {
-    startTransition(async () => {
-      const result = await markContractPaidAction(
-        contract.id,
-        contract.payment_status !== "paid"
-      );
-      if (result.error) setError(result.error);
     });
   };
 
@@ -282,33 +234,6 @@ export function EditContractRow({
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="HVP 담당자">
-                  <select
-                    name="hvp_id"
-                    defaultValue={contract.hvp_id ?? "none"}
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
-                  >
-                    <option value="none">— 없음</option>
-                    {hvps.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.name} {h.cohort ? `(${h.cohort})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="수수료율 (%)">
-                  <Input
-                    name="hvp_fee_rate"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    defaultValue={ratePercent}
-                  />
-                </Field>
-              </div>
-
               <Field label="메모">
                 <textarea
                   name="notes"
@@ -317,28 +242,6 @@ export function EditContractRow({
                   className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
                 />
               </Field>
-
-              <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
-                <div className="text-xs">
-                  <div className="text-zinc-500">지급 상태</div>
-                  <div
-                    className={`font-medium ${
-                      contract.payment_status === "paid" ? "text-emerald-700" : "text-amber-700"
-                    }`}
-                  >
-                    {contract.payment_status === "paid" ? "✓ 지급 완료" : "● 지급 예정"}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onTogglePaid}
-                  disabled={pending}
-                  className="text-xs"
-                >
-                  {contract.payment_status === "paid" ? "지급 취소" : "지급 완료 처리"}
-                </Button>
-              </div>
 
               {error ? (
                 <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
@@ -397,40 +300,6 @@ export function EditContractRow({
         </div>
       ) : null}
     </>
-  );
-}
-
-// ============================================================
-// 빠른 지급 토글 (테이블 행에서)
-// ============================================================
-export function PaidToggle({
-  contractId,
-  paid,
-}: {
-  contractId: number;
-  paid: boolean;
-}) {
-  const [pending, startTransition] = useTransition();
-
-  const onClick = () => {
-    startTransition(async () => {
-      await markContractPaidAction(contractId, !paid);
-    });
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={pending}
-      className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-full transition ${
-        paid
-          ? "bg-green-100 text-green-700 hover:bg-green-200"
-          : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-      } ${pending ? "opacity-50" : ""}`}
-      title="클릭으로 지급 상태 토글"
-    >
-      {paid ? "✓ 지급 완료" : "● 지급 예정"}
-    </button>
   );
 }
 

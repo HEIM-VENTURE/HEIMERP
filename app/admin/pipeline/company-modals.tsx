@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createCompanyAction, updateCompanyAction } from "./actions";
 
-type Hvp = { id: string; name: string; cohort: string | null };
-
 type CompanyValues = {
   id?: number;
   name?: string | null;
@@ -22,7 +20,6 @@ type CompanyValues = {
   inquiry_purpose?: string | null;
   proposal_amount?: number | null;
   program_grade?: string | null;
-  hvp_id?: string | null;
   pm?: string | null;
   notes?: string | null;
   received_at?: string | null;
@@ -50,11 +47,9 @@ const SALES_STAGE_OPTIONS = [
 // 공통 폼 필드
 // ============================================================
 function CompanyFormFields({
-  hvps,
   values,
   showStage,
 }: {
-  hvps: Hvp[];
   values: CompanyValues;
   showStage: boolean;
 }) {
@@ -131,37 +126,21 @@ function CompanyFormFields({
         </Field>
       </div>
 
-      <div className={`grid gap-3 ${showStage ? "grid-cols-2" : "grid-cols-1"}`}>
-        <Field label="담당 HVP">
+      {showStage ? (
+        <Field label="영업 단계">
           <select
-            name="hvp_id"
-            defaultValue={values.hvp_id ?? "none"}
+            name="sales_stage"
+            defaultValue="received"
             className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
           >
-            <option value="none">— 없음</option>
-            {hvps.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name} {h.cohort ? `(${h.cohort})` : ""}
+            {SALES_STAGE_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
               </option>
             ))}
           </select>
         </Field>
-        {showStage ? (
-          <Field label="영업 단계">
-            <select
-              name="sales_stage"
-              defaultValue="received"
-              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white"
-            >
-              {SALES_STAGE_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        ) : null}
-      </div>
+      ) : null}
 
       <Field label="담당 PM">
         <select
@@ -221,7 +200,7 @@ function CompanyFormFields({
 // ============================================================
 // 신규 기업 모달
 // ============================================================
-export function NewCompanyModal({ hvps, label = "+ 신규" }: { hvps: Hvp[]; label?: string }) {
+export function NewCompanyModal({ label = "+ 신규" }: { label?: string }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -249,7 +228,7 @@ export function NewCompanyModal({ hvps, label = "+ 신규" }: { hvps: Hvp[]; lab
           onClose={() => setOpen(false)}
         >
           <form action={onSubmit} className="space-y-3">
-            <CompanyFormFields hvps={hvps} values={{}} showStage />
+            <CompanyFormFields values={{}} showStage />
             {error ? <ErrorBox msg={error} /> : null}
             <FormButtons pending={pending} onCancel={() => setOpen(false)} submitLabel="추가" />
           </form>
@@ -263,10 +242,8 @@ export function NewCompanyModal({ hvps, label = "+ 신규" }: { hvps: Hvp[]; lab
 // 기업 편집 모달
 // ============================================================
 export function EditCompanyModal({
-  hvps,
   company,
 }: {
-  hvps: Hvp[];
   company: CompanyValues & { id: number };
 }) {
   const [open, setOpen] = useState(false);
@@ -290,7 +267,7 @@ export function EditCompanyModal({
       {open ? (
         <ModalShell title="기업 정보 편집" subtitle={company.name ?? ""} onClose={() => setOpen(false)}>
           <form action={onSubmit} className="space-y-3">
-            <CompanyFormFields hvps={hvps} values={company} showStage={false} />
+            <CompanyFormFields values={company} showStage={false} />
             {error ? <ErrorBox msg={error} /> : null}
             <FormButtons pending={pending} onCancel={() => setOpen(false)} submitLabel="저장" />
           </form>

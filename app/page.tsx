@@ -24,7 +24,6 @@ export default async function LoginPage({ searchParams }: Props) {
       .single();
 
     if (profile?.role === "admin") redirect("/admin/dashboard");
-    if (profile?.role === "hvp") redirect("/hvp/dashboard");
     redirect("/company/dashboard");
   }
 
@@ -61,8 +60,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
             <div className="pt-5 border-t border-zinc-100">
               <p className="text-xs text-zinc-400 leading-relaxed">
-                💡 HVP는 신청서 작성 후 관리자 승인을 받으셔야 합니다.<br />
-                승인 후 본인 <b>Google 계정</b>으로 로그인하세요.
+                등록된 <b>Google 계정</b>으로 로그인하세요.
               </p>
             </div>
           </div>

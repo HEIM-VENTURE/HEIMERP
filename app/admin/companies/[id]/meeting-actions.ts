@@ -51,7 +51,6 @@ export async function createMeetingAction(formData: FormData): Promise<CreateMee
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/companies/${companyId}`);
-  revalidatePath(`/hvp/companies/${companyId}`);
   return { success: true, meetingId: meeting.id, wantAi: wantAiSummary };
 }
 
@@ -90,7 +89,6 @@ export async function regenerateSummaryAction(
       .eq("id", meetingId);
 
     revalidatePath(`/admin/companies/${meeting.company_id}`);
-    revalidatePath(`/hvp/companies/${meeting.company_id}`);
     return { success: true, summary: result.summary, todos: result.todos };
   } catch (e: any) {
     return { error: `AI 요약 실패: ${e?.message ?? "알 수 없음"}` };
@@ -121,14 +119,13 @@ export async function deleteMeetingAction(
 
   if (meeting?.company_id) {
     revalidatePath(`/admin/companies/${meeting.company_id}`);
-    revalidatePath(`/hvp/companies/${meeting.company_id}`);
   }
   return { success: true };
 }
 
 /**
  * 미팅에서 추출한 To-do 후보들을 todos 테이블에 추가.
- * 대표/HVP가 확인 후 한 번에/개별 추가.
+ * 대표/관리자가 확인 후 한 번에/개별 추가.
  */
 export async function addMeetingTodosAction(
   companyId: number,
@@ -157,7 +154,6 @@ export async function addMeetingTodosAction(
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/companies/${companyId}`);
-  revalidatePath(`/hvp/companies/${companyId}`);
   revalidatePath("/admin/todos");
   revalidatePath("/admin/dashboard");
   return { success: true, added: clean.length };

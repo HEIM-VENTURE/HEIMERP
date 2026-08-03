@@ -31,7 +31,6 @@ export async function updateProfileAction(
   if (error) return { error: error.message };
 
   revalidatePath("/admin/settings");
-  revalidatePath("/hvp"); // HVP 사이드바 이름 표시
   revalidatePath("/admin"); // admin 사이드바
   return { success: true };
 }
@@ -116,7 +115,6 @@ export async function uploadAvatarAction(
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
-  revalidatePath("/hvp");
   return { success: true, avatarUrl: publicUrl };
 }
 
@@ -152,6 +150,5 @@ export async function removeAvatarAction(): Promise<ActionResult> {
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
-  revalidatePath("/hvp");
   return { success: true };
 }

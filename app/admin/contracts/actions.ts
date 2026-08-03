@@ -22,15 +22,6 @@ async function requireAdmin() {
   return { supabase, error: null };
 }
 
-function parseRate(raw: string): number | { error: string } {
-  if (!raw) return { error: "수수료율이 비어있습니다" };
-  const num = Number(raw);
-  if (!Number.isFinite(num)) return { error: "수수료율이 숫자가 아닙니다" };
-  const normalized = num > 1 ? num / 100 : num;
-  if (normalized < 0 || normalized > 1) return { error: "수수료율은 0~100% 사이여야 합니다" };
-  return Math.round(normalized * 1000) / 1000;
-}
-
 export async function createContractAction(formData: FormData): Promise<ActionResult> {
   const { supabase, error: authError } = await requireAdmin();
   if (authError) return { error: authError };
@@ -46,21 +37,12 @@ export async function createContractAction(formData: FormData): Promise<ActionRe
     return { error: "총 금액이 유효하지 않습니다" };
   }
 
-  const rateResult = parseRate(String(formData.get("hvp_fee_rate") ?? "20"));
-  if (typeof rateResult === "object") return rateResult;
-
-  const hvpIdRaw = String(formData.get("hvp_id") ?? "").trim();
-  const hvpId = hvpIdRaw && hvpIdRaw !== "none" ? hvpIdRaw : null;
-
   const notes = String(formData.get("notes") ?? "").trim() || null;
 
   const { error } = await supabase.from("contracts").insert({
     company_id: companyId,
     contracted_at: contractedAt,
     total_amount: totalAmount,
-    hvp_id: hvpId,
-    hvp_fee_rate: rateResult,
-    payment_status: "scheduled",
     notes,
   });
 
@@ -84,12 +66,6 @@ export async function updateContractAction(contractId: number, formData: FormDat
     return { error: "총 금액이 유효하지 않습니다" };
   }
 
-  const rateResult = parseRate(String(formData.get("hvp_fee_rate") ?? ""));
-  if (typeof rateResult === "object") return rateResult;
-
-  const hvpIdRaw = String(formData.get("hvp_id") ?? "").trim();
-  const hvpId = hvpIdRaw && hvpIdRaw !== "none" ? hvpIdRaw : null;
-
   const notes = String(formData.get("notes") ?? "").trim() || null;
 
   const { data, error } = await supabase
@@ -97,8 +73,6 @@ export async function updateContractAction(contractId: number, formData: FormDat
     .update({
       contracted_at: contractedAt,
       total_amount: totalAmount,
-      hvp_id: hvpId,
-      hvp_fee_rate: rateResult,
       notes,
       updated_at: new Date().toISOString(),
     })
@@ -110,29 +84,6 @@ export async function updateContractAction(contractId: number, formData: FormDat
 
   revalidatePath("/admin/contracts");
   if (data?.company_id) revalidatePath(`/admin/companies/${data.company_id}`);
-  return { success: true };
-}
-
-export async function markContractPaidAction(contractId: number, paid: boolean): Promise<ActionResult> {
-  const { supabase, error: authError } = await requireAdmin();
-  if (authError) return { error: authError };
-
-  const { data, error } = await supabase
-    .from("contracts")
-    .update({
-      payment_status: paid ? "paid" : "scheduled",
-      paid_at: paid ? new Date().toISOString().split("T")[0] : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", contractId)
-    .select("company_id")
-    .single();
-
-  if (error) return { error: error.message };
-
-  revalidatePath("/admin/contracts");
-  if (data?.company_id) revalidatePath(`/admin/companies/${data.company_id}`);
-  revalidatePath("/admin/dashboard");
   return { success: true };
 }
 

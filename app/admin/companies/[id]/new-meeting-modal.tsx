@@ -148,7 +148,7 @@ export function NewMeetingModal({ companyId }: Props) {
 
               <div>
                 <Label htmlFor="attendees" className="text-xs font-medium text-zinc-700 mb-1 block">참석자</Label>
-                <Input id="attendees" name="attendees" placeholder="예: 이지원(대표), 김민준(HVP), 정수정(컨설턴트)" />
+                <Input id="attendees" name="attendees" placeholder="예: 이지원(대표), 정수정(컨설턴트)" />
               </div>
 
               <div>

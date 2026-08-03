@@ -51,7 +51,6 @@ export async function loginAction(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (profile.role === "admin") redirect("/admin/dashboard");
-  if (profile.role === "hvp") redirect("/hvp/dashboard");
   redirect(
     "/company/dashboard?debug=" +
       encodeURIComponent(`role=${profile.role} email=${profile.email}`)

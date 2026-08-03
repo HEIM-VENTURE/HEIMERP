@@ -15,8 +15,8 @@ export async function changeSalesStageAction(companyId: number, newStage: string
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin" && profile?.role !== "hvp") {
-    return { error: "권한 없음" };
+  if (profile?.role !== "admin") {
+    return { error: "관리자 권한 필요" };
   }
 
   const { error } = await supabase

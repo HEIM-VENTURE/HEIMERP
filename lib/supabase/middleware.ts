@@ -46,7 +46,6 @@ export async function updateSession(request: NextRequest) {
   const isAuthPath = pathname === "/" || pathname.startsWith("/auth");
   const isProtected =
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/hvp") ||
     pathname.startsWith("/company");
 
   // 비로그인 + 보호 경로 → 로그인으로

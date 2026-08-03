@@ -5,21 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 type Opt = { value: string; label: string };
 
 /**
- * To-do 다차원 필터 바 (담당 PM / HVP / 기업 / 단계).
+ * To-do 다차원 필터 바 (담당 PM / 기업 / 단계).
  * URL 쿼리 파라미터로 동작 — 다른 필터(filter/auto/cat)는 보존.
  */
 export function TodoFilters({
   pms,
-  hvps,
   companies,
   stages,
   current,
 }: {
   pms: string[];
-  hvps: { id: string; name: string }[];
   companies: { id: number; name: string }[];
   stages: Opt[];
-  current: { pm: string; hvp: string; company: string; stage: string };
+  current: { pm: string; company: string; stage: string };
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -32,11 +30,11 @@ export function TodoFilters({
   };
 
   const anyActive =
-    current.pm !== "all" || current.hvp !== "all" || current.company !== "all" || current.stage !== "all";
+    current.pm !== "all" || current.company !== "all" || current.stage !== "all";
 
   const reset = () => {
     const p = new URLSearchParams(params.toString());
-    ["pm", "hvp", "company", "stage"].forEach((k) => p.delete(k));
+    ["pm", "company", "stage"].forEach((k) => p.delete(k));
     router.push(`/admin/todos?${p.toString()}`);
   };
 
@@ -49,15 +47,6 @@ export function TodoFilters({
         {pms.map((p) => (
           <option key={p} value={p}>
             PM: {p}
-          </option>
-        ))}
-      </select>
-
-      <select value={current.hvp} onChange={(e) => setParam("hvp", e.target.value)} className={sel}>
-        <option value="all">HVP — 전체</option>
-        {hvps.map((h) => (
-          <option key={h.id} value={h.id}>
-            HVP: {h.name}
           </option>
         ))}
       </select>

@@ -4,49 +4,75 @@
 
 ---
 
-## ⚡ 다음 세션 먼저 읽기 (2026-05-28 인수인계)
+## ⚡ 다음 세션 먼저 읽기 (2026-08-03 인수인계 — HVP 전면 삭제 완료)
 
-**상태: 로컬 커밋 19개 쌓임 + Netlify 미배포(의도적). 작업트리 clean.**
+**상태: HVP 전 스택 정리 커밋 준비 중. 이전 로컬 커밋들에 이어 붙임. Netlify 여전히 미배포.**
 
-### ❗ 배포 정책 (중요)
-- Netlify 무료 크레딧 **75% 소진 경고** 받음 → **빌드 아끼려고 push 안 하는 중**.
-- 모든 작업 **로컬 커밋만** 하고 localhost(`npm run dev`)에서 검증. 사용자가 "배포하자" 하면 그때 **`git push origin main` 1번** (커밋 19개 한 빌드로).
-- 로컬 빌드(`npx next build`)·tsc·lint는 공짜니 검증은 로컬에서.
+### 🚨 HVP 프로그램 종료 결정 (2026-08-03)
 
-### 🗄️ 마이그레이션 적용 상태 (Supabase는 localhost·운영 공용 DB)
-- 0013(계약 자동생성), 0014(Storage 버킷), 0015(meeting ai_todos): **적용됨 확인**
-- 0016(HVP 22명), 0017(기업 71개 import): **service_role JS로 데이터 직접 적용함** (SQL 재실행 불필요)
-- 0018(hvp_applications 온보딩 컬럼): **적용됨 확인**
-- 0019(todos.category + HVP온보딩 트리거 + 단계룰): **적용 여부 미확인 → 새 세션에서 확인. 안 됐으면 SQL Editor 실행 필요** (안 하면 To-do 페이지 에러)
-- 새 컬럼/트리거 DDL은 JS로 못 넣음 → 사용자가 SQL Editor에서 실행해야 함. (사용자는 잘 실행해옴)
+사업 방향 변경으로 **HVP(Heim Venture Partners) 프로그램 중단**. 이번 세션에서 코드 스택 전체 정리:
 
-### 🎨 진행 중: UI/UX 디자인 개편 (로고 톤 + 다크모드)
-- **브랜드 색**: 로고 기반 **스틸블루 `#41566b` + 오렌지 `#e5531f`** (저채도). `app/globals.css`의 `@theme inline`에서 emerald/blue/보라계열→steel, amber→오렌지로 재매핑. rose는 에러용 유지, zinc 중립 유지.
-  - ⚠️ 방금 `:root`→`@theme`로 옮겨 lab() 캐스케이드 문제 해결. **사용자가 강력새로고침(Ctrl+Shift+R)으로 색 적용 확인 중이었음.** 확인 결과 못 받음.
-- **라이트/다크 토글**: `components/theme-toggle.tsx` (사이드바 하단). 다크는 `.dark`에서 zinc/white 변수 반전 → 전 페이지 자동 전환. `app/layout.tsx`에 깜빡임 방지 스크립트 + `suppressHydrationWarning`.
-- 다음: 색 톤 미세조정(단계 구분 명도 등), 사용자 피드백 반영.
+**삭제된 라우트/파일:**
+- `app/hvp/**` 전체 (dashboard·companies·fees·notifications·submit)
+- `app/admin/hvp/**` 전체
+- `app/admin/applications/**` — HVP 신청자 온보딩 페이지 통째로
+- `app/api/webhooks/{tally,google-form}/hvp-applications/` 웹훅 2개
+- `components/sidebar/hvp-{sidebar,shell}.tsx`
 
-### 📋 이번 세션에서 만든 것 (커밋 19개 요약)
-1. 미팅 AI 요약 복구: Gemini `gemini-2.0-flash-exp`(폐기)→`gemini-flash-lite-latest`, JSON→마크다운 출력(따옴표 깨짐 해결), 9초 데드라인(Netlify 타임아웃 회피), 저장/AI 분리. MarkdownView 렌더러. 회의록 전문보기·재생성·삭제. AI가 "대표님 To-do" 추출→ To-do 추가.
-2. +신규/편집 기업 모달, 담당 PM 필드(박대성/강영환/기동현/허유나, custom_fields.pm), 자료 업로드(Storage), /hvp/fees, /admin/contracts.
-3. /admin/hvp 카드형 + 실제 HVP 22명, 기업 71개 import(소개HVP 연결).
-4. 로그인 Google 전용(이메일/비번 제거), HVP 승인 Google 방식(비번 안 만듦, 이메일 자동매칭).
-5. HVP 신청자 4단계 온보딩 퍼널(신청→결제→교육이수→파트너) + 단계 수동 드롭다운. 파트너 단계 = HVP 명단 자동 등록.
-6. 단계별 자동 To-do(카테고리: hvp_onboarding/deal/general) + 대시보드 임박 highlight + HVP 보조힌트(회색 텍스트). To-do 다차원 필터(PM/HVP/기업/단계).
-7. 기업 드랍/복구(파이프라인 기본 '진행중만', 드랍 배지).
+**참조 정리된 파일 (30개 내외):**
+- `lib/supabase/middleware.ts`: `/hvp` 보호경로 제거
+- `app/auth/**`, `app/page.tsx`, `app/company/layout.tsx`: `role === 'hvp'` 분기 제거
+- `lib/labels.ts`: `HVP_*_LABELS`, `hvpStageHint`, `HVP_FIELD_LABELS` 삭제, `ROLE_LABELS`에서 hvp 제거
+- `components/sidebar/admin-sidebar.tsx`: HVP·신청자 접수 nav 제거
+- `app/admin/dashboard/page.tsx`: "활동 HVP" KPI → "계약 금액 누계"로 대체, HVP 로스터 없음, hvp_fee_amount 누계 제거
+- `app/admin/contracts/**`: HVP 수수료 필드·필터·컬럼 다 걷어냄. `payment_status`는 DB 컬럼만 남기고 UI 숨김 (나중에 클라이언트 지급 추적용으로 재활용 가능)
+- `app/admin/pipeline/**`, `todos/**`, `companies/[id]/**`, `settings/actions.ts`, `meeting-actions.ts`, `file-actions.ts`, `new-meeting-modal.tsx`: 담당 HVP 필드·hvp_id 컬럼 다 제거
+
+**신규 마이그레이션: `0029_drop_hvp.sql`**
+- `profiles.role='hvp'` → `'company_member'` 강등
+- `auto_create_contract()` 함수 재정의 (hvp_id/hvp_fee_rate 참조 제거)
+- FK 컬럼 DROP: `companies.hvp_id`, `contracts.hvp_id/hvp_fee_rate/hvp_fee_amount`, `profiles.hvp_id`
+- 테이블 DROP CASCADE: `hvp`, `hvp_applications`, `hvp_field_definitions`
+- Enum DROP: `hvp_status`, `hvp_application_status`
+- `app_role` enum 재생성 → `('admin', 'company_member')` (hvp 제거)
+- ⚠️ **아직 Supabase에 적용 안 됨.** 사용자가 SQL Editor에서 실행 필요. **되돌릴 수 없음** (22 HVP 시드/신청 이력 소멸).
+
+**로컬 빌드 통과 확인:** `npm run build` 성공, TypeScript 타입체크 통과.
+
+### 📌 새로 도입 예정: 관리자 세부 역할 (심사역 계층)
+
+이번 세션에서는 코드에 미반영. **다음 세션에서 작업할 것.**
+
+- 관리자 단일 role → **랭크별 뷰 스코프 분리** (사용자 요청)
+- 실제 인원: 박대성(대표), 강영환(수석심사역), 허유나(선임심사역), 기동현(심사역)
+- RLS로 데이터 스코프 강제: 심사역=본인 담당만, 수석=본인+하위, 대표=전체
+- 동일 대시보드 쉘에서 랭크에 따라 자동 스코프 (별도 화면 3개가 아님)
+- ⚠️ 아직 미확정 결정: 수석이 하위 감독하는지·대표가 담당 포트폴리오 있는지·크로스체크 허용 여부 — 사용자 확답 대기
+
+### 🎨 UI 디자인 방향 확정 (Linear 스타일 다크 우선)
+
+- 사용자 승인. 목업: `C:\Users\laa02\AppData\Local\Temp\claude\...\heim-erp-linear-mockup.html` (Artifact로 배포됨)
+- 팔레트: bg `#0B0D10` (쿨 바이어스), accent `#F26B3A` (하임 오렌지), steel `#7A9AC0`, 세만틱 color 별도
+- 13px 본문, 얇은 1px 보더, 10px radius, tabular-nums
+- 실제 코드 적용은 아직 미시작 (다음 세션 후반부)
+
+### ❗ 배포 정책 (동일)
+- Netlify 무료 크레딧 75% 소진 → push 안 하는 중. 로컬 검증만.
+- 사용자가 "배포하자" 하면 `git push origin main` 1번.
+- 최종 Vercel 이전 예정 (icn1 서울 리전).
 
 ### ⏭️ 다음 할 일 (우선순위)
-1. **디자인 색 적용 확인** (Ctrl+Shift+R) → 톤 미세조정
-2. **제안(proposal) 단계부터의 자동 To-do** — 사용자가 항목 정리해서 전달 예정 → 0019 트리거(`generate_sales_stage_todos`)에 추가. 컨설팅 단계(IR Deck 피드백 반영 등)도.
-3. 0019 마이그레이션 적용 확인
-4. 비어있는 메뉴: `/admin/meetings`, `/admin/tips` (사이드바 링크만 있고 페이지 없음)
-5. 준비되면 **Netlify 1회 배포**
-6. **최종: Vercel 이전** (느림·함수 타임아웃 완전 해결 — icn1 서울 리전). 사용자가 "이거 다 하고" 하기로 함.
+
+1. **사용자가 Supabase SQL Editor에서 `0029_drop_hvp.sql` 실행** — 실행 후 확인 필요
+2. **관리자 세부 역할(심사역 계층) 스키마 설계 + 마이그레이션** — 3개 확답 받고 시작
+3. Linear 스타일 디자인 실제 코드 적용 (globals.css 팔레트 재작성, 컴포넌트 단위로)
+4. 비어있는 메뉴 `/admin/meetings`, `/admin/tips` 정리 또는 채우기
+5. 배포 → Vercel 이전
 
 ### 🔑 기타 메모
-- admin@heimvi.com = **Google 계정** (Google 전용 로그인 안전)
-- Google 로그인 운영에서 되려면 Supabase Auth → URL Configuration에 Site URL=`https://heimventure.netlify.app` + Redirect URLs(운영·localhost) 설정 필요 (이전에 localhost 거부 이슈 있었음 — 사용자가 처리했는지 확인)
-- HEIM ADS OS(다른 목업) Firestore: projectId `heim-ads`, 공개 읽기 가능 — HVP/기업 데이터 출처. 추가 데이터 필요 시 거기서 fetch 가능.
+- admin@heimvi.com = **Google 계정** (Google 전용 로그인)
+- Google 로그인 운영 Redirect URL 설정 확인 필요
+- HEIM ADS OS(다른 목업) Firestore: projectId `heim-ads`, HVP 데이터 출처였음 (이제 무의미)
 
 ---
 
@@ -61,13 +87,14 @@
 - **Supabase Project ID**: `evcdteayjtflrujabvys`
 - **Supabase Dashboard**: https://supabase.com/dashboard/project/evcdteayjtflrujabvys
 
-## 사용자 3종 역할
+## 사용자 2종 역할 (2026-08-03 이후)
 
 | 역할 | 권한 | 자동 매칭 |
 |---|---|---|
-| **admin** | 전체 RW | `@heimvi.com` 도메인 → 자동 admin |
-| **hvp** | 자기 데려온 기업만 RW | hvp 테이블의 이메일 매칭 시 자동 |
+| **admin** | 전체 RW | `@heimvi.com` / `@heiminworld.com` 도메인 → 자동 admin |
 | **company_member** | 자기 회사만 R, 일부 W | 기본값 |
+
+> HVP 역할은 2026-08-03 삭제됨. 관리자 세부 역할(심사역 계층)은 다음 세션에서 도입 예정.
 
 ## 비용 정책 ⚠️
 

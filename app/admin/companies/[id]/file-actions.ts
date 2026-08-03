@@ -10,9 +10,9 @@ const BUCKET = "company-files";
 
 /**
  * 현재 사용자가 해당 기업에 접근 가능한지 검증.
- * admin = 전체, hvp = 본인 데려온 기업만.
+ * admin = 전체.
  */
-async function authorizeCompany(companyId: number) {
+async function authorizeCompany(_companyId: number) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,22 +21,11 @@ async function authorizeCompany(companyId: number) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, hvp_id")
+    .select("role")
     .eq("id", user.id)
     .single();
 
   if (profile?.role === "admin") return { error: null, userId: user.id };
-
-  if (profile?.role === "hvp") {
-    const { data: company } = await supabase
-      .from("companies")
-      .select("hvp_id")
-      .eq("id", companyId)
-      .single();
-    if (company?.hvp_id && company.hvp_id === profile.hvp_id) {
-      return { error: null, userId: user.id };
-    }
-  }
 
   return { error: "권한 없음" as const, userId: null };
 }
@@ -112,7 +101,6 @@ export async function recordCompanyFileAction(
   }
 
   revalidatePath(`/admin/companies/${companyId}`);
-  revalidatePath(`/hvp/companies/${companyId}`);
   return { success: true };
 }
 
@@ -139,7 +127,6 @@ export async function deleteCompanyFileAction(
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/companies/${companyId}`);
-  revalidatePath(`/hvp/companies/${companyId}`);
   return { success: true };
 }
 

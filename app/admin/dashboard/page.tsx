@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Rocket, Award, Users } from "lucide-react";
+import { Building2, Rocket, Award, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { NewCompanyModal } from "../pipeline/company-modals";
@@ -13,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 // KPI 카드 아이콘 (kpis 배열 순서와 일치)
-const KPI_ICONS = [Building2, Rocket, Award, Users];
+const KPI_ICONS = [Building2, Rocket, Award, FileText];
 // 단계별 분포 깔때기 — 보라 단일 램프 (연 → 진)
 const FUNNEL_COLORS = ["#d0c8f0", "#b4a6e7", "#9580dc", "#6d5dd3", "#4d3ca8"];
 
@@ -30,12 +30,11 @@ export default async function AdminDashboardPage() {
   const weekStr0 = weekLater0.toISOString().split("T")[0];
 
   // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
-  const [companiesRes, hvpsRes, contractsRes, imminentRes, hvpListRes, profileRes] = await Promise.all([
+  const [companiesRes, contractsRes, imminentRes, profileRes] = await Promise.all([
     supabase
       .from("companies")
       .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
-    supabase.from("hvp").select("id, status"),
-    supabase.from("contracts").select("id, total_amount, hvp_fee_amount, payment_status"),
+    supabase.from("contracts").select("id, total_amount, contracted_at"),
     supabase
       .from("todos")
       .select("id, title, due_date, status, category, companies(id, name)")
@@ -44,14 +43,12 @@ export default async function AdminDashboardPage() {
       .lte("due_date", weekStr0)
       .order("due_date", { ascending: true })
       .limit(12),
-    supabase.from("hvp").select("id, name, cohort").order("name", { ascending: true }),
     supabase.from("profiles").select("name").eq("id", user?.id ?? "").single(),
   ]);
 
   const adminName = (profileRes.data as { name: string } | null)?.name ?? "관리자";
 
   const allCompanies = companiesRes.data ?? [];
-  const allHvps = hvpsRes.data ?? [];
   const allContracts = contractsRes.data ?? [];
   type ImminentTodo = {
     id: number;
@@ -64,14 +61,12 @@ export default async function AdminDashboardPage() {
   const overdueTodos = imminent.filter((t) => t.due_date && t.due_date < todayStr0);
   const todayDue = imminent.filter((t) => t.due_date === todayStr0);
   const weekDue = imminent.filter((t) => t.due_date && t.due_date > todayStr0);
-  const hvpList = (hvpListRes.data as { id: string; name: string; cohort: string | null }[]) ?? [];
 
   const totalCompanies = allCompanies.length;
   const kickoffCount = allCompanies.filter((c) => c.sales_stage === "kickoff").length;
   const tipsSelected = allCompanies.filter(
     (c) => c.consulting_stage === "fund_closing" || c.consulting_stage === "final_closing"
   ).length;
-  const activeHvps = allHvps.filter((h) => h.status === "active").length;
   const tipsConversionRate =
     totalCompanies > 0 ? Math.round((tipsSelected / totalCompanies) * 1000) / 10 : 0;
 
@@ -84,6 +79,15 @@ export default async function AdminDashboardPage() {
   const thisMonthKickoffCount = allCompanies.filter(
     (c) => c.sales_stage === "kickoff" && new Date(c.received_at) >= thisMonthStart
   ).length;
+
+  // 이번 달 신규 계약
+  const thisMonthNewContracts = allContracts.filter(
+    (c) => c.contracted_at && new Date(c.contracted_at) >= thisMonthStart
+  ).length;
+  const totalContractAmount = allContracts.reduce(
+    (s, c) => s + Number(c.total_amount ?? 0),
+    0
+  );
 
   const kpis = [
     {
@@ -104,9 +108,10 @@ export default async function AdminDashboardPage() {
       delta: `전환율 ${tipsConversionRate}%`,
     },
     {
-      label: "활동 HVP",
-      value: activeHvps.toString(),
-      delta: activeHvps === 0 ? "HVP 등록 필요" : `총 ${allHvps.length}명`,
+      label: "계약 금액 누계",
+      value: `${Math.round(totalContractAmount / 10000)}억`,
+      delta: thisMonthNewContracts > 0 ? `↑ ${thisMonthNewContracts}건 (이번 달)` : `총 ${allContracts.length}건`,
+      positive: thisMonthNewContracts > 0,
     },
   ];
 
@@ -147,11 +152,6 @@ export default async function AdminDashboardPage() {
     .sort((a, b) => new Date((b as any).updated_at ?? b.received_at).getTime() - new Date((a as any).updated_at ?? a.received_at).getTime())
     .slice(0, 6);
 
-  // 수수료 합계
-  const totalFeeScheduled = allContracts
-    .filter((c) => c.payment_status === "scheduled")
-    .reduce((sum, c) => sum + Number(c.hvp_fee_amount ?? 0), 0);
-
   return (
     <>
       <div className="flex items-center justify-between mb-7">
@@ -165,7 +165,7 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/pipeline">
             <Button variant="outline">파이프라인 →</Button>
           </Link>
-          <NewCompanyModal hvps={hvpList} label="+ 신규 기업" />
+          <NewCompanyModal label="+ 신규 기업" />
         </div>
       </div>
 
@@ -340,11 +340,6 @@ export default async function AdminDashboardPage() {
               ))}
             </div>
           )}
-          {totalFeeScheduled > 0 ? (
-            <div className="mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-500">
-              💰 정산 예정 HVP 수수료 누계: <span className="text-zinc-900 font-medium">{Math.round(totalFeeScheduled).toLocaleString()}만원</span>
-            </div>
-          ) : null}
         </div>
 
         {/* 임박 To-do (놓치면 안 되는 것) */}
@@ -399,7 +394,7 @@ function TodoGroup({
               <div className="text-zinc-800 truncate">{t.title}</div>
               <div className="text-[11px] text-zinc-400">
                 {t.due_date}
-                {t.companies ? ` · ${t.companies.name}` : t.category === "hvp_onboarding" ? " · HVP 온보딩" : ""}
+                {t.companies ? ` · ${t.companies.name}` : ""}
               </div>
             </div>
           </div>
