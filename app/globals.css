@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
-  --font-heading: 'Pretendard', system-ui, sans-serif;
+  /* heimventure.com 과 동일한 폰트 스택 (Pretendard 우선) */
+  --font-sans: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'malgun gothic', '맑은 고딕', 돋움, dotum, sans-serif;
+  --font-mono: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'malgun gothic', '맑은 고딕', sans-serif;
+  --font-heading: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'malgun gothic', '맑은 고딕', 돋움, dotum, sans-serif;
   /* HEIM 브랜드 색 — 보라/라벤더 (주색) + 오렌지 포인트 */
   --color-brand: #6d5dd3;          /* 보라-바이올렛 (주색) */
   --color-brand-fg: #ffffff;
