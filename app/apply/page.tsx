@@ -80,7 +80,7 @@ export default async function ApplyPage({ searchParams }: Props) {
           {/* aside 자체는 grid 로 인해 전체 세로 길이 채움
               내부 sticky 컨테이너는 뷰포트 높이 = 스크롤해도 계속 보임 */}
           <div
-            className="sm:sticky sm:top-0 relative overflow-hidden sm:h-screen min-h-[600px]"
+            className="sm:sticky sm:top-0 relative overflow-hidden sm:h-screen min-h-[420px] sm:min-h-[600px]"
             style={{
               backgroundImage:
                 "linear-gradient(180deg, rgba(20,30,45,0.55) 0%, rgba(20,30,45,0.35) 40%, rgba(20,30,45,0.85) 100%), url('/apply-hero.jpg')",
@@ -90,7 +90,7 @@ export default async function ApplyPage({ searchParams }: Props) {
             }}
           >
             {/* 콘텐츠 */}
-            <div className="relative flex flex-col justify-between h-full px-10 lg:px-14 py-10 lg:py-14">
+            <div className="relative flex flex-col justify-between h-full px-6 sm:px-10 lg:px-14 py-8 sm:py-10 lg:py-14">
               {/* Logo (white version for dark background) */}
               <div>
                 <Image
@@ -99,13 +99,13 @@ export default async function ApplyPage({ searchParams }: Props) {
                   width={460}
                   height={140}
                   priority
-                  className="w-[240px] lg:w-[280px] h-auto"
+                  className="w-[180px] sm:w-[240px] lg:w-[280px] h-auto"
                 />
               </div>
 
               {/* Hero — 중간 */}
               <div>
-                <h1 className="text-[44px] lg:text-[56px] leading-[1.15] tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
+                <h1 className="text-[30px] sm:text-[40px] lg:text-[56px] leading-[1.2] sm:leading-[1.15] tracking-[-0.025em] sm:tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
                   다음 라운드까지,
                   <br />
                   <span className="font-normal" style={{ color: "#FFB59E" }}>
@@ -114,7 +114,7 @@ export default async function ApplyPage({ searchParams }: Props) {
                     함께합니다.
                   </span>
                 </h1>
-                <p className="mt-7 text-[18px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
+                <p className="mt-5 sm:mt-7 text-[14.5px] sm:text-[17px] lg:text-[18px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
                   하임벤처투자는 TIPS 선정 · 투자 유치 · 성장 전략까지
                   실행 단계까지 책임지는 파트너입니다.
                 </p>
@@ -158,7 +158,7 @@ export default async function ApplyPage({ searchParams }: Props) {
             RIGHT PANE — Form
            ═══════════════════════════════════════════════ */}
         <main className="relative" style={{ background: "#FFFFFF" }}>
-          <div className="mx-auto max-w-2xl px-8 lg:px-14 py-14 lg:py-20">
+          <div className="mx-auto max-w-2xl px-6 sm:px-8 lg:px-14 py-10 sm:py-14 lg:py-20">
             <div
               className="text-[12px] font-medium mb-5"
               style={{ color: "#C74815" }}
@@ -166,12 +166,12 @@ export default async function ApplyPage({ searchParams }: Props) {
               신청서 · 약 5분 소요
             </div>
             <h2
-              className="text-[38px] leading-[1.2] tracking-[-0.025em] font-semibold mb-5 text-balance"
+              className="text-[28px] sm:text-[32px] lg:text-[38px] leading-[1.2] tracking-[-0.025em] font-semibold mb-4 sm:mb-5 text-balance"
               style={{ color: "#1F2A36" }}
             >
               기업 접수 신청서
             </h2>
-            <p className="text-[16.5px] leading-relaxed mb-12" style={{ color: "#5D6B7A" }}>
+            <p className="text-[14.5px] sm:text-[15.5px] lg:text-[16.5px] leading-relaxed mb-10 sm:mb-12" style={{ color: "#5D6B7A" }}>
               접수 후 <b style={{ color: "#1F2A36" }}>5영업일 이내</b>에 이메일로 회신드립니다.
               정확한 수치를 모르시는 경우 가장 가까운 항목을 선택해주세요.
             </p>
@@ -455,13 +455,13 @@ function Section({
         style={{ borderBottom: "1px solid #E2DDD1" }}
       >
         <span
-          className="text-[24px] font-extrabold leading-none"
+          className="text-[20px] sm:text-[24px] font-extrabold leading-none"
           style={{ color: "#C74815", letterSpacing: "0" }}
         >
           {index}
         </span>
         <h3
-          className="text-[20px] font-semibold tracking-[-0.01em]"
+          className="text-[17px] sm:text-[20px] font-semibold tracking-[-0.01em]"
           style={{ color: "#1F2A36" }}
         >
           {title}
