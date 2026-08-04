@@ -104,8 +104,8 @@ export default async function ApplyPage({ searchParams }: Props) {
               </div>
 
               {/* Hero — 중간 */}
-              <div>
-                <h1 className="text-[30px] sm:text-[40px] lg:text-[56px] leading-[1.2] sm:leading-[1.15] tracking-[-0.025em] sm:tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
+              <div className="mt-10 sm:mt-0">
+                <h1 className="text-[24px] sm:text-[38px] lg:text-[56px] leading-[1.25] sm:leading-[1.15] tracking-[-0.02em] sm:tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
                   다음 라운드까지,
                   <br />
                   <span className="font-normal" style={{ color: "#FFB59E" }}>
@@ -114,7 +114,7 @@ export default async function ApplyPage({ searchParams }: Props) {
                     함께합니다.
                   </span>
                 </h1>
-                <p className="mt-5 sm:mt-7 text-[14.5px] sm:text-[17px] lg:text-[18px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
+                <p className="mt-4 sm:mt-7 text-[12.5px] sm:text-[16px] lg:text-[18px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
                   하임벤처투자는 TIPS 선정 · 투자 유치 · 성장 전략까지
                   실행 단계까지 책임지는 파트너입니다.
                 </p>
