@@ -1,15 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  ArrowLeft,
+  Building2,
+  Phone,
+  Mail,
+  User,
+  Calendar,
+  TrendingUp,
+  FileText,
+  Kanban,
+  Coins,
+  Target,
+  Clock,
+  Activity as ActivityIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   SALES_STAGE_LABELS,
-  SALES_STAGES_ORDER,
   SALES_STAGE_COLORS,
   CONSULTING_STAGE_LABELS,
-  CONSULTING_STAGES_ORDER,
   PROGRAM_GRADE_LABELS,
   PROGRAM_GRADE_COLORS,
-  TODO_STATUS_LABELS,
   FILE_KIND_LABELS,
 } from "@/lib/labels";
 import { StageChanger } from "./stage-changer";
@@ -172,18 +184,23 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   // 미완료 To-do
   const openTodos = todos.filter((t: any) => t.status !== "done");
 
+  const totalContracts = contracts.reduce((s, c: any) => s + Number(c.total_amount ?? 0), 0);
+  const stageColor = SALES_STAGE_COLORS[company.sales_stage];
+
   return (
     <>
-      {/* 헤더 */}
-      <div className="text-xs text-zinc-400 mb-2">
-        <Link href="/admin/pipeline" className="hover:text-zinc-700">기업 파이프라인</Link>
-        {" / "}
-        <span className="text-zinc-600">{company.name}</span>
-      </div>
+      {/* Breadcrumb */}
+      <Link
+        href="/admin/pipeline"
+        className="inline-flex items-center gap-1.5 text-[12.5px] text-zinc-500 hover:text-zinc-900 mb-4"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        기업 파이프라인
+      </Link>
 
       {company.drop_reason ? (
         <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-900 flex items-center gap-2">
-          <span>⛔</span>
+          <span className="text-lg">⛔</span>
           <span>
             <b>드랍된 기업</b> — 사유: {company.drop_reason}
             <span className="text-rose-500 text-xs ml-2">(단계 변경 → 드랍 취소로 복구 가능)</span>
@@ -191,56 +208,104 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
         </div>
       ) : null}
 
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl">
+      {/* ══════════ Hero Header ══════════ */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 mb-5">
+        <div className="flex items-start gap-5">
+          {/* Avatar */}
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand/15 to-brand-accent/10 border border-brand/10 flex items-center justify-center text-brand font-bold text-2xl shrink-0">
             {company.name.slice(0, 1)}
           </div>
-          <div>
-            <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <h1 className="text-2xl font-bold text-zinc-900">{company.name}</h1>
-              <span className={`px-2 py-0.5 text-xs rounded ${SALES_STAGE_COLORS[company.sales_stage]?.badge ?? "bg-zinc-100"}`}>
+
+          {/* Title + meta */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                  stageColor?.badge ?? "bg-zinc-100"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${stageColor?.dot ?? "bg-zinc-400"}`} />
                 {SALES_STAGE_LABELS[company.sales_stage]}
+                {company.consulting_stage
+                  ? ` · ${CONSULTING_STAGE_LABELS[company.consulting_stage]}`
+                  : ""}
               </span>
               {company.program_grade ? (
-                <span className={`px-2 py-0.5 text-xs rounded ${PROGRAM_GRADE_COLORS[company.program_grade]}`}>
+                <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${PROGRAM_GRADE_COLORS[company.program_grade]}`}>
                   {PROGRAM_GRADE_LABELS[company.program_grade]}
-                  {company.proposal_amount ? ` ${company.proposal_amount}만` : ""}
+                  {company.proposal_amount ? ` · ${company.proposal_amount}만` : ""}
+                </span>
+              ) : null}
+              {company.custom_fields?.pm ? (
+                <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500 ml-1">
+                  <User className="w-3 h-3" />
+                  담당 {company.custom_fields.pm}
                 </span>
               ) : null}
             </div>
-            <p className="text-sm text-zinc-500">
-              {[company.main_item, company.address, company.ceo_name && `대표 ${company.ceo_name}`].filter(Boolean).join(" · ") || "추가 정보 없음"}
+            <h1 className="text-[26px] font-bold text-zinc-900 tracking-tight mb-1.5">
+              {company.name}
+            </h1>
+            <p className="text-[13.5px] text-zinc-600">
+              {[company.main_item, company.address, company.ceo_name && `대표 ${company.ceo_name}`]
+                .filter(Boolean)
+                .join(" · ") || "추가 정보 없음"}
             </p>
           </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 shrink-0">
+            <EditCompanyModal
+              company={{
+                id: company.id,
+                name: company.name,
+                address: company.address,
+                ceo_name: company.ceo_name,
+                phone: company.phone,
+                email: company.email,
+                main_item: company.main_item,
+                founded_at: company.founded_at,
+                last_year_revenue: company.last_year_revenue,
+                inquiry_purpose: company.inquiry_purpose,
+                proposal_amount: company.proposal_amount,
+                program_grade: company.program_grade,
+                pm: company.custom_fields?.pm ?? null,
+                notes: company.notes,
+                received_at: company.received_at,
+                contracted_at: company.contracted_at,
+              }}
+            />
+            <NewMeetingModal companyId={company.id} />
+            <StageChanger
+              companyId={company.id}
+              currentSalesStage={company.sales_stage}
+              currentConsultingStage={company.consulting_stage}
+              currentDropReason={company.drop_reason}
+            />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <EditCompanyModal
-            company={{
-              id: company.id,
-              name: company.name,
-              address: company.address,
-              ceo_name: company.ceo_name,
-              phone: company.phone,
-              email: company.email,
-              main_item: company.main_item,
-              founded_at: company.founded_at,
-              last_year_revenue: company.last_year_revenue,
-              inquiry_purpose: company.inquiry_purpose,
-              proposal_amount: company.proposal_amount,
-              program_grade: company.program_grade,
-              pm: company.custom_fields?.pm ?? null,
-              notes: company.notes,
-              received_at: company.received_at,
-              contracted_at: company.contracted_at,
-            }}
+
+        {/* Quick stats row */}
+        <div className="grid grid-cols-4 gap-2 mt-6 pt-5 border-t border-zinc-100">
+          <QuickStat
+            icon={<Calendar className="w-3.5 h-3.5" />}
+            label="접수일"
+            value={company.received_at?.split("T")[0] ?? "—"}
           />
-          <NewMeetingModal companyId={company.id} />
-          <StageChanger
-            companyId={company.id}
-            currentSalesStage={company.sales_stage}
-            currentConsultingStage={company.consulting_stage}
-            currentDropReason={company.drop_reason}
+          <QuickStat
+            icon={<TrendingUp className="w-3.5 h-3.5" />}
+            label="전년 매출"
+            value={formatRevenue(company.last_year_revenue) ?? "—"}
+          />
+          <QuickStat
+            icon={<Coins className="w-3.5 h-3.5" />}
+            label="계약 누계"
+            value={contracts.length > 0 ? `${totalContracts.toLocaleString()}만` : "—"}
+          />
+          <QuickStat
+            icon={<Target className="w-3.5 h-3.5" />}
+            label="진행중 To-do"
+            value={openTodos.length > 0 ? `${openTodos.length}건` : "없음"}
           />
         </div>
       </div>
@@ -448,6 +513,34 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
 
           {/* 자료 */}
           <FileManager companyId={company.id} files={files as any} />
+
+          {/* 프로젝트 (곧 공개) */}
+          <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Kanban className="w-4 h-4 text-zinc-300" />
+              <h3 className="text-sm font-semibold text-zinc-400">프로젝트</h3>
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+                soon
+              </span>
+            </div>
+            <p className="text-[11.5px] text-zinc-400 leading-relaxed">
+              이 기업의 프로젝트가 여기에 표시됩니다 (TIPS·IR·투자유치·성장전략 각각 분리).
+            </p>
+          </div>
+
+          {/* 투자 딜 (곧 공개) */}
+          <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Coins className="w-4 h-4 text-zinc-300" />
+              <h3 className="text-sm font-semibold text-zinc-400">투자 딜</h3>
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+                soon
+              </span>
+            </div>
+            <p className="text-[11.5px] text-zinc-400 leading-relaxed">
+              투자자 태핑·미팅·심의 이력이 여기에 축적됩니다.
+            </p>
+          </div>
         </div>
       </div>
     </>
@@ -459,6 +552,26 @@ function Info({ label, value }: { label: string; value: string | number | null }
     <div className="flex justify-between">
       <span className="text-zinc-500">{label}</span>
       <span className="text-zinc-900">{value || <span className="text-zinc-300">—</span>}</span>
+    </div>
+  );
+}
+
+function QuickStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5 text-[10.5px] text-zinc-500 font-medium">
+        <span className="text-zinc-400">{icon}</span>
+        {label}
+      </div>
+      <div className="text-[15px] text-zinc-900 font-semibold tabular-nums mt-0.5">{value}</div>
     </div>
   );
 }
