@@ -4,9 +4,71 @@
 
 ---
 
-## ⚡ 다음 세션 먼저 읽기 (2026-08-03 인수인계 — HVP 전면 삭제 완료)
+## ⚡ 다음 세션 먼저 읽기 (2026-08-05 인수인계 — 데모데이·재디자인·자간 sweep 완료)
 
-**상태: HVP 전 스택 정리 커밋 준비 중. 이전 로컬 커밋들에 이어 붙임. Netlify 여전히 미배포.**
+**상태: Vercel 배포 활성 (main auto-deploy). 최신 커밋 `e41db52`.**
+
+### 🚨 사용자가 아직 안 한 필수 작업 2개 (다음 세션 첫 확인!)
+
+데모데이 시스템이 실제로 작동하려면 아래 2개 완료 여부 반드시 확인:
+
+1. **Supabase 마이그레이션 `0030_demoday.sql` 실행** — SQL Editor에 붙여넣기. 5개 테이블(demoday_rounds/startups/reviewers/reviewer_invites/submissions) + RLS 생성.
+   - 확인: `SELECT to_regclass('public.demoday_rounds')` 가 NULL 이 아니면 완료
+
+2. **환경변수 `DEMODAY_TOKEN_SECRET` 등록** — 로컬 `.env.local` + Vercel 둘 다.
+   - 32바이트 hex: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - 미등록 시 `/demoday/j/*` 심사역 세션이 500 에러
+
+**둘 다 안 하셨으면 다음 세션 첫 작업은 이거 도와드리기부터.**
+
+### 📦 이번 세션(들)에서 완성된 것
+
+**대규모 재구조화:**
+- HVP 프로그램 전면 삭제 (라우트·컴포넌트·DB 마이그레이션 0029)
+- 대시보드 5도메인 포털 + 사이드바 그룹화 재구성
+- 기업 상세 화면 헤로 헤더 재디자인 (헤더 카드 + quick stats)
+- 자간(letter-spacing) 넓힘 전체 제거 (16개 파일, 27건)
+
+**새 도메인 UI 껍데기 (mock 데이터):**
+- `/admin/applications` — 접수 검토 (mock, 5건)
+- `/admin/projects` — 프로젝트 (mock, 6건)
+- `/admin/deals` — 투자 딜 (mock, 3건)
+
+**공개 랜딩 페이지:**
+- `/apply` — 기업 접수 신청서 (여의도 사진 배경 + Pretendard + 15필드 + 3파일)
+
+**데모데이 시스템 (실 DB · Supabase 기반) — 스펙 §2 완전 준수:**
+- `lib/demoday/*` — Repository 패턴, HMAC 세션 쿠키, 서버 검증
+- API 라우트 10개 (공개 3 + 관리자 7)
+- `/demoday/j/[token]/*` — 심사역 랜딩 (모바일 우선, 자동 임시저장, 4축 점수, verdict 5-option)
+- `/admin/demoday/*` — 관리자 콘솔 (회차 CRUD, 심사역 초청, 중복 감지, 토큰 발급, 실시간 요약, **회차 삭제**)
+
+**실 데이터 정리:**
+- 결제 고객 리스트 (49건) → Supabase companies 반영 (24 UPDATE + 22 INSERT)
+
+### 🔗 주요 URL (배포 완료 후)
+
+| 목적 | URL |
+|---|---|
+| 홈 대시보드 | https://heim-erp.vercel.app/admin/dashboard |
+| 기업 접수 신청 (외부 공개) | https://heim-erp.vercel.app/apply |
+| 데모데이 관리 | https://heim-erp.vercel.app/admin/demoday |
+| 새 데모데이 생성 | https://heim-erp.vercel.app/admin/demoday/new |
+| 심사역 랜딩 (토큰 발급 후) | https://heim-erp.vercel.app/demoday/j/{token} |
+
+### ⏭️ 다음 우선순위
+
+1. **사용자가 마이그레이션·env 완료** (필수 · 위 참고)
+2. **데모데이 첫 실사용 테스트** — 새 회차 만들고 심사역 초청 → 토큰 URL로 실 제출 흐름 검증
+3. 남은 도메인 실데이터 전환 (applications, projects, deals — 현재 mock)
+4. 사후 모니터링 도메인 신규 구축
+5. `/apply` 백엔드 완성 (Phase 1b/1c — 실 데이터 저장, 이메일)
+
+### 🔑 기타 유지
+- admin@heimvi.com Google 로그인 · `@heimvi.com`·`@heiminworld.com` 자동 admin
+- Pretendard heimventure.com 스택 통일
+- 자간 넓힘 금지 (사용자 규칙) — 새로 CSS 쓸 때 `tracking-wide/wider/widest/tracking-[0.XXem]` 사용 X
+- 여의도 사진(D) 랜딩 페이지에 사용 중 (`public/apply-hero.jpg`)
 
 ### 🚨 HVP 프로그램 종료 결정 (2026-08-03)
 
