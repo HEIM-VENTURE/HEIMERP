@@ -33,9 +33,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE() {
-  return NextResponse.json(
-    { error: "회차 삭제는 지원되지 않습니다" },
-    { status: 405 }
-  );
+export async function DELETE(_: NextRequest, { params }: Params) {
+  const guard = await requireAdmin();
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
+  try {
+    const { id } = await params;
+    const repo = getAdminRepository();
+    await repo.deleteRound(id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[admin/demoday/rounds DELETE] error", err);
+    return NextResponse.json({ error: "회차 삭제에 실패했습니다" }, { status: 500 });
+  }
 }

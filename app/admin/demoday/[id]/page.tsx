@@ -13,6 +13,7 @@ import { getAdminRepository } from "@/lib/demoday/supabase-repo";
 import { VERDICT_LABEL, type RoundStatus } from "@/lib/demoday/types";
 import { InvitePanel, CopyButton } from "./invite-panel";
 import { StatusEditor } from "./status-editor";
+import { DeleteRoundButton } from "./delete-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "데모데이 상세 · HEIM ERP" };
@@ -109,6 +110,7 @@ export default async function DemoDayDetailPage({ params }: Props) {
               ) : null}
             </div>
           </div>
+          <DeleteRoundButton roundId={round.id} roundTitle={round.title} />
         </div>
 
         {/* Quick stats */}

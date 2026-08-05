@@ -262,6 +262,12 @@ export class SupabaseJudgingRepository implements JudgingRepository {
     return toRound(data as RoundRow);
   }
 
+  async deleteRound(id: string): Promise<void> {
+    // FK ON DELETE CASCADE 로 startups·invites·submissions 자동 정리
+    const { error } = await this.db.from("demoday_rounds").delete().eq("id", id);
+    if (error) throw error;
+  }
+
   // ─── Startups ──────────────────────
   async listStartupsInRound(roundId: string): Promise<Startup[]> {
     const { data, error } = await this.db

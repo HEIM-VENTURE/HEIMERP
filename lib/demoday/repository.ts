@@ -31,6 +31,8 @@ export interface JudgingRepository {
     notes?: string | null;
   }): Promise<Round>;
   updateRound(id: string, patch: Partial<Round>): Promise<Round>;
+  /** 회차 삭제 · DB CASCADE 로 startups·invites·submissions 자동 정리 */
+  deleteRound(id: string): Promise<void>;
 
   // ─── Startups (round 참여) ─────────────
   listStartupsInRound(roundId: string): Promise<Startup[]>;
