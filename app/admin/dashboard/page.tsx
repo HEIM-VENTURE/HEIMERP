@@ -1,21 +1,24 @@
 import Link from "next/link";
-import { Building2, Rocket, Award, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Inbox,
+  Building2,
+  Kanban,
+  Coins,
+  LineChart,
+  ArrowUpRight,
+  ArrowRight,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { NewCompanyModal } from "../pipeline/company-modals";
 import {
   SALES_STAGE_LABELS,
-  SALES_STAGES_ORDER,
   SALES_STAGE_COLORS,
   CONSULTING_STAGE_LABELS,
 } from "@/lib/labels";
+import { MOCK_APPLICATIONS, STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
 
 export const dynamic = "force-dynamic";
-
-// KPI 카드 아이콘 (kpis 배열 순서와 일치)
-const KPI_ICONS = [Building2, Rocket, Award, FileText];
-// 단계별 분포 깔때기 — 보라 단일 램프 (연 → 진)
-const FUNNEL_COLORS = ["#d0c8f0", "#b4a6e7", "#9580dc", "#6d5dd3", "#4d3ca8"];
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -23,345 +26,432 @@ export default async function AdminDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 임박 To-do 기준 (이번 주까지)
-  const todayStr0 = new Date().toISOString().split("T")[0];
-  const weekLater0 = new Date();
-  weekLater0.setDate(weekLater0.getDate() + 7);
-  const weekStr0 = weekLater0.toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0];
+  const weekLater = new Date();
+  weekLater.setDate(weekLater.getDate() + 7);
+  const weekStr = weekLater.toISOString().split("T")[0];
 
-  // ===== 모든 쿼리를 동시에 (Promise.all로 RTT 1번만) =====
   const [companiesRes, contractsRes, imminentRes, profileRes] = await Promise.all([
     supabase
       .from("companies")
-      .select("id, sales_stage, consulting_stage, received_at, created_at, name, updated_at"),
-    supabase.from("contracts").select("id, total_amount, contracted_at"),
+      .select("id, sales_stage, consulting_stage, received_at, name, updated_at"),
+    supabase.from("contracts").select("id, total_amount"),
     supabase
       .from("todos")
-      .select("id, title, due_date, status, category, companies(id, name)")
+      .select("id, title, due_date, status, companies(id, name)")
       .neq("status", "done")
       .not("due_date", "is", null)
-      .lte("due_date", weekStr0)
+      .lte("due_date", weekStr)
       .order("due_date", { ascending: true })
-      .limit(12),
+      .limit(8),
     supabase.from("profiles").select("name").eq("id", user?.id ?? "").single(),
   ]);
 
   const adminName = (profileRes.data as { name: string } | null)?.name ?? "관리자";
-
   const allCompanies = companiesRes.data ?? [];
   const allContracts = contractsRes.data ?? [];
+
   type ImminentTodo = {
     id: number;
     title: string;
     due_date: string | null;
-    category: string | null;
     companies: { id: number; name: string } | null;
   };
   const imminent = (imminentRes.data as unknown as ImminentTodo[]) ?? [];
-  const overdueTodos = imminent.filter((t) => t.due_date && t.due_date < todayStr0);
-  const todayDue = imminent.filter((t) => t.due_date === todayStr0);
-  const weekDue = imminent.filter((t) => t.due_date && t.due_date > todayStr0);
+  const overdue = imminent.filter((t) => t.due_date && t.due_date < todayStr);
+  const todayDue = imminent.filter((t) => t.due_date === todayStr);
+  const weekDue = imminent.filter((t) => t.due_date && t.due_date > todayStr);
 
   const totalCompanies = allCompanies.length;
   const kickoffCount = allCompanies.filter((c) => c.sales_stage === "kickoff").length;
   const tipsSelected = allCompanies.filter(
-    (c) => c.consulting_stage === "fund_closing" || c.consulting_stage === "final_closing"
+    (c) =>
+      c.consulting_stage === "fund_closing" || c.consulting_stage === "final_closing"
   ).length;
-  const tipsConversionRate =
-    totalCompanies > 0 ? Math.round((tipsSelected / totalCompanies) * 1000) / 10 : 0;
-
-  // 이번 달 신규
-  const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thisMonthNewCount = allCompanies.filter(
-    (c) => new Date(c.received_at) >= thisMonthStart
-  ).length;
-  const thisMonthKickoffCount = allCompanies.filter(
-    (c) => c.sales_stage === "kickoff" && new Date(c.received_at) >= thisMonthStart
-  ).length;
-
-  // 이번 달 신규 계약
-  const thisMonthNewContracts = allContracts.filter(
-    (c) => c.contracted_at && new Date(c.contracted_at) >= thisMonthStart
-  ).length;
-  const totalContractAmount = allContracts.reduce(
+  const totalContractValue = allContracts.reduce(
     (s, c) => s + Number(c.total_amount ?? 0),
     0
   );
 
-  const kpis = [
-    {
-      label: "전체 접수 기업",
-      value: totalCompanies.toString(),
-      delta: thisMonthNewCount > 0 ? `↑ ${thisMonthNewCount} (이번 달)` : "이번 달 신규 없음",
-      positive: thisMonthNewCount > 0,
-    },
-    {
-      label: "착수 (컨설팅 진행)",
-      value: kickoffCount.toString(),
-      delta: thisMonthKickoffCount > 0 ? `↑ ${thisMonthKickoffCount} (이번 달)` : "이번 달 변동 없음",
-      positive: thisMonthKickoffCount > 0,
-    },
-    {
-      label: "TIPS 선정",
-      value: tipsSelected.toString(),
-      delta: `전환율 ${tipsConversionRate}%`,
-    },
-    {
-      label: "계약 금액 누계",
-      value: `${Math.round(totalContractAmount / 10000)}억`,
-      delta: thisMonthNewContracts > 0 ? `↑ ${thisMonthNewContracts}건 (이번 달)` : `총 ${allContracts.length}건`,
-      positive: thisMonthNewContracts > 0,
-    },
-  ];
+  // Mock 접수 상태
+  const pendingApplications = MOCK_APPLICATIONS.filter(
+    (a) => a.status === "new" || a.status === "reviewing"
+  ).length;
 
-  // 단계별 분포
-  const stageDist = SALES_STAGES_ORDER.map((s) => ({
-    stage: s,
-    name: SALES_STAGE_LABELS[s],
-    count: allCompanies.filter((c) => c.sales_stage === s).length,
-    color: SALES_STAGE_COLORS[s].dot,
-  }));
-  const maxStageCount = Math.max(...stageDist.map((s) => s.count), 1);
-
-  // 월별 신규 접수 (최근 6개월)
-  const months = Array.from({ length: 6 }).map((_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const count = allCompanies.filter((c) => {
-      const r = new Date(c.received_at);
-      return r >= d && r < next;
-    }).length;
-    return {
-      label: `${d.getMonth() + 1}월`,
-      year: d.getFullYear(),
-      count,
-      isCurrent: i === 5,
-    };
-  });
-  const maxMonthly = Math.max(...months.map((m) => m.count), 1);
-  const totalRecent = months.reduce((a, m) => a + m.count, 0);
-  const avgMonthly = months.length > 0 ? (totalRecent / months.length).toFixed(1) : "0";
-  const lastMonth = months[months.length - 2]?.count ?? 0;
-  const currMonth = months[months.length - 1]?.count ?? 0;
-  const momChange =
-    lastMonth > 0 ? Math.round(((currMonth - lastMonth) / lastMonth) * 1000) / 10 : null;
-
-  // 최근 활동 (최근 변경된 기업 5개)
   const recentChanges = [...allCompanies]
-    .sort((a, b) => new Date((b as any).updated_at ?? b.received_at).getTime() - new Date((a as any).updated_at ?? a.received_at).getTime())
-    .slice(0, 6);
+    .sort(
+      (a, b) =>
+        new Date((b as any).updated_at ?? b.received_at).getTime() -
+        new Date((a as any).updated_at ?? a.received_at).getTime()
+    )
+    .slice(0, 5);
+
+  const now = new Date();
 
   return (
     <>
-      <div className="flex items-center justify-between mb-7">
+      {/* ── Header ── */}
+      <div className="flex items-end justify-between mb-7">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">안녕하세요, {adminName}님 👋</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">
+            안녕하세요, {adminName}님
+          </h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {now.getFullYear()}년 {now.getMonth() + 1}월 · 오늘의 운영 현황을 확인하세요
+            {now.getFullYear()}년 {now.getMonth() + 1}월 {now.getDate()}일 · 오늘의 운영 현황
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/admin/pipeline">
-            <Button variant="outline">파이프라인 →</Button>
-          </Link>
-          <NewCompanyModal label="+ 신규 기업" />
-        </div>
       </div>
 
-      {/* KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-        {kpis.map((k, i) => {
-          const Icon = KPI_ICONS[i] ?? Building2;
-          if (i === 0) {
-            return (
-              <div
-                key={k.label}
-                className="rounded-2xl p-5 bg-gradient-to-br from-brand to-[#4d3ca8] text-white shadow-sm"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="text-xs text-white/75">{k.label}</div>
-                  <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-                    <Icon className="w-[18px] h-[18px]" />
-                  </span>
-                </div>
-                <div className="text-3xl font-bold mt-2">{k.value}</div>
-                <div className="inline-flex items-center mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/15">
-                  {k.delta}
-                </div>
-              </div>
-            );
+      {/* ═══════════════════════════════════════════════
+          Section 1 — 5 도메인 포털
+          접수 · 기업 · 프로젝트 · 투자 딜 · 모니터링
+         ═══════════════════════════════════════════════ */}
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-[13px] font-semibold text-zinc-900 tracking-tight">
+          기업 성장 여정
+        </h2>
+        <span className="text-[11.5px] text-zinc-400">접수 → 프로젝트 → 투자 → 성장</span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+        <DomainCard
+          href="/admin/applications"
+          icon={<Inbox />}
+          title="접수 · 검토"
+          value={pendingApplications}
+          unit="건 대기"
+          trend={
+            pendingApplications > 0
+              ? `${pendingApplications}건 검토 필요`
+              : "모두 처리됨"
           }
-          return (
-            <div key={k.label} className="bg-white border border-zinc-200 rounded-2xl p-5">
-              <div className="flex items-start justify-between">
-                <div className="text-xs text-zinc-500">{k.label}</div>
-                <span className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
-                  <Icon className="w-[18px] h-[18px]" />
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-zinc-900 mt-2">{k.value}</div>
-              <div
-                className={`inline-flex items-center mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                  k.positive ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"
-                }`}
-              >
-                {k.delta}
-              </div>
-            </div>
-          );
-        })}
+          tint="#E5531F"
+          active
+        />
+        <DomainCard
+          href="/admin/pipeline"
+          icon={<Building2 />}
+          title="기업 마스터"
+          value={totalCompanies}
+          unit="개 기업"
+          trend={`착수 ${kickoffCount} · TIPS 진행 ${tipsSelected}`}
+          tint="#41566B"
+          active
+        />
+        <DomainCard
+          href="/admin/projects"
+          icon={<Kanban />}
+          title="프로젝트"
+          value={0}
+          unit="건"
+          trend="구축 예정"
+          tint="#7A8BA0"
+          comingSoon
+        />
+        <DomainCard
+          href="/admin/deals"
+          icon={<Coins />}
+          title="투자 딜"
+          value={0}
+          unit="건"
+          trend="구축 예정"
+          tint="#8578C4"
+          comingSoon
+        />
+        <DomainCard
+          href="/admin/monitoring"
+          icon={<LineChart />}
+          title="사후 모니터링"
+          value={0}
+          unit="개 기업"
+          trend="구축 예정"
+          tint="#6DA37C"
+          comingSoon
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        {/* 단계별 분포 */}
-        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-zinc-900">단계별 분포</h2>
-            <Link href="/admin/pipeline" className="text-xs text-zinc-500 hover:text-zinc-900">
-              파이프라인 →
-            </Link>
-          </div>
-          <div className="space-y-3.5">
-            {stageDist.map((s, i) => {
-              const pctOfTotal = totalCompanies > 0 ? Math.round((s.count / totalCompanies) * 100) : 0;
-              const widthPct = maxStageCount > 0 ? Math.max((s.count / maxStageCount) * 100, 3) : 3;
-              return (
-                <div key={s.stage} className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-xs text-zinc-600">{s.name}</span>
-                  <div className="flex-1 h-6 bg-zinc-100/70 rounded-lg overflow-hidden">
-                    <div
-                      className="h-full rounded-lg transition-all"
-                      style={{ width: `${widthPct}%`, backgroundColor: FUNNEL_COLORS[i] ?? "#6d5dd3" }}
-                    />
-                  </div>
-                  <div className="flex items-baseline gap-2 shrink-0 tabular-nums">
-                    <span className="w-7 text-right text-zinc-900 font-semibold text-sm">{s.count}</span>
-                    <span className="w-10 text-right text-zinc-400 text-xs">{pctOfTotal}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* ═══════════════════════════════════════════════
+          Section 2 — 오늘의 초점: 임박 To-do + 대기 접수
+         ═══════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-4 mb-8">
+        {/* 임박 To-do */}
+        <Card>
+          <CardHead
+            title="오늘의 할 일"
+            hint={`연체 ${overdue.length} · 오늘 ${todayDue.length} · 이번 주 ${weekDue.length}`}
+            link="/admin/todos"
+          />
+          {imminent.length === 0 ? (
+            <EmptyLine>임박한 할 일이 없습니다 ✨</EmptyLine>
+          ) : (
+            <div className="space-y-3.5">
+              <TodoGroup label="지난 마감" tone="rose" todos={overdue} />
+              <TodoGroup label="오늘 마감" tone="amber" todos={todayDue} />
+              <TodoGroup label="이번 주" tone="blue" todos={weekDue} />
+            </div>
+          )}
+        </Card>
 
-        {/* 월별 신규 접수 */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-zinc-900">월별 신규 접수</h2>
-            <span className="text-xs text-zinc-400">최근 6개월</span>
-          </div>
-          <div className="flex items-end gap-2.5 h-52">
-            {months.map((mo, i) => {
-              const heightPct = maxMonthly > 0 ? Math.max((mo.count / maxMonthly) * 85, 6) : 6;
-              return (
-                <div
-                  key={`${mo.year}-${i}`}
-                  className="flex-1 h-full flex flex-col items-center justify-end gap-1.5"
-                >
-                  <div
-                    className={`text-sm font-semibold ${mo.isCurrent ? "text-blue-600" : "text-zinc-700"}`}
-                  >
-                    {mo.count}
-                  </div>
-                  <div
-                    className={`w-full rounded-lg transition-all ${
-                      mo.isCurrent ? "bg-gradient-to-t from-blue-600 to-blue-400" : "bg-blue-100"
-                    }`}
-                    style={{ height: `${heightPct}%` }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex gap-2.5 mt-2 mb-1">
-            {months.map((mo, i) => (
-              <div
-                key={`lbl-${mo.year}-${i}`}
-                className={`flex-1 text-center text-[11px] ${
-                  mo.isCurrent ? "text-zinc-900 font-semibold" : "text-zinc-400"
-                }`}
-              >
-                {mo.label}
-              </div>
-            ))}
-          </div>
-          <div className="pt-3 mt-1 border-t border-zinc-100 grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div className="text-zinc-400">평균 접수/월</div>
-              <div className="text-zinc-900 font-semibold mt-0.5">{avgMonthly}건</div>
+        {/* 검토 대기 접수 */}
+        <Card>
+          <CardHead
+            title="검토 대기 · 신규 접수"
+            hint={`${MOCK_APPLICATIONS.filter((a) => a.status === "new").length}건 미배정`}
+            link="/admin/applications"
+          />
+          {MOCK_APPLICATIONS.filter(
+            (a) => a.status === "new" || a.status === "reviewing"
+          ).length === 0 ? (
+            <EmptyLine>검토 대기 없음</EmptyLine>
+          ) : (
+            <div className="space-y-1">
+              {MOCK_APPLICATIONS.filter(
+                (a) => a.status === "new" || a.status === "reviewing"
+              )
+                .slice(0, 5)
+                .map((a) => {
+                  const c = STATUS_COLOR[a.status];
+                  return (
+                    <Link
+                      key={a.id}
+                      href={`/admin/applications/${a.id}`}
+                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-zinc-50 transition-colors -mx-2"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: c.dot }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-medium text-zinc-900 truncate">
+                          {a.company_name}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 truncate mt-0.5">
+                          {a.tagline}
+                        </div>
+                      </div>
+                      <span
+                        className="text-[10.5px] px-1.5 py-0.5 rounded font-medium shrink-0"
+                        style={{ background: c.bg, color: c.text }}
+                      >
+                        {STATUS_LABEL[a.status]}
+                      </span>
+                    </Link>
+                  );
+                })}
             </div>
-            <div>
-              <div className="text-zinc-400">전월 대비</div>
-              <div
-                className={`font-semibold mt-0.5 ${
-                  momChange === null
-                    ? "text-zinc-400"
-                    : momChange > 0
-                      ? "text-emerald-600"
-                      : momChange < 0
-                        ? "text-rose-600"
-                        : "text-zinc-700"
-                }`}
-              >
-                {momChange === null ? "—" : `${momChange > 0 ? "↑" : momChange < 0 ? "↓" : "→"} ${Math.abs(momChange)}%`}
-              </div>
-            </div>
+          )}
+          <div className="mt-4 pt-3 border-t border-zinc-100 text-[11px] text-zinc-400 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3" /> Mock 데이터 · Phase 1c 이후 실데이터
           </div>
-        </div>
+        </Card>
+      </div>
+
+      {/* ═══════════════════════════════════════════════
+          Section 3 — 파이프라인 · 최근 활동
+         ═══════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 파이프라인 KPI */}
+        <Card>
+          <CardHead title="파이프라인 · 계약" hint="Supabase 실데이터" link="/admin/pipeline" />
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="총 기업" value={totalCompanies} suffix="곳" />
+            <Stat label="컨설팅 착수" value={kickoffCount} suffix="곳" />
+            <Stat label="TIPS 진행" value={tipsSelected} suffix="곳" />
+            <Stat
+              label="계약 금액 누계"
+              value={Math.round(totalContractValue).toLocaleString()}
+              suffix="만원"
+            />
+          </div>
+        </Card>
 
         {/* 최근 활동 */}
-        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
-          <h2 className="font-semibold text-zinc-900 mb-5">최근 활동</h2>
+        <Card>
+          <CardHead title="최근 활동" hint="최근 업데이트된 기업" link="/admin/pipeline" />
           {recentChanges.length === 0 ? (
-            <div className="text-sm text-zinc-400 text-center py-6">아직 활동 기록이 없습니다</div>
+            <EmptyLine>아직 활동 기록이 없습니다</EmptyLine>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {recentChanges.map((c: any) => (
-                <div key={c.id} className="flex items-start gap-3 text-sm">
+                <div key={c.id} className="flex items-start gap-3 text-sm py-1">
                   <span
                     className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                      SALES_STAGE_COLORS[c.sales_stage as keyof typeof SALES_STAGE_COLORS]?.dot ?? "bg-zinc-300"
+                      SALES_STAGE_COLORS[c.sales_stage as keyof typeof SALES_STAGE_COLORS]
+                        ?.dot ?? "bg-zinc-300"
                     }`}
                   />
                   <div className="flex-1 min-w-0">
-                    <Link href={`/admin/companies/${c.id}`} className="text-zinc-900 font-medium hover:underline">
+                    <Link
+                      href={`/admin/companies/${c.id}`}
+                      className="text-zinc-900 font-medium hover:underline text-[13.5px]"
+                    >
                       {c.name}
                     </Link>
-                    <span className="text-zinc-500 ml-2 text-xs">
+                    <span className="text-zinc-500 ml-2 text-[11.5px]">
                       {SALES_STAGE_LABELS[c.sales_stage as keyof typeof SALES_STAGE_LABELS]}
                       {c.consulting_stage
                         ? ` · ${CONSULTING_STAGE_LABELS[c.consulting_stage as keyof typeof CONSULTING_STAGE_LABELS]}`
                         : ""}
                     </span>
                   </div>
-                  <span className="text-xs text-zinc-400 shrink-0">{timeAgo(c.updated_at ?? c.received_at)}</span>
+                  <span className="text-[11px] text-zinc-400 shrink-0">
+                    {timeAgo(c.updated_at ?? c.received_at)}
+                  </span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        {/* 임박 To-do (놓치면 안 되는 것) */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 lg:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-zinc-900">⏰ 임박 To-do</h2>
-            <Link href="/admin/todos" className="text-xs text-zinc-500 hover:text-zinc-900">
-              전체 →
-            </Link>
-          </div>
-          {overdueTodos.length + todayDue.length + weekDue.length === 0 ? (
-            <div className="text-sm text-zinc-400 text-center py-6">임박한 To-do가 없습니다 ✨</div>
-          ) : (
-            <div className="space-y-4">
-              <TodoGroup label="지난 마감" tone="rose" todos={overdueTodos} />
-              <TodoGroup label="오늘 마감" tone="amber" todos={todayDue} />
-              <TodoGroup label="이번 주" tone="blue" todos={weekDue} />
-            </div>
-          )}
-        </div>
+        </Card>
       </div>
     </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// Sub-components
+// ═══════════════════════════════════════════════
+function DomainCard({
+  href,
+  icon,
+  title,
+  value,
+  unit,
+  trend,
+  tint,
+  active,
+  comingSoon,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  value: number;
+  unit: string;
+  trend: string;
+  tint: string;
+  active?: boolean;
+  comingSoon?: boolean;
+}) {
+  return (
+    <Link
+      href={comingSoon ? "#" : href}
+      onClick={comingSoon ? (e) => e.preventDefault() : undefined}
+      className={`group relative rounded-2xl p-4 transition-all ${
+        comingSoon
+          ? "cursor-default"
+          : "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
+      }`}
+      style={{
+        background: comingSoon
+          ? "#FAFAF7"
+          : `linear-gradient(180deg, #FFFFFF 0%, ${tint}08 100%)`,
+        border: `1px solid ${comingSoon ? "#E5E1D8" : tint + "22"}`,
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4"
+          style={{
+            background: comingSoon ? "#F0EFEA" : tint + "14",
+            color: comingSoon ? "#9CA3AF" : tint,
+          }}
+        >
+          {icon}
+        </div>
+        {comingSoon ? (
+          <span
+            className="text-[9.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+            style={{ background: "#F0EFEA", color: "#8B8579" }}
+          >
+            준비 중
+          </span>
+        ) : active ? (
+          <ArrowUpRight
+            className="w-3.5 h-3.5 text-zinc-300 group-hover:text-zinc-600 transition-colors"
+          />
+        ) : null}
+      </div>
+      <div
+        className="text-[11.5px] font-medium tracking-tight mb-1"
+        style={{ color: comingSoon ? "#9CA3AF" : "#5D6B7A" }}
+      >
+        {title}
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span
+          className="text-[26px] font-bold tabular-nums leading-none"
+          style={{ color: comingSoon ? "#9CA3AF" : "#1F2A36" }}
+        >
+          {value}
+        </span>
+        <span className="text-[11.5px] text-zinc-500">{unit}</span>
+      </div>
+      <div
+        className="text-[11px] mt-2"
+        style={{ color: comingSoon ? "#B0B0A8" : "#8A9099" }}
+      >
+        {trend}
+      </div>
+    </Link>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-zinc-200 rounded-2xl p-5">{children}</div>
+  );
+}
+
+function CardHead({
+  title,
+  hint,
+  link,
+}: {
+  title: string;
+  hint?: string;
+  link?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-zinc-100">
+      <div>
+        <h3 className="text-[13.5px] font-semibold text-zinc-900">{title}</h3>
+        {hint ? <div className="text-[11px] text-zinc-400 mt-0.5">{hint}</div> : null}
+      </div>
+      {link ? (
+        <Link
+          href={link}
+          className="text-[11.5px] text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-0.5"
+        >
+          전체 <ArrowRight className="w-3 h-3" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: number | string;
+  suffix?: string;
+}) {
+  return (
+    <div className="p-3 rounded-lg bg-zinc-50/70">
+      <div className="text-[11px] text-zinc-500 font-medium">{label}</div>
+      <div className="flex items-baseline gap-1 mt-1">
+        <span className="text-[20px] font-bold text-zinc-900 tabular-nums leading-none">
+          {value}
+        </span>
+        {suffix ? <span className="text-[11px] text-zinc-500">{suffix}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function EmptyLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-center py-6 text-[13px] text-zinc-400">{children}</div>
   );
 }
 
@@ -372,7 +462,12 @@ function TodoGroup({
 }: {
   label: string;
   tone: "rose" | "amber" | "blue";
-  todos: { id: number; title: string; due_date: string | null; category: string | null; companies: { id: number; name: string } | null }[];
+  todos: {
+    id: number;
+    title: string;
+    due_date: string | null;
+    companies: { id: number; name: string } | null;
+  }[];
 }) {
   if (todos.length === 0) return null;
   const toneCls = {
@@ -383,15 +478,18 @@ function TodoGroup({
   const dot = { rose: "bg-rose-500", amber: "bg-amber-500", blue: "bg-blue-400" }[tone];
   return (
     <div>
-      <div className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded border mb-2 ${toneCls}`}>
+      <div
+        className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded border mb-1.5 ${toneCls}`}
+      >
+        <Clock className="w-2.5 h-2.5" />
         {label} {todos.length}
       </div>
-      <div className="space-y-1.5">
-        {todos.slice(0, 6).map((t) => (
-          <div key={t.id} className="flex items-start gap-2 text-sm">
+      <div className="space-y-1">
+        {todos.slice(0, 5).map((t) => (
+          <div key={t.id} className="flex items-start gap-2 text-sm py-0.5">
             <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${dot}`} />
             <div className="flex-1 min-w-0">
-              <div className="text-zinc-800 truncate">{t.title}</div>
+              <div className="text-zinc-800 text-[13px] truncate">{t.title}</div>
               <div className="text-[11px] text-zinc-400">
                 {t.due_date}
                 {t.companies ? ` · ${t.companies.name}` : ""}
@@ -399,7 +497,9 @@ function TodoGroup({
             </div>
           </div>
         ))}
-        {todos.length > 6 ? <div className="text-[11px] text-zinc-400 pl-3.5">+ {todos.length - 6}개 더</div> : null}
+        {todos.length > 5 ? (
+          <div className="text-[11px] text-zinc-400 pl-3.5">+ {todos.length - 5}개 더</div>
+        ) : null}
       </div>
     </div>
   );
