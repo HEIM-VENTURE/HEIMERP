@@ -49,7 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/applications", label: "기업 접수", icon: Inbox },
       { href: "/admin/pipeline", label: "기업 파이프라인", icon: Workflow },
       { href: "/admin/projects", label: "프로젝트", icon: Kanban },
-      { href: "/admin/deals", label: "투자 딜", icon: Coins, comingSoon: true },
+      { href: "/admin/deals", label: "투자 딜", icon: Coins },
       { href: "/admin/monitoring", label: "사후 모니터링", icon: LineChart, comingSoon: true },
     ],
   },

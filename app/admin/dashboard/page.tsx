@@ -18,6 +18,7 @@ import {
 } from "@/lib/labels";
 import { MOCK_APPLICATIONS, STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
 import { MOCK_PROJECTS } from "@/lib/mock-projects";
+import { MOCK_DEALS } from "@/lib/mock-deals";
 
 export const dynamic = "force-dynamic";
 
@@ -152,11 +153,11 @@ export default async function AdminDashboardPage() {
           href="/admin/deals"
           icon={<Coins />}
           title="투자 딜"
-          value={0}
-          unit="건"
-          trend="구축 예정"
+          value={MOCK_DEALS.filter((d) => d.stage !== "closed" && d.stage !== "lost").length}
+          unit="건 진행"
+          trend={`목표 ${MOCK_DEALS.filter((d) => d.stage !== "closed" && d.stage !== "lost").reduce((s, d) => s + d.target_amount, 0)}억 · 완료 ${MOCK_DEALS.filter((d) => d.stage === "closed").length}건`}
           tint="#8578C4"
-          comingSoon
+          active
         />
         <DomainCard
           href="/admin/monitoring"
