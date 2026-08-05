@@ -16,6 +16,7 @@ import {
   Coins,
   LineChart,
   Building2,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "운영",
     items: [
+      { href: "/admin/demoday", label: "데모데이", icon: Video },
       { href: "/admin/contracts", label: "계약", icon: Receipt },
       { href: "/admin/meetings", label: "미팅 · 회의록", icon: CalendarDays },
     ],
