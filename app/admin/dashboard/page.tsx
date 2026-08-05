@@ -17,6 +17,7 @@ import {
   CONSULTING_STAGE_LABELS,
 } from "@/lib/labels";
 import { MOCK_APPLICATIONS, STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
+import { MOCK_PROJECTS } from "@/lib/mock-projects";
 
 export const dynamic = "force-dynamic";
 
@@ -141,11 +142,11 @@ export default async function AdminDashboardPage() {
           href="/admin/projects"
           icon={<Kanban />}
           title="프로젝트"
-          value={0}
-          unit="건"
-          trend="구축 예정"
+          value={MOCK_PROJECTS.filter((p) => p.stage !== "done" && p.stage !== "on_hold").length}
+          unit="건 진행"
+          trend={`완료 ${MOCK_PROJECTS.filter((p) => p.stage === "done").length} · 보류 ${MOCK_PROJECTS.filter((p) => p.stage === "on_hold").length}`}
           tint="#7A8BA0"
-          comingSoon
+          active
         />
         <DomainCard
           href="/admin/deals"
