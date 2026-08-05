@@ -11,6 +11,7 @@ import {
   CalendarDays,
   Landmark,
   Settings,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin/dashboard", label: "대시보드", icon: LayoutDashboard },
+  { href: "/admin/applications", label: "기업 접수", icon: Inbox },
   { href: "/admin/pipeline", label: "기업 파이프라인", icon: Workflow },
   { href: "/admin/todos", label: "할 일 (To-do)", icon: ListChecks },
   { href: "/admin/contracts", label: "계약 · 수수료", icon: Receipt },
