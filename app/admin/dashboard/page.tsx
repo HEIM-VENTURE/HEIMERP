@@ -360,7 +360,7 @@ function DomainCard({
         </div>
         {comingSoon ? (
           <span
-            className="text-[9.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+            className="text-[9.5px] font-semibold uppercase px-1.5 py-0.5 rounded"
             style={{ background: "#F0EFEA", color: "#8B8579" }}
           >
             준비 중

@@ -98,7 +98,7 @@ export function AdminSidebar({ profile, onNavigate }: Props) {
       <nav className="flex-1 overflow-y-auto text-sm">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-4">
-            <div className="px-3 text-[10px] font-medium tracking-wider uppercase text-zinc-400 mb-1.5">
+            <div className="px-3 text-[10px] font-medium uppercase text-zinc-400 mb-1.5">
               {group.label}
             </div>
             <div className="space-y-0.5">
@@ -114,7 +114,7 @@ export function AdminSidebar({ profile, onNavigate }: Props) {
                     >
                       <Icon className="w-[18px] h-[18px] shrink-0 text-zinc-300" />
                       <span className="flex-1">{item.label}</span>
-                      <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+                      <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
                         soon
                       </span>
                     </div>

@@ -49,7 +49,7 @@ export default async function StartupListPage({ params }: Props) {
       {/* Intro */}
       <div className="mb-4">
         <div
-          className="text-[10.5px] font-semibold uppercase tracking-[0.14em] mb-2"
+          className="text-[10.5px] font-semibold uppercase mb-2"
           style={{ color: "#C74815" }}
         >
           Demo Day Evaluation

@@ -215,7 +215,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
                 <AiBullets label="약점" items={app.ai_summary.weaknesses} tone="warn" />
                 <AiBullets label="주요 위험" items={app.ai_summary.risks} tone="risk" />
                 <div className="pt-3 border-t border-zinc-200/60">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  <div className="text-[11px] font-semibold uppercase text-zinc-500 mb-1.5">
                     추천 검토의견
                   </div>
                   <div className="text-[13.5px] text-zinc-900 font-medium leading-relaxed">
@@ -337,7 +337,7 @@ function MissingFile({ kind, required }: { kind: string; required?: boolean }) {
 function AiBlock({ label, text }: { label: string; text: string }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+      <div className="text-[11px] font-semibold uppercase text-zinc-500 mb-1">
         {label}
       </div>
       <div className="text-zinc-800">{text}</div>
@@ -361,7 +361,7 @@ function AiBullets({
   }[tone];
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+      <div className="text-[11px] font-semibold uppercase text-zinc-500 mb-1.5">
         {label}
       </div>
       <ul className="space-y-1.5">

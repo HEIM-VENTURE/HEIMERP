@@ -103,7 +103,7 @@ export default async function DemoDayListPage() {
 
       {upcoming.length > 0 ? (
         <div className="mb-8">
-          <div className="text-[11.5px] font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <div className="text-[11.5px] font-semibold text-zinc-500 uppercase mb-3">
             예정 · 진행 중
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -120,7 +120,7 @@ export default async function DemoDayListPage() {
 
       {past.length > 0 ? (
         <div>
-          <div className="text-[11.5px] font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <div className="text-[11.5px] font-semibold text-zinc-500 uppercase mb-3">
             완료
           </div>
           <div className="space-y-3">

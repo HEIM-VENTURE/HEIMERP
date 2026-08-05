@@ -519,7 +519,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             <div className="flex items-center gap-2 mb-2">
               <Kanban className="w-4 h-4 text-zinc-300" />
               <h3 className="text-sm font-semibold text-zinc-400">프로젝트</h3>
-              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
                 soon
               </span>
             </div>
@@ -533,7 +533,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             <div className="flex items-center gap-2 mb-2">
               <Coins className="w-4 h-4 text-zinc-300" />
               <h3 className="text-sm font-semibold text-zinc-400">투자 딜</h3>
-              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
                 soon
               </span>
             </div>

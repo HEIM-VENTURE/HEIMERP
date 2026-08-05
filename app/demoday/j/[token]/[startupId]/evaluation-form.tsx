@@ -213,7 +213,7 @@ export function EvaluationForm({
 
       {/* Scores */}
       <div className="bg-white border border-zinc-200 rounded-2xl p-4">
-        <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-zinc-500 mb-3">
+        <div className="text-[10.5px] font-semibold uppercase text-zinc-500 mb-3">
           평가 항목 (1 낮음 · 5 매우 우수)
         </div>
         <div className="space-y-5">
@@ -256,7 +256,7 @@ export function EvaluationForm({
 
       {/* Verdict */}
       <div className="bg-white border border-zinc-200 rounded-2xl p-4">
-        <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-zinc-500 mb-3">
+        <div className="text-[10.5px] font-semibold uppercase text-zinc-500 mb-3">
           투자 판단 <span className="text-rose-500 normal-case">*</span>
         </div>
         <div className="grid grid-cols-1 gap-2">

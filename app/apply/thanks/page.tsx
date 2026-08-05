@@ -42,7 +42,7 @@ export default function ThanksPage() {
         </div>
 
         <div
-          className="text-[11px] font-medium uppercase tracking-[0.16em] mb-4"
+          className="text-[11px] font-medium uppercase mb-4"
           style={{ color: "#E5531F" }}
         >
           Application Received
@@ -62,7 +62,7 @@ export default function ThanksPage() {
           className="mt-10 mx-auto max-w-md px-5 py-4 rounded-xl text-left"
           style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E4DA" }}
         >
-          <div className="text-[11px] font-medium tracking-[0.12em] uppercase mb-2" style={{ color: "#8A9099" }}>
+          <div className="text-[11px] font-medium uppercase mb-2" style={{ color: "#8A9099" }}>
             다음 단계
           </div>
           <ul className="text-[13px] space-y-2" style={{ color: "#1A1D22" }}>

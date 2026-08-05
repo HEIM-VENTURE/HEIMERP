@@ -158,7 +158,7 @@ export default async function ProjectsListPage({ searchParams }: Props) {
                 {/* Next milestone */}
                 {p.next_milestone ? (
                   <div className="p-3 rounded-lg bg-zinc-50/70 mb-3">
-                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase mb-1">
                       다음 마일스톤
                     </div>
                     <div className="text-[13px] text-zinc-900 font-medium leading-snug">

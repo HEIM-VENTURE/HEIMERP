@@ -163,7 +163,7 @@ export default async function DemoDayDetailPage({ params }: Props) {
                     ) : null}
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider">
+                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase">
                       평균
                     </div>
                     <div className="text-[24px] font-bold tabular-nums text-zinc-900 leading-none">
@@ -203,7 +203,7 @@ export default async function DemoDayDetailPage({ params }: Props) {
                       })}
                     </div>
                     <div className="mt-4 pt-3 border-t border-zinc-100">
-                      <div className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                      <div className="text-[10.5px] font-semibold uppercase text-zinc-500 mb-2">
                         투자 판단 분포
                       </div>
                       <div className="flex items-center gap-3 flex-wrap">

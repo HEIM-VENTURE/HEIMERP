@@ -110,7 +110,7 @@ export default async function DealDetailPage({ params }: Props) {
             </div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+            <div className="text-[10.5px] font-medium text-zinc-500 uppercase mb-1">
               {d.stage === "closed" ? "확정 유치" : "목표 유치"}
             </div>
             <div className="text-[28px] font-bold text-zinc-900 tabular-nums leading-none">
@@ -325,7 +325,7 @@ export default async function DealDetailPage({ params }: Props) {
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             <h3 className="text-[13px] font-semibold text-zinc-500">투자심의 · 클로징</h3>
-            <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium tracking-wider uppercase">
+            <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
               soon
             </span>
           </div>

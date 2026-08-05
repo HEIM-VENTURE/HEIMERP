@@ -157,7 +157,7 @@ export default async function DealsListPage({ searchParams }: Props) {
 
                   {/* Right: Amount + progress */}
                   <div className="text-right shrink-0 min-w-[140px]">
-                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+                    <div className="text-[10.5px] font-medium text-zinc-500 uppercase mb-1">
                       {d.stage === "closed" ? "확정" : "목표"}
                     </div>
                     <div className="text-[22px] font-bold text-zinc-900 tabular-nums leading-none">

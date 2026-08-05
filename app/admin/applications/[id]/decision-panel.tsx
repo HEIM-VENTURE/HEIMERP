@@ -194,13 +194,13 @@ export function DecisionPanel({
               {emailTemplate.subject ? (
                 <>
                   <div className="pb-2 mb-2.5 border-b border-zinc-200">
-                    <div className="text-[10.5px] font-medium uppercase tracking-wider text-zinc-500 mb-0.5">
+                    <div className="text-[10.5px] font-medium uppercase text-zinc-500 mb-0.5">
                       제목
                     </div>
                     <div className="text-zinc-900 font-medium">{emailTemplate.subject}</div>
                   </div>
                   <div>
-                    <div className="text-[10.5px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                    <div className="text-[10.5px] font-medium uppercase text-zinc-500 mb-1">
                       본문
                     </div>
                     <div className="text-zinc-800 whitespace-pre-line leading-relaxed">

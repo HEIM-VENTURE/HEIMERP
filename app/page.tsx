@@ -75,7 +75,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
           <div className="relative">
             <div className="text-4xl font-bold tracking-tight text-white">HEIM</div>
-            <div className="text-sm font-medium tracking-[0.3em] text-white/70 mt-1">
+            <div className="text-sm font-medium text-white/70 mt-1">
               VENTURE INVESTMENT
             </div>
             <p className="text-white/80 text-sm mt-6 leading-relaxed max-w-xs">

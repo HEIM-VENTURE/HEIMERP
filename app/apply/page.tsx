@@ -396,7 +396,7 @@ function TrustStat({ n, label }: { n: string; label: string }) {
       <div className="text-[30px] font-semibold text-white tracking-tight leading-none">
         {n}
       </div>
-      <div className="mt-2 text-[11.5px] text-white/60 tracking-wide">{label}</div>
+      <div className="mt-2 text-[11.5px] text-white/60">{label}</div>
     </div>
   );
 }
@@ -405,7 +405,7 @@ function Pillar({ n, title, body }: { n: string; title: string; body: string }) 
   return (
     <div className="flex gap-4">
       <div
-        className="shrink-0 font-mono text-[11px] tracking-[0.14em] pt-0.5"
+        className="shrink-0 font-mono text-[11px] pt-0.5"
         style={{ color: "#FFB59E" }}
       >
         {n}
