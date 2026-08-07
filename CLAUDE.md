@@ -8,18 +8,21 @@
 
 **상태: Vercel 배포 활성 (main auto-deploy). 최신 커밋 `e41db52`.**
 
-### 🚨 사용자가 아직 안 한 필수 작업 2개 (다음 세션 첫 확인!)
+### ✅ 이전 세션에서 완료된 사용자 셋업
 
-데모데이 시스템이 실제로 작동하려면 아래 2개 완료 여부 반드시 확인:
+- ✅ Supabase 마이그레이션 `0030_demoday.sql` 실행 완료
+- ✅ 환경변수 `DEMODAY_TOKEN_SECRET` 로컬 + Vercel Production/Preview 등록 완료
+- ✅ 데모데이 시스템 사용 준비 완료 (아직 첫 회차 만들기 전)
 
-1. **Supabase 마이그레이션 `0030_demoday.sql` 실행** — SQL Editor에 붙여넣기. 5개 테이블(demoday_rounds/startups/reviewers/reviewer_invites/submissions) + RLS 생성.
-   - 확인: `SELECT to_regclass('public.demoday_rounds')` 가 NULL 이 아니면 완료
+### 🐛 최근 픽스
 
-2. **환경변수 `DEMODAY_TOKEN_SECRET` 등록** — 로컬 `.env.local` + Vercel 둘 다.
-   - 32바이트 hex: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-   - 미등록 시 `/demoday/j/*` 심사역 세션이 500 에러
+- `7a45169` — 대시보드 500 에러 해결 (준비 중 도메인 카드의 onClick 을 Server Component 규칙에 맞게 Wrapper 로 분기)
 
-**둘 다 안 하셨으면 다음 세션 첫 작업은 이거 도와드리기부터.**
+### ⏭️ 다음 세션 첫 확인
+
+1. https://heim-erp.vercel.app/admin/dashboard 정상 로드 확인 (재배포 완료 후)
+2. `/admin/demoday/new` 로 첫 실제 데모데이 회차 만들어보기 (사용자 다음주 실사용 목표)
+3. 심사역 초청 → 토큰 URL 발급 → 실제 심사역에게 전달 흐름 검증
 
 ### 📦 이번 세션(들)에서 완성된 것
 
