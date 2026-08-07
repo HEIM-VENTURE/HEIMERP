@@ -332,22 +332,31 @@ function DomainCard({
   active?: boolean;
   comingSoon?: boolean;
 }) {
+  const containerCls = `group relative rounded-2xl p-4 transition-all ${
+    comingSoon
+      ? "cursor-default"
+      : "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
+  }`;
+  const containerStyle = {
+    background: comingSoon
+      ? "#FAFAF7"
+      : `linear-gradient(180deg, #FFFFFF 0%, ${tint}08 100%)`,
+    border: `1px solid ${comingSoon ? "#E5E1D8" : tint + "22"}`,
+  } as const;
+
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    comingSoon ? (
+      <div className={containerCls} style={containerStyle}>
+        {children}
+      </div>
+    ) : (
+      <Link href={href} className={containerCls} style={containerStyle}>
+        {children}
+      </Link>
+    );
+
   return (
-    <Link
-      href={comingSoon ? "#" : href}
-      onClick={comingSoon ? (e) => e.preventDefault() : undefined}
-      className={`group relative rounded-2xl p-4 transition-all ${
-        comingSoon
-          ? "cursor-default"
-          : "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
-      }`}
-      style={{
-        background: comingSoon
-          ? "#FAFAF7"
-          : `linear-gradient(180deg, #FFFFFF 0%, ${tint}08 100%)`,
-        border: `1px solid ${comingSoon ? "#E5E1D8" : tint + "22"}`,
-      }}
-    >
+    <Wrapper>
       <div className="flex items-center justify-between mb-3">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4"
@@ -392,7 +401,7 @@ function DomainCard({
       >
         {trend}
       </div>
-    </Link>
+    </Wrapper>
   );
 }
 
