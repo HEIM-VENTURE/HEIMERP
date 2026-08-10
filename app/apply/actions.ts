@@ -54,17 +54,20 @@ export async function submitApplicationAction(formData: FormData) {
   // 2. application_no 를 DB에서 미리 발급받는다 (파일 경로에 필요).
   //     applications INSERT 전에 sequence만 소비.
   // ─────────────────────────────────────────────
-  const { data: noRow, error: noErr } = await supabase
-    .rpc("next_application_no")
-    .single<string>();
+  // 스칼라 반환 RPC: data 필드에 곧바로 문자열이 담긴다. .single() 붙이면 파싱 실패로 null.
+  const { data: rpcData, error: noErr } = await supabase.rpc("next_application_no");
 
-  if (noErr || !noRow) {
-    console.error("[apply] application_no 발급 실패:", noErr);
+  if (noErr || typeof rpcData !== "string" || !rpcData) {
+    console.error("[apply] application_no 발급 실패", {
+      err: noErr,
+      data: rpcData,
+      dataType: typeof rpcData,
+    });
     redirect(
       "/apply?error=" + encodeURIComponent("접수번호 발급 중 오류가 발생했습니다.")
     );
   }
-  const applicationNo = noRow as unknown as string;
+  const applicationNo = rpcData;
 
   // ─────────────────────────────────────────────
   // 3. 파일 3종을 Storage(company-files 버킷)에 업로드
@@ -132,11 +135,16 @@ export async function submitApplicationAction(formData: FormData) {
   });
 
   if (insertErr) {
-    console.error("[apply] applications insert 실패:", insertErr);
+    console.error("[apply] applications insert 실패", {
+      code: insertErr.code,
+      message: insertErr.message,
+      details: insertErr.details,
+      hint: insertErr.hint,
+    });
     // 업로드된 파일은 그대로 두고 실패 페이지로 (관리자 수동 정리)
     redirect(
       "/apply?error=" +
-        encodeURIComponent("신청서 저장 중 오류가 발생했습니다. 관리자에게 문의해주세요.")
+        encodeURIComponent(`저장 실패: ${insertErr.message}`)
     );
   }
 
