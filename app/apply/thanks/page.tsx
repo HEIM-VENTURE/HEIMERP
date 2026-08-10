@@ -5,7 +5,12 @@ export const metadata = {
   title: "접수 완료 · HEIM Venture Investment",
 };
 
-export default function ThanksPage() {
+type Props = {
+  searchParams: Promise<{ no?: string }>;
+};
+
+export default async function ThanksPage({ searchParams }: Props) {
+  const { no } = await searchParams;
   return (
     <div
       className="min-h-screen flex flex-col font-sans"
@@ -51,6 +56,15 @@ export default function ThanksPage() {
         <h1 className="text-3xl font-semibold tracking-tight mb-5" style={{ color: "#1A1D22" }}>
           신청서가 접수되었습니다.
         </h1>
+
+        {no ? (
+          <div
+            className="inline-block mb-5 px-4 py-2 rounded-lg text-[13px] font-mono"
+            style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E4DA", color: "#41566B" }}
+          >
+            접수번호 <b style={{ color: "#1A1D22" }}>{no}</b>
+          </div>
+        ) : null}
 
         <p className="text-[15px] leading-relaxed" style={{ color: "#5C6470" }}>
           제출해주신 정보는 담당 심사역이 검토 후
