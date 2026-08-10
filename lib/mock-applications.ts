@@ -123,7 +123,7 @@ export const STATUS_COLOR: Record<
 export const MOCK_APPLICATIONS: Application[] = [
   {
     id: "app-2026-0042",
-    application_no: "HAIM-APP-2026-0042",
+    application_no: "HEIM-APP-2026-0042",
     received_at: "2026-08-01T09:14:00+09:00",
     status: "reviewing",
     company_name: "뉴로핏",
@@ -178,7 +178,7 @@ export const MOCK_APPLICATIONS: Application[] = [
   },
   {
     id: "app-2026-0041",
-    application_no: "HAIM-APP-2026-0041",
+    application_no: "HEIM-APP-2026-0041",
     received_at: "2026-07-31T16:22:00+09:00",
     status: "new",
     company_name: "플렉스랩",
@@ -211,7 +211,7 @@ export const MOCK_APPLICATIONS: Application[] = [
   },
   {
     id: "app-2026-0040",
-    application_no: "HAIM-APP-2026-0040",
+    application_no: "HEIM-APP-2026-0040",
     received_at: "2026-07-30T11:05:00+09:00",
     status: "go",
     company_name: "퀀텀브릿지",
@@ -244,7 +244,7 @@ export const MOCK_APPLICATIONS: Application[] = [
   },
   {
     id: "app-2026-0039",
-    application_no: "HAIM-APP-2026-0039",
+    application_no: "HEIM-APP-2026-0039",
     received_at: "2026-07-29T13:40:00+09:00",
     status: "more_docs",
     company_name: "아토믹스",
@@ -276,7 +276,7 @@ export const MOCK_APPLICATIONS: Application[] = [
   },
   {
     id: "app-2026-0038",
-    application_no: "HAIM-APP-2026-0038",
+    application_no: "HEIM-APP-2026-0038",
     received_at: "2026-07-28T08:15:00+09:00",
     status: "no_go",
     company_name: "리유즈랩",
