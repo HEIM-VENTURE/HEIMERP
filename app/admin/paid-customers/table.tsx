@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, X, HelpCircle } from "lucide-react";
+import { Check, X, HelpCircle, Download } from "lucide-react";
 
 type PaidCustomer = {
   id: string;
@@ -49,6 +49,47 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
     });
   }, [rows, urgency, paid, program, q]);
 
+  async function handleExport() {
+    // xlsx 라이브러리는 무거워서 필요할 때만 동적 로드
+    const XLSX = await import("xlsx");
+
+    // 원본 엑셀과 동일한 컬럼 순서·이름으로 매핑
+    const data = filtered.map((r) => ({
+      "No.": r.no ?? "",
+      "회사명": r.company_name ?? "",
+      "결제여부": r.is_paid === true ? "O" : r.is_paid === false ? "X" : "",
+      "신규법인 설립": r.new_corp_setup ?? "",
+      "신규회사명": r.new_company_name ?? "",
+      "타깃 프로그램": r.target_program ?? "",
+      "긴급도": r.urgency ?? "",
+      "식별이름": r.legal_name ?? "",
+      "설립일": r.established_at ?? "",
+      "직원 수": r.headcount ?? "",
+      "IR Deck (팁스)": r.ir_deck_tips ?? "",
+      "IR Deck (립스)": r.ir_deck_lips ?? "",
+      "1차 데모데이 (A)": r.demoday_1_a ?? "",
+      "1차 데모데이 (B)": r.demoday_1_b ?? "",
+      "2차 데모데이 (A)": r.demoday_2_a ?? "",
+      "2차 데모데이 (B)": r.demoday_2_b ?? "",
+      "오프라인": r.offline ?? "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    // 컬럼 폭 힌트
+    (ws["!cols"] as unknown) = [
+      { wch: 5 }, { wch: 22 }, { wch: 8 }, { wch: 12 }, { wch: 14 },
+      { wch: 14 }, { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 14 },
+      { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 10 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "결제고객");
+
+    const today = new Date();
+    const yyyymmdd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+    XLSX.writeFile(wb, `결제고객리스트_${yyyymmdd}.xlsx`);
+  }
+
   return (
     <>
       {/* 필터 바 */}
@@ -95,6 +136,15 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
         <span className="ml-auto text-[12px] text-zinc-500">
           {filtered.length} / {rows.length}건
         </span>
+        <button
+          type="button"
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-900 text-white text-[12px] font-medium hover:bg-zinc-800 transition-colors"
+          title="현재 필터된 목록을 엑셀 파일로 다운로드"
+        >
+          <Download className="w-3.5 h-3.5" />
+          엑셀 다운로드
+        </button>
       </div>
 
       {/* 표 */}
