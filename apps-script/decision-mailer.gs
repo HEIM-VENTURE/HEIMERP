@@ -88,8 +88,12 @@ function doPost(e) {
         return jsonResponse({ ok: false, error: 'missing field: ' + required[i] });
       }
     }
-    if (payload.decision !== 'go' && payload.decision !== 'more_docs') {
-      return jsonResponse({ ok: false, error: 'invalid decision (must be go|more_docs)' });
+    var validDecisions = ['go', 'more_docs', 'meeting_info', 'custom'];
+    if (validDecisions.indexOf(payload.decision) === -1) {
+      return jsonResponse({ ok: false, error: 'invalid decision (must be one of ' + validDecisions.join('|') + ')' });
+    }
+    if (payload.decision === 'custom' && (!payload.subject || !payload.body)) {
+      return jsonResponse({ ok: false, error: 'custom requires subject and body' });
     }
 
     // 이메일 조립
@@ -161,16 +165,41 @@ function buildMail(p) {
     };
   }
 
-  // more_docs: 검토의견 그대로 본문에 삽입
+  if (p.decision === 'more_docs') {
+    return {
+      subject: '[하임벤처투자] ' + p.company_name + ' 님, 추가 자료 요청',
+      body:
+        greeting +
+        '제출해주신 신청서를 검토했습니다. 판단을 위해 아래 자료가 추가로 필요합니다.\n\n' +
+        (p.notes || '(자료 목록 미기재)') + '\n\n' +
+        '준비되시면 이 이메일에 회신으로 첨부 부탁드립니다.\n\n' +
+        '접수번호: ' + p.application_no +
+        footer,
+    };
+  }
+
+  if (p.decision === 'meeting_info') {
+    return {
+      subject: '[하임벤처투자] ' + p.company_name + ' 님, 초도 미팅 진행 안내',
+      body:
+        greeting +
+        '초도 미팅 일정 확정해주셔서 감사합니다.\n\n' +
+        '미팅은 Zoom으로 진행되며, 소요 시간은 약 1시간입니다.\n' +
+        'Zoom 참여 링크는 미팅 시작 전에 별도로 전달드리겠습니다.\n\n' +
+        '미팅에서는 다음 내용을 다룰 예정입니다:\n' +
+        '- 기업 현황 진단\n' +
+        '- 주요 사업 이슈 논의\n' +
+        '- 향후 협업 방향 협의\n\n' +
+        '미팅 준비하시면서 궁금한 점 있으시면 언제든 회신 부탁드립니다.\n\n' +
+        '접수번호: ' + p.application_no +
+        footer,
+    };
+  }
+
+  // custom: 관리자가 직접 입력한 제목·본문. 인사말+서명만 자동으로 감쌈.
   return {
-    subject: '[하임벤처투자] ' + p.company_name + ' 님, 추가 자료 요청',
-    body:
-      greeting +
-      '제출해주신 신청서를 검토했습니다. 판단을 위해 아래 자료가 추가로 필요합니다.\n\n' +
-      (p.notes || '(자료 목록 미기재)') + '\n\n' +
-      '준비되시면 이 이메일에 회신으로 첨부 부탁드립니다.\n\n' +
-      '접수번호: ' + p.application_no +
-      footer,
+    subject: p.subject,
+    body: greeting + p.body + '\n\n접수번호: ' + p.application_no + footer,
   };
 }
 

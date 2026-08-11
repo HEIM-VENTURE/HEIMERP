@@ -12,6 +12,7 @@ import {
 import { getApplication, listReviewers, getCurrentAdmin } from "@/lib/applications";
 import { DecisionPanel } from "./decision-panel";
 import { AssigneePicker } from "./assignee-picker";
+import { MeetingInfoPanel, CustomEmailPanel } from "./extra-email-panels";
 
 export const metadata = { title: "접수 검토 · HEIM ERP" };
 export const dynamic = "force-dynamic";
@@ -278,6 +279,14 @@ export default async function ApplicationDetailPage({ params }: Props) {
             initialNotes={app.review_notes ?? ""}
             canEdit={canEdit}
           />
+
+          {/* GO 판정된 신청에만: 미팅 안내 이메일 + 추가 메일 발송 */}
+          {app.status === "go" && canEdit ? (
+            <>
+              <MeetingInfoPanel applicationId={app.id} />
+              <CustomEmailPanel applicationId={app.id} />
+            </>
+          ) : null}
         </div>
       </div>
     </>

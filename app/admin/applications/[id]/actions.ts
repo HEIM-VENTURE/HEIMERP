@@ -118,7 +118,7 @@ export async function saveDecisionAction(
 
   // 이메일 발송: GO / more_docs이고, 중복 발송 아닐 때만
   if ((decision === "go" || decision === "more_docs") && !sameDecisionAlreadySent) {
-    await triggerEmail(applicationId, decision, notes, admin);
+    await triggerEmail(applicationId, decision as EmailKind, notes, admin);
   }
 
   revalidatePath("/admin/applications");
@@ -127,17 +127,20 @@ export async function saveDecisionAction(
   return { ok: true, alreadySent: sameDecisionAlreadySent };
 }
 
+type EmailKind = "go" | "more_docs" | "meeting_info" | "custom";
+
 /**
  * Apps Script webhook 호출 → Gmail 발송.
- * 판정된 신청의 이메일/기업명/담당자 이름을 payload에 담아 POST.
- * 성공 시 email_sent_at 세팅, 실패 시 email_error 기록.
+ * kind에 따라 다른 이메일 템플릿 사용. custom은 subject/body 추가 payload 필요.
+ * 판정 저장 흐름(go/more_docs)에서 호출되면 email_sent_at 업데이트, 부가 발송(meeting_info/custom)에서는 email_sent_at 안 건드림.
  */
 async function triggerEmail(
   applicationId: string,
-  decision: "go" | "more_docs",
+  decision: EmailKind,
   notes: string,
-  admin: ReturnType<typeof createAdminClient>
-): Promise<void> {
+  admin: ReturnType<typeof createAdminClient>,
+  extra?: { subject?: string; body?: string }
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const webhookUrl = process.env.APPS_SCRIPT_WEBHOOK_URL;
   const secret = process.env.APPS_SCRIPT_SHARED_SECRET;
 
@@ -147,7 +150,7 @@ async function triggerEmail(
       .from("applications")
       .update({ email_error: "Apps Script webhook 미설정" })
       .eq("id", applicationId);
-    return;
+    return { ok: false, error: "Apps Script webhook 미설정" };
   }
 
   // 이메일 발송에 필요한 필드 재조회
@@ -159,10 +162,10 @@ async function triggerEmail(
 
   if (!app) {
     console.error("[email] 신청서를 다시 조회할 수 없음");
-    return;
+    return { ok: false, error: "신청서를 다시 조회할 수 없음" };
   }
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     secret,
     application_no: app.application_no as string,
     decision,
@@ -171,6 +174,14 @@ async function triggerEmail(
     to_email: app.email as string,
     notes: notes.trim(),
   };
+  if (decision === "custom") {
+    payload.subject = extra?.subject ?? "";
+    payload.body = extra?.body ?? "";
+  }
+
+  // email_sent_at은 판정 이메일(go/more_docs) 발송 성공 시에만 업데이트.
+  // 부가 발송(meeting_info/custom)은 원 판정의 email_sent_at을 건드리지 않음.
+  const isDecisionEmail = decision === "go" || decision === "more_docs";
 
   try {
     const resp = await fetch(webhookUrl, {
@@ -185,30 +196,38 @@ async function triggerEmail(
     try { json = JSON.parse(text); } catch { /* not json */ }
 
     if (json.ok) {
-      await admin
-        .from("applications")
-        .update({
-          email_pending: false,
-          email_sent_at: json.sent_at || new Date().toISOString(),
-          email_error: null,
-        })
-        .eq("id", applicationId);
-    } else {
-      await admin
-        .from("applications")
-        .update({
-          email_error: `발송 실패: ${json.error || text.substring(0, 200)}`,
-        })
-        .eq("id", applicationId);
+      if (isDecisionEmail) {
+        await admin
+          .from("applications")
+          .update({
+            email_pending: false,
+            email_sent_at: json.sent_at || new Date().toISOString(),
+            email_error: null,
+          })
+          .eq("id", applicationId);
+      } else {
+        // 부가 발송 성공 시 email_error만 클리어
+        await admin
+          .from("applications")
+          .update({ email_error: null })
+          .eq("id", applicationId);
+      }
+      return { ok: true };
     }
-  } catch (err) {
-    console.error("[email] webhook 호출 실패", err);
+    const errMsg = json.error || text.substring(0, 200);
     await admin
       .from("applications")
-      .update({
-        email_error: `webhook 호출 실패: ${String(err).substring(0, 200)}`,
-      })
+      .update({ email_error: `발송 실패: ${errMsg}` })
       .eq("id", applicationId);
+    return { ok: false, error: errMsg };
+  } catch (err) {
+    console.error("[email] webhook 호출 실패", err);
+    const msg = String(err).substring(0, 200);
+    await admin
+      .from("applications")
+      .update({ email_error: `webhook 호출 실패: ${msg}` })
+      .eq("id", applicationId);
+    return { ok: false, error: msg };
   }
 }
 
@@ -275,6 +294,59 @@ export async function unarchiveAction(
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/applications");
+  revalidatePath(`/admin/applications/${applicationId}`);
+  return { ok: true };
+}
+
+/**
+ * 미팅 안내 이메일 발송 (고정 템플릿). GO 판정된 신청에만 노출되지만 서버에서도 status 체크.
+ */
+export async function sendMeetingInfoAction(
+  applicationId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+
+  const admin = createAdminClient();
+  const { data: app } = await admin
+    .from("applications")
+    .select("status")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (!app) return { ok: false, error: "신청을 찾을 수 없습니다." };
+  if (app.status !== "go") {
+    return { ok: false, error: "GO 판정된 신청에만 미팅 안내 이메일을 보낼 수 있습니다." };
+  }
+
+  const result = await triggerEmail(applicationId, "meeting_info", "", admin);
+  if (!result.ok) return result;
+  revalidatePath(`/admin/applications/${applicationId}`);
+  return { ok: true };
+}
+
+/**
+ * 자유 이메일 발송. 관리자가 직접 입력한 제목·본문. 인사말·서명은 Apps Script에서 자동 감쌈.
+ */
+export async function sendCustomEmailAction(
+  applicationId: string,
+  subject: string,
+  body: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+
+  if (!subject.trim()) return { ok: false, error: "제목을 입력해주세요." };
+  if (!body.trim()) return { ok: false, error: "본문을 입력해주세요." };
+
+  const admin = createAdminClient();
+  const result = await triggerEmail(
+    applicationId,
+    "custom",
+    "",
+    admin,
+    { subject: subject.trim(), body: body.trim() }
+  );
+  if (!result.ok) return result;
   revalidatePath(`/admin/applications/${applicationId}`);
   return { ok: true };
 }
