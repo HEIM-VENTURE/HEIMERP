@@ -1,7 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, X, HelpCircle, Download } from "lucide-react";
+import { Check, X, HelpCircle, Download, LinkIcon } from "lucide-react";
+import { SALES_STAGE_LABELS, SALES_STAGE_COLORS } from "@/lib/labels";
+
+type SalesStageKey = keyof typeof SALES_STAGE_LABELS;
 
 type PaidCustomer = {
   id: string;
@@ -22,16 +26,25 @@ type PaidCustomer = {
   demoday_2_a: string | null;
   demoday_2_b: string | null;
   offline: string | null;
+  company_id: number | null;
+  company?: {
+    id: number;
+    name: string;
+    sales_stage: string | null;
+    consulting_stage: string | null;
+  } | null;
 };
 
 type UrgencyFilter = "all" | 1 | 2 | 3;
 type PaidFilter = "all" | "paid" | "unpaid";
 type ProgramFilter = "all" | "팁스" | "립스" | "투자";
+type PipelineFilter = "all" | "linked" | "unlinked";
 
 export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const [urgency, setUrgency] = useState<UrgencyFilter>("all");
   const [paid, setPaid] = useState<PaidFilter>("all");
   const [program, setProgram] = useState<ProgramFilter>("all");
+  const [pipeline, setPipeline] = useState<PipelineFilter>("all");
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -40,6 +53,8 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       if (paid === "paid" && r.is_paid !== true) return false;
       if (paid === "unpaid" && r.is_paid !== false) return false;
       if (program !== "all" && !(r.target_program ?? "").includes(program)) return false;
+      if (pipeline === "linked" && !r.company) return false;
+      if (pipeline === "unlinked" && r.company) return false;
       if (q.trim()) {
         const needle = q.trim().toLowerCase();
         const hay = [r.company_name, r.legal_name, r.new_company_name].filter(Boolean).join(" ").toLowerCase();
@@ -47,16 +62,23 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       }
       return true;
     });
-  }, [rows, urgency, paid, program, q]);
+  }, [rows, urgency, paid, program, pipeline, q]);
+
+  const linkedCount = rows.filter((r) => !!r.company).length;
+  const unlinkedCount = rows.length - linkedCount;
 
   async function handleExport() {
     // xlsx 라이브러리는 무거워서 필요할 때만 동적 로드
     const XLSX = await import("xlsx");
 
-    // 원본 엑셀과 동일한 컬럼 순서·이름으로 매핑
+    // 원본 엑셀과 동일한 컬럼 순서·이름으로 매핑 + 파이프라인 단계
     const data = filtered.map((r) => ({
       "No.": r.no ?? "",
       "회사명": r.company_name ?? "",
+      "파이프라인 단계":
+        r.company
+          ? (SALES_STAGE_LABELS[r.company.sales_stage as SalesStageKey] ?? "등록됨")
+          : "미등록",
       "결제여부": r.is_paid === true ? "O" : r.is_paid === false ? "X" : "",
       "신규법인 설립": r.new_corp_setup ?? "",
       "신규회사명": r.new_company_name ?? "",
@@ -75,9 +97,9 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-    // 컬럼 폭 힌트
+    // 컬럼 폭 힌트 (파이프라인 컬럼 포함해서 18개)
     (ws["!cols"] as unknown) = [
-      { wch: 5 }, { wch: 22 }, { wch: 8 }, { wch: 12 }, { wch: 14 },
+      { wch: 5 }, { wch: 22 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 14 },
       { wch: 14 }, { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 14 },
       { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 10 },
     ];
@@ -133,6 +155,16 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           ]}
           onChange={(v) => setProgram(v as ProgramFilter)}
         />
+        <FilterGroup
+          label="파이프라인"
+          value={pipeline}
+          options={[
+            { key: "all", label: "전체" },
+            { key: "linked", label: `등록 ${linkedCount}` },
+            { key: "unlinked", label: `미등록 ${unlinkedCount}` },
+          ]}
+          onChange={(v) => setPipeline(v as PipelineFilter)}
+        />
         <span className="ml-auto text-[12px] text-zinc-500">
           {filtered.length} / {rows.length}건
         </span>
@@ -155,6 +187,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
               <tr>
                 <Th w="w-10">#</Th>
                 <Th w="w-52">회사명 · 법인명</Th>
+                <Th w="w-24">파이프라인</Th>
                 <Th w="w-16">결제</Th>
                 <Th w="w-14">긴급</Th>
                 <Th w="w-32">타깃</Th>
@@ -175,7 +208,17 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                     <span className="tabular-nums text-zinc-400">{r.no ?? "-"}</span>
                   </Td>
                   <Td>
-                    <div className="font-medium text-zinc-900 truncate">{r.company_name}</div>
+                    {r.company ? (
+                      <Link
+                        href={`/admin/companies/${r.company.id}`}
+                        className="font-medium text-zinc-900 hover:text-brand hover:underline truncate inline-flex items-center gap-1"
+                      >
+                        {r.company_name}
+                        <LinkIcon className="w-3 h-3 text-zinc-400" />
+                      </Link>
+                    ) : (
+                      <div className="font-medium text-zinc-900 truncate">{r.company_name}</div>
+                    )}
                     {r.legal_name && r.legal_name !== r.company_name ? (
                       <div className="text-[10.5px] text-zinc-400 truncate">{r.legal_name}</div>
                     ) : null}
@@ -183,6 +226,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       <div className="text-[10.5px] text-brand mt-0.5">신규: {r.new_company_name}</div>
                     ) : null}
                   </Td>
+                  <Td><PipelineBadge company={r.company} /></Td>
                   <Td><PaidBadge value={r.is_paid} /></Td>
                   <Td><UrgencyBadge value={r.urgency} /></Td>
                   <Td>{splitProgram(r.target_program)}</Td>
@@ -221,6 +265,27 @@ function Th({ children, w }: { children: React.ReactNode; w?: string }) {
 }
 function Td({ children, className }: { children: React.ReactNode; className?: string }) {
   return <td className={`px-3 py-2.5 align-top ${className ?? ""}`}>{children}</td>;
+}
+
+function PipelineBadge({ company }: { company: PaidCustomer["company"] }) {
+  if (!company) {
+    return (
+      <span className="inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10.5px] font-medium">
+        미등록
+      </span>
+    );
+  }
+  const stage = company.sales_stage as SalesStageKey | null;
+  if (!stage || !SALES_STAGE_LABELS[stage]) {
+    return <span className="text-[11px] text-zinc-500">등록됨</span>;
+  }
+  const c = SALES_STAGE_COLORS[stage];
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-medium ${c.badge}`}>
+      <span className={`w-1 h-1 rounded-full ${c.dot}`} />
+      {SALES_STAGE_LABELS[stage]}
+    </span>
+  );
 }
 
 function PaidBadge({ value }: { value: boolean | null }) {

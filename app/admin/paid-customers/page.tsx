@@ -24,13 +24,20 @@ type PaidCustomer = {
   demoday_2_b: string | null;
   offline: string | null;
   memo: string | null;
+  company_id: number | null;
+  company?: {
+    id: number;
+    name: string;
+    sales_stage: string | null;
+    consulting_stage: string | null;
+  } | null;
 };
 
 export default async function PaidCustomersPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("paid_customers")
-    .select("*")
+    .select("*, company:companies!paid_customers_company_id_fkey(id, name, sales_stage, consulting_stage)")
     .order("urgency", { ascending: true, nullsFirst: false })
     .order("no", { ascending: true });
 
