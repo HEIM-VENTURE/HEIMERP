@@ -79,10 +79,12 @@ export function DecisionPanel({
   applicationId,
   initialStatus,
   initialNotes,
+  canEdit = true,
 }: {
   applicationId: string;
   initialStatus: ApplicationStatus;
   initialNotes: string;
+  canEdit?: boolean;
 }) {
   const router = useRouter();
   const [decision, setDecision] = useState<Decision | null>(
@@ -101,6 +103,10 @@ export function DecisionPanel({
 
   function handleSubmit() {
     if (!decision) return;
+    if (!canEdit) {
+      setErrorMsg("이 신청은 편집 권한이 없습니다.");
+      return;
+    }
     if (decision === "more_docs" && !notes.trim()) {
       setErrorMsg("자료 요청은 검토 의견에 요청 자료를 명시해주세요. (이메일 본문으로 그대로 발송됩니다)");
       return;
@@ -141,8 +147,9 @@ export function DecisionPanel({
             <button
               key={d.key}
               type="button"
+              disabled={!canEdit}
               onClick={() => setDecision(d.key)}
-              className={`text-left px-3.5 py-3 rounded-lg transition-all border ${
+              className={`text-left px-3.5 py-3 rounded-lg transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${
                 active ? "border-2" : "border hover:bg-zinc-50"
               }`}
               style={
@@ -176,6 +183,7 @@ export function DecisionPanel({
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          disabled={!canEdit}
           rows={4}
           placeholder={
             decision === "more_docs"
@@ -246,7 +254,7 @@ export function DecisionPanel({
       {/* Submit */}
       <button
         type="button"
-        disabled={!decision || pending}
+        disabled={!decision || pending || !canEdit}
         onClick={handleSubmit}
         className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg text-[13.5px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         style={{

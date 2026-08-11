@@ -74,16 +74,54 @@ export async function listReviewers(): Promise<Reviewer[]> {
 }
 
 /**
- * 활성 신청 목록 (archived 제외).
+ * 현재 로그인 관리자의 rank + id를 반환.
+ * 비로그인/비관리자면 null.
  */
-export async function listApplications(): Promise<Application[]> {
+export type CurrentAdmin = { id: string; name: string; rank: "owner" | "member" };
+
+export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name, role, admin_rank")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!profile || profile.role !== "admin") return null;
+  return {
+    id: profile.id as string,
+    name: (profile.name as string) ?? "",
+    rank: (profile.admin_rank as "owner" | "member") ?? "member",
+  };
+}
+
+/**
+ * 활성 신청 목록 (archived 제외).
+ *
+ * 정책:
+ *  - owner        : 전체 조회
+ *  - member       : 본인이 담당(reviewer_id=me) + 미배정(reviewer_id=null)
+ *  - member + all : 전체 조회 (읽기만, 편집은 별개 체크)
+ */
+export async function listApplications(opts?: { showAll?: boolean }): Promise<Application[]> {
+  const supabase = await createClient();
+  const me = await getCurrentAdmin();
+
+  let query = supabase
     .from("applications")
     .select("*")
     .is("archived_at", null)
     .order("received_at", { ascending: false });
 
+  if (me && me.rank !== "owner" && !opts?.showAll) {
+    // member: 본인 담당 or 미배정만
+    query = query.or(`reviewer_id.eq.${me.id},reviewer_id.is.null`);
+  }
+
+  const { data, error } = await query;
   if (error) {
     console.error("[applications.list] 조회 실패", error);
     return [];

@@ -6,7 +6,7 @@ import {
   REVENUE_LABEL,
   type ApplicationStatus,
 } from "@/lib/mock-applications";
-import { listApplications } from "@/lib/applications";
+import { listApplications, getCurrentAdmin } from "@/lib/applications";
 
 export const metadata = { title: "기업 접수 · HEIM ERP" };
 export const dynamic = "force-dynamic";
@@ -20,14 +20,19 @@ const TABS: { key: ApplicationStatus | "all"; label: string }[] = [
 ];
 
 type Props = {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; all?: string }>;
 };
 
 export default async function ApplicationsListPage({ searchParams }: Props) {
   const params = await searchParams;
   const activeTab = (params.status ?? "all") as ApplicationStatus | "all";
+  const showAll = params.all === "1";
 
-  const all = await listApplications();
+  const me = await getCurrentAdmin();
+  const isOwner = me?.rank === "owner";
+  const effectiveShowAll = isOwner || showAll;
+
+  const all = await listApplications({ showAll: effectiveShowAll });
   const rows = activeTab === "all" ? all : all.filter((a) => a.status === activeTab);
 
   const counts = TABS.reduce<Record<string, number>>((acc, t) => {
@@ -35,17 +40,41 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
     return acc;
   }, {});
 
+  // "전체 보기" 토글용 링크 (owner에겐 노출 X — 항상 전체가 보이니까)
+  const toggleHref = showAll
+    ? `/admin/applications${activeTab !== "all" ? `?status=${activeTab}` : ""}`
+    : `/admin/applications?${activeTab !== "all" ? `status=${activeTab}&` : ""}all=1`;
+
   return (
     <>
       <div className="flex items-end justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">기업 접수</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            랜딩 페이지로 접수된 기업 신청서를 검토하고 GO / 조건부 GO / 자료요청 / NO-GO 를 결정합니다.
+            {isOwner
+              ? "전체 신청서를 조회·판정할 수 있습니다."
+              : showAll
+              ? "전체 신청서를 조회 중. 본인 담당이 아닌 신청은 편집이 잠깁니다."
+              : "본인이 담당하는 신청과 미배정 신청을 표시합니다."}
           </p>
         </div>
-        <div className="text-xs text-zinc-400">
-          Supabase 실데이터 · NO-GO 처리된 신청은 목록에서 숨김
+        <div className="flex items-center gap-3">
+          {!isOwner ? (
+            <Link
+              href={toggleHref}
+              className={`text-[12px] px-3 py-1.5 rounded-md border transition-colors ${
+                showAll
+                  ? "bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800"
+                  : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              {showAll ? "내 담당만 보기" : "전체 보기"}
+            </Link>
+          ) : null}
+          <div className="text-xs text-zinc-400">
+            {me?.name}
+            {isOwner ? " · 대표" : " · 관리자"}
+          </div>
         </div>
       </div>
 
@@ -53,10 +82,14 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
       <div className="flex items-center gap-1 mb-5 border-b border-zinc-200">
         {TABS.map((t) => {
           const active = activeTab === t.key;
+          const href =
+            t.key === "all"
+              ? `/admin/applications${showAll ? "?all=1" : ""}`
+              : `/admin/applications?status=${t.key}${showAll ? "&all=1" : ""}`;
           return (
             <Link
               key={t.key}
-              href={t.key === "all" ? "/admin/applications" : `/admin/applications?status=${t.key}`}
+              href={href}
               className={`px-3.5 py-2.5 text-[13px] rounded-t-md transition-colors -mb-px border-b-2 ${
                 active
                   ? "border-brand text-zinc-900 font-medium"
@@ -89,6 +122,9 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
             {rows.map((a) => {
               const color = STATUS_COLOR[a.status];
               const receivedDate = a.received_at.split("T")[0].slice(5);
+              const isMine = a.reviewer === me?.name;
+              const isUnassigned = !a.reviewer;
+              const canEdit = isOwner || isMine || isUnassigned;
               return (
                 <tr key={a.id} className="hover:bg-zinc-50/70 transition-colors">
                   <td className="px-5 py-3.5">
@@ -115,7 +151,11 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
                     {REVENUE_LABEL[a.revenue_range] ?? a.revenue_range}
                   </td>
                   <td className="px-5 py-3.5 text-[13px] text-zinc-700">
-                    {a.reviewer ?? <span className="text-zinc-300">미배정</span>}
+                    {a.reviewer ? (
+                      <span className={isMine ? "font-medium text-zinc-900" : ""}>{a.reviewer}</span>
+                    ) : (
+                      <span className="text-zinc-300">미배정</span>
+                    )}
                   </td>
                   <td className="px-5 py-3.5">
                     <span
@@ -125,6 +165,9 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: color.dot }} />
                       {STATUS_LABEL[a.status]}
                     </span>
+                    {!canEdit ? (
+                      <span className="ml-1.5 text-[10px] text-zinc-400 tabular-nums">조회만</span>
+                    ) : null}
                   </td>
                   <td className="px-5 py-3.5 text-[12px] text-zinc-500 tabular-nums">
                     {receivedDate}
@@ -135,7 +178,11 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
           </tbody>
         </table>
         {rows.length === 0 ? (
-          <div className="text-center py-10 text-sm text-zinc-400">해당 상태의 접수가 없습니다</div>
+          <div className="text-center py-10 text-sm text-zinc-400">
+            {showAll || isOwner
+              ? "해당 상태의 접수가 없습니다"
+              : "본인 담당 신청이 없습니다. 상단 '전체 보기'로 다른 사람 담당도 볼 수 있어요."}
+          </div>
         ) : null}
       </div>
     </>

@@ -1,18 +1,67 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Decision = "go" | "more_docs" | "no_go";
+type AdminRank = "owner" | "member";
+
+// ─────────────────────────────────────────────
+// 공통: 로그인·권한 판정 헬퍼
+// ─────────────────────────────────────────────
+async function requireAdmin(): Promise<
+  | { ok: true; me: { id: string; name: string; rank: AdminRank } }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
+  if (userErr || !user) return { ok: false, error: "로그인 세션이 만료되었습니다." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name, role, admin_rank")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!profile || profile.role !== "admin") {
+    return { ok: false, error: "관리자 권한이 필요합니다." };
+  }
+  return {
+    ok: true,
+    me: {
+      id: profile.id as string,
+      name: (profile.name as string) ?? "",
+      rank: ((profile.admin_rank as AdminRank) ?? "member"),
+    },
+  };
+}
+
+// member는 (본인 담당) 또는 (미배정)일 때만 편집 가능. owner는 항상 가능.
+async function canEdit(
+  applicationId: string,
+  me: { id: string; rank: AdminRank }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (me.rank === "owner") return { ok: true };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("applications")
+    .select("reviewer_id")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "신청을 찾을 수 없습니다." };
+  const reviewerId = data.reviewer_id as string | null;
+  if (reviewerId === null || reviewerId === me.id) return { ok: true };
+  return {
+    ok: false,
+    error: "다른 담당자의 신청은 편집할 수 없습니다. 대표에게 요청하거나 담당자 본인이 처리해주세요.",
+  };
+}
 
 /**
  * 접수 판정 저장.
- *
- * - GO / more_docs → status·decided_at·review_notes 저장, email_pending=true (Apps Script가 발송)
- * - NO-GO → status='no_go' + archived_at 세팅 (목록에서 숨김, DB에 이력 보존, 이메일 없음)
- * - reviewer_id/name은 현재 로그인 admin에서 자동 추출
  */
 export async function saveDecisionAction(
   applicationId: string,
@@ -24,37 +73,20 @@ export async function saveDecisionAction(
     return { ok: false, error: "잘못된 판정 값입니다." };
   }
 
-  // 로그인 admin 확인
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+  const { me } = auth;
 
-  if (userErr || !user) {
-    return { ok: false, error: "로그인 세션이 만료되었습니다. 다시 로그인 해주세요." };
-  }
+  const perm = await canEdit(applicationId, me);
+  if (!perm.ok) return perm;
 
-  // 프로필에서 이름 확보 (스냅샷)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return { ok: false, error: "관리자 권한이 필요합니다." };
-  }
-
-  // service_role로 업데이트 (RLS admin 정책도 통과하지만 애플리케이션 레벨에서 이미 검증했으니 안전)
   const admin = createAdminClient();
-
   const nowIso = new Date().toISOString();
   const payload: Record<string, unknown> = {
     status: decision,
     review_notes: notes.trim() || null,
-    reviewer_id: user.id,
-    reviewer_name: profile.name,
+    reviewer_id: me.id,
+    reviewer_name: me.name,
     decided_at: nowIso,
   };
 
@@ -62,7 +94,6 @@ export async function saveDecisionAction(
     payload.archived_at = nowIso;
     payload.email_pending = false;
   } else {
-    // GO / more_docs → 이메일 큐 활성화 (Apps Script가 다음 세션에 픽업)
     payload.archived_at = null;
     payload.email_pending = true;
     payload.email_sent_at = null;
@@ -79,35 +110,46 @@ export async function saveDecisionAction(
     return { ok: false, error: `저장 실패: ${updateErr.message}` };
   }
 
-  // 캐시 무효화
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${applicationId}`);
   revalidatePath("/admin/dashboard");
-
   return { ok: true };
 }
 
 /**
  * 담당자 배정.
- *
- * - reviewerId=null 이면 미배정으로 되돌림.
- * - 판정 전에도 배정 가능 (판정 시 판정자로 덮어써지지 않도록 판정 로직에서 이미 판정자 = 담당자로 스냅샷됨).
+ * - member는 (미배정 상태의 신청을 본인에게 배정) 또는 (본인 담당을 미배정으로 되돌리기)만 가능.
+ * - owner는 자유롭게 다른 사람에게도 배정 가능.
  */
 export async function assignReviewerAction(
   applicationId: string,
   reviewerId: string | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "로그인 세션이 만료되었습니다." };
-
-  const { data: me } = await supabase
-    .from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (me?.role !== "admin") return { ok: false, error: "관리자 권한이 필요합니다." };
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+  const { me } = auth;
 
   const admin = createAdminClient();
+
+  // 현재 담당자 조회 (권한 체크용)
+  const { data: current } = await admin
+    .from("applications")
+    .select("reviewer_id")
+    .eq("id", applicationId)
+    .maybeSingle();
+  const currentReviewerId = (current?.reviewer_id as string | null) ?? null;
+
+  // member의 배정 규칙
+  if (me.rank !== "owner") {
+    const okAsClaim = currentReviewerId === null && reviewerId === me.id;      // 미배정 → 본인
+    const okAsRelease = currentReviewerId === me.id && reviewerId === null;     // 본인 → 미배정
+    if (!okAsClaim && !okAsRelease) {
+      return {
+        ok: false,
+        error: "본인 담당으로 가져오거나 미배정으로 되돌리는 것만 가능합니다. 다른 사람에게 배정하려면 대표에게 요청하세요.",
+      };
+    }
+  }
 
   // 미배정 처리
   if (!reviewerId) {
@@ -142,19 +184,16 @@ export async function assignReviewerAction(
 }
 
 /**
- * NO-GO 되돌리기 (아카이브 해제). 필요 시 사용.
+ * NO-GO 되돌리기 (아카이브 해제). owner 전용.
  */
 export async function unarchiveAction(
   applicationId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "로그인 필요" };
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (profile?.role !== "admin") return { ok: false, error: "관리자만 가능" };
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+  if (auth.me.rank !== "owner") {
+    return { ok: false, error: "NO-GO 되돌리기는 대표만 가능합니다." };
+  }
 
   const admin = createAdminClient();
   const { error } = await admin

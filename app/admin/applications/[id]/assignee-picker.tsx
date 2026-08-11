@@ -11,11 +11,17 @@ export function AssigneePicker({
   reviewers,
   currentReviewerId,
   currentReviewerName,
+  canEdit = true,
+  isOwner = true,
+  meId = null,
 }: {
   applicationId: string;
   reviewers: Reviewer[];
   currentReviewerId: string | null;
   currentReviewerName: string | null;
+  canEdit?: boolean;
+  isOwner?: boolean;
+  meId?: string | null;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string>(currentReviewerId ?? "");
@@ -24,6 +30,12 @@ export function AssigneePicker({
   const [justSaved, setJustSaved] = useState(false);
 
   const dirty = selected !== (currentReviewerId ?? "");
+  // member는 (미배정→본인) 또는 (본인→미배정)만 허용
+  const memberAllowed =
+    isOwner ||
+    (currentReviewerId === null && selected === meId) ||
+    (currentReviewerId === meId && selected === "");
+  const submittable = canEdit && dirty && memberAllowed;
 
   function handleSave() {
     setErrorMsg(null);
@@ -60,16 +72,27 @@ export function AssigneePicker({
       <select
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
-        disabled={pending}
-        className="w-full px-3 py-2.5 rounded-lg text-[13px] bg-white border border-zinc-200 focus:outline-none focus:border-brand focus:shadow-[0_0_0_3px_rgba(109,93,211,0.1)]"
+        disabled={pending || !canEdit}
+        className="w-full px-3 py-2.5 rounded-lg text-[13px] bg-white border border-zinc-200 focus:outline-none focus:border-brand focus:shadow-[0_0_0_3px_rgba(109,93,211,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <option value="">— 미배정 —</option>
         {reviewers.map((r) => (
-          <option key={r.id} value={r.id}>
+          <option
+            key={r.id}
+            value={r.id}
+            // member는 본인 외 다른 사람 선택 못 함 (대표 배정 요청은 별도)
+            disabled={!isOwner && r.id !== meId}
+          >
             {r.name} · {r.email}
+            {!isOwner && r.id !== meId ? " (대표 승인 필요)" : ""}
           </option>
         ))}
       </select>
+      {!isOwner ? (
+        <p className="mt-1.5 text-[11px] text-zinc-500">
+          본인 담당으로 가져오거나 미배정으로 되돌리는 것만 가능합니다. 다른 사람에게 배정은 대표 승인이 필요해요.
+        </p>
+      ) : null}
 
       {reviewers.length === 0 ? (
         <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
@@ -90,11 +113,19 @@ export function AssigneePicker({
 
       <button
         type="button"
-        disabled={!dirty || pending}
+        disabled={!submittable || pending}
         onClick={handleSave}
         className="mt-4 w-full h-9 rounded-lg text-[12.5px] font-medium text-white bg-zinc-900 hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {pending ? "저장 중..." : dirty ? "담당자 저장" : "변경사항 없음"}
+        {pending
+          ? "저장 중..."
+          : !canEdit
+          ? "편집 권한 없음"
+          : !dirty
+          ? "변경사항 없음"
+          : !memberAllowed
+          ? "대표 승인 필요"
+          : "담당자 저장"}
       </button>
     </div>
   );

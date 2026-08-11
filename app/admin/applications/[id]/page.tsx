@@ -9,7 +9,7 @@ import {
   STATUS_LABEL,
   STATUS_COLOR,
 } from "@/lib/mock-applications";
-import { getApplication, listReviewers } from "@/lib/applications";
+import { getApplication, listReviewers, getCurrentAdmin } from "@/lib/applications";
 import { DecisionPanel } from "./decision-panel";
 import { AssigneePicker } from "./assignee-picker";
 
@@ -20,9 +20,10 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function ApplicationDetailPage({ params }: Props) {
   const { id } = await params;
-  const [app, reviewers] = await Promise.all([
+  const [app, reviewers, me] = await Promise.all([
     getApplication(id),
     listReviewers(),
+    getCurrentAdmin(),
   ]);
   if (!app) return notFound();
 
@@ -35,6 +36,12 @@ export default async function ApplicationDetailPage({ params }: Props) {
     .eq("id", id)
     .maybeSingle();
   const currentReviewerId = (reviewerRow?.reviewer_id as string | null) ?? null;
+
+  // 편집 권한 (owner=항상, member=본인담당 또는 미배정)
+  const isOwner = me?.rank === "owner";
+  const isMine = currentReviewerId === me?.id;
+  const isUnassigned = currentReviewerId === null;
+  const canEdit = Boolean(me && (isOwner || isMine || isUnassigned));
 
   const color = STATUS_COLOR[app.status];
   const receivedDate = new Date(app.received_at).toLocaleString("ko-KR", {
@@ -256,12 +263,23 @@ export default async function ApplicationDetailPage({ params }: Props) {
             </div>
           )}
 
+          {/* 편집 잠금 안내 (member가 다른 사람 담당을 열었을 때) */}
+          {!canEdit && me ? (
+            <div className="rounded-2xl p-4 bg-amber-50 border border-amber-200 text-[12.5px] text-amber-900">
+              🔒 <b>조회 전용</b> — 이 신청은 <b>{app.reviewer ?? "다른 관리자"}</b> 담당이라
+              판정·재배정이 잠겨 있어요. 본인 담당으로 가져오려면 대표에게 요청해주세요.
+            </div>
+          ) : null}
+
           {/* Assignee picker */}
           <AssigneePicker
             applicationId={app.id}
             reviewers={reviewers}
             currentReviewerId={currentReviewerId}
             currentReviewerName={app.reviewer}
+            canEdit={canEdit}
+            isOwner={isOwner}
+            meId={me?.id ?? null}
           />
 
           {/* Decision panel */}
@@ -269,6 +287,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
             applicationId={app.id}
             initialStatus={app.status}
             initialNotes={app.review_notes ?? ""}
+            canEdit={canEdit}
           />
         </div>
       </div>
