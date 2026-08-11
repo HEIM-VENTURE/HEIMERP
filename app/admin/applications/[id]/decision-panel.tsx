@@ -115,6 +115,7 @@ export function DecisionPanel({
   const [pending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [alreadySent, setAlreadySent] = useState(false);
 
   const activeDecision = decision ? DECISIONS.find((d) => d.key === decision) : null;
   const emailTemplate = decision ? EMAIL_TEMPLATE[decision] : null;
@@ -133,6 +134,7 @@ export function DecisionPanel({
       return;
     }
     setErrorMsg(null);
+    setAlreadySent(false);
     startTransition(async () => {
       const res = await saveDecisionAction(applicationId, decision, notes);
       if (!res.ok) {
@@ -140,6 +142,7 @@ export function DecisionPanel({
         return;
       }
       setSavedAt(new Date());
+      setAlreadySent(res.alreadySent);
       // NO-GO는 목록으로 돌아가는 편이 자연스러움
       if (decision === "no_go") {
         router.push("/admin/applications");
@@ -263,9 +266,13 @@ export function DecisionPanel({
         </div>
       ) : null}
       {savedAt && !errorMsg ? (
-        <div className="mb-3 px-3 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-700">
+        <div className="mb-3 px-3 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-700 leading-relaxed">
           저장됨 · {savedAt.toLocaleTimeString("ko-KR")}
-          {decision !== "no_go" ? " · 이메일은 곧 자동 발송됩니다" : ""}
+          {decision === "no_go"
+            ? ""
+            : alreadySent
+            ? " · 이미 발송된 판정이라 이메일은 재발송하지 않습니다"
+            : " · 이메일은 곧 자동 발송됩니다"}
         </div>
       ) : null}
 

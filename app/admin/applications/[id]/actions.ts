@@ -54,7 +54,7 @@ export async function saveDecisionAction(
   applicationId: string,
   decision: Decision,
   notes: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; alreadySent: boolean } | { ok: false; error: string }> {
   if (!applicationId) return { ok: false, error: "applicationId가 없습니다." };
   if (!["go", "more_docs", "no_go"].includes(decision)) {
     return { ok: false, error: "잘못된 판정 값입니다." };
@@ -68,6 +68,21 @@ export async function saveDecisionAction(
   if (!perm.ok) return perm;
 
   const admin = createAdminClient();
+
+  // 현재 상태 조회 — 중복 발송 방지 판단용
+  const { data: current } = await admin
+    .from("applications")
+    .select("status, email_sent_at")
+    .eq("id", applicationId)
+    .maybeSingle();
+  const prevStatus = (current?.status as Decision | null) ?? null;
+  const prevSentAt = (current?.email_sent_at as string | null) ?? null;
+
+  // 같은 판정으로 이미 이메일 발송된 적 있으면 재발송 안 함
+  //   (사장님이 검토의견만 수정하려고 저장 다시 누르는 경우도 이메일은 안 감)
+  const sameDecisionAlreadySent =
+    prevStatus === decision && !!prevSentAt && decision !== "no_go";
+
   const nowIso = new Date().toISOString();
   const payload: Record<string, unknown> = {
     status: decision,
@@ -80,7 +95,11 @@ export async function saveDecisionAction(
   if (decision === "no_go") {
     payload.archived_at = nowIso;
     payload.email_pending = false;
+  } else if (sameDecisionAlreadySent) {
+    // 같은 판정 재저장: email 관련 필드 그대로 유지 (재발송 안 함)
+    payload.archived_at = null;
   } else {
+    // 판정 변경 or 첫 판정: 이메일 큐 재활성화
     payload.archived_at = null;
     payload.email_pending = true;
     payload.email_sent_at = null;
@@ -97,16 +116,15 @@ export async function saveDecisionAction(
     return { ok: false, error: `저장 실패: ${updateErr.message}` };
   }
 
-  // GO / more_docs → Apps Script webhook 호출 (이메일 발송)
-  //   실패해도 저장은 유지. email_error에 기록해두면 나중에 재시도 가능.
-  if (decision === "go" || decision === "more_docs") {
+  // 이메일 발송: GO / more_docs이고, 중복 발송 아닐 때만
+  if ((decision === "go" || decision === "more_docs") && !sameDecisionAlreadySent) {
     await triggerEmail(applicationId, decision, notes, admin);
   }
 
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${applicationId}`);
   revalidatePath("/admin/dashboard");
-  return { ok: true };
+  return { ok: true, alreadySent: sameDecisionAlreadySent };
 }
 
 /**
