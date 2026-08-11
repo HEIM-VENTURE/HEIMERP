@@ -37,11 +37,8 @@ export default async function ApplicationDetailPage({ params }: Props) {
     .maybeSingle();
   const currentReviewerId = (reviewerRow?.reviewer_id as string | null) ?? null;
 
-  // 편집 권한 (owner=항상, member=본인담당 또는 미배정)
-  const isOwner = me?.rank === "owner";
-  const isMine = currentReviewerId === me?.id;
-  const isUnassigned = currentReviewerId === null;
-  const canEdit = Boolean(me && (isOwner || isMine || isUnassigned));
+  // rank 잠금 없음 — admin이면 항상 편집 가능
+  const canEdit = Boolean(me);
 
   const color = STATUS_COLOR[app.status];
   const receivedDate = new Date(app.received_at).toLocaleString("ko-KR", {
@@ -263,14 +260,6 @@ export default async function ApplicationDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* 편집 잠금 안내 (member가 다른 사람 담당을 열었을 때) */}
-          {!canEdit && me ? (
-            <div className="rounded-2xl p-4 bg-amber-50 border border-amber-200 text-[12.5px] text-amber-900">
-              🔒 <b>조회 전용</b> — 이 신청은 <b>{app.reviewer ?? "다른 관리자"}</b> 담당이라
-              판정·재배정이 잠겨 있어요. 본인 담당으로 가져오려면 대표에게 요청해주세요.
-            </div>
-          ) : null}
-
           {/* Assignee picker */}
           <AssigneePicker
             applicationId={app.id}
@@ -278,7 +267,7 @@ export default async function ApplicationDetailPage({ params }: Props) {
             currentReviewerId={currentReviewerId}
             currentReviewerName={app.reviewer}
             canEdit={canEdit}
-            isOwner={isOwner}
+            isOwner={true}
             meId={me?.id ?? null}
           />
 

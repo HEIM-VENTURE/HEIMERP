@@ -39,25 +39,12 @@ async function requireAdmin(): Promise<
   };
 }
 
-// member는 (본인 담당) 또는 (미배정)일 때만 편집 가능. owner는 항상 가능.
+// rank 잠금 없음 — admin이면 모든 신청 편집 가능
 async function canEdit(
-  applicationId: string,
-  me: { id: string; rank: AdminRank }
+  _applicationId: string,
+  _me: { id: string; rank: AdminRank }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (me.rank === "owner") return { ok: true };
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("applications")
-    .select("reviewer_id")
-    .eq("id", applicationId)
-    .maybeSingle();
-  if (error || !data) return { ok: false, error: "신청을 찾을 수 없습니다." };
-  const reviewerId = data.reviewer_id as string | null;
-  if (reviewerId === null || reviewerId === me.id) return { ok: true };
-  return {
-    ok: false,
-    error: "다른 담당자의 신청은 편집할 수 없습니다. 대표에게 요청하거나 담당자 본인이 처리해주세요.",
-  };
+  return { ok: true };
 }
 
 /**
@@ -218,29 +205,8 @@ export async function assignReviewerAction(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth;
-  const { me } = auth;
 
   const admin = createAdminClient();
-
-  // 현재 담당자 조회 (권한 체크용)
-  const { data: current } = await admin
-    .from("applications")
-    .select("reviewer_id")
-    .eq("id", applicationId)
-    .maybeSingle();
-  const currentReviewerId = (current?.reviewer_id as string | null) ?? null;
-
-  // member의 배정 규칙
-  if (me.rank !== "owner") {
-    const okAsClaim = currentReviewerId === null && reviewerId === me.id;      // 미배정 → 본인
-    const okAsRelease = currentReviewerId === me.id && reviewerId === null;     // 본인 → 미배정
-    if (!okAsClaim && !okAsRelease) {
-      return {
-        ok: false,
-        error: "본인 담당으로 가져오거나 미배정으로 되돌리는 것만 가능합니다. 다른 사람에게 배정하려면 대표에게 요청하세요.",
-      };
-    }
-  }
 
   // 미배정 처리
   if (!reviewerId) {
@@ -275,16 +241,13 @@ export async function assignReviewerAction(
 }
 
 /**
- * NO-GO 되돌리기 (아카이브 해제). owner 전용.
+ * NO-GO 되돌리기 (아카이브 해제). admin이면 누구나 가능.
  */
 export async function unarchiveAction(
   applicationId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth;
-  if (auth.me.rank !== "owner") {
-    return { ok: false, error: "NO-GO 되돌리기는 대표만 가능합니다." };
-  }
 
   const admin = createAdminClient();
   const { error } = await admin

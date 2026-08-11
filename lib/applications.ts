@@ -99,29 +99,17 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 }
 
 /**
- * 활성 신청 목록 (archived 제외).
- *
- * 정책:
- *  - owner        : 전체 조회
- *  - member       : 본인이 담당(reviewer_id=me) + 미배정(reviewer_id=null)
- *  - member + all : 전체 조회 (읽기만, 편집은 별개 체크)
+ * 활성 신청 목록 (archived 제외). admin이면 항상 전체 조회.
+ * showAll 옵션은 하위 호환 용도로 유지되며 무시된다.
  */
-export async function listApplications(opts?: { showAll?: boolean }): Promise<Application[]> {
+export async function listApplications(_opts?: { showAll?: boolean }): Promise<Application[]> {
   const supabase = await createClient();
-  const me = await getCurrentAdmin();
-
-  let query = supabase
+  const { data, error } = await supabase
     .from("applications")
     .select("*")
     .is("archived_at", null)
     .order("received_at", { ascending: false });
 
-  if (me && me.rank !== "owner" && !opts?.showAll) {
-    // member: 본인 담당 or 미배정만
-    query = query.or(`reviewer_id.eq.${me.id},reviewer_id.is.null`);
-  }
-
-  const { data, error } = await query;
   if (error) {
     console.error("[applications.list] 조회 실패", error);
     return [];

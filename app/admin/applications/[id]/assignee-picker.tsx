@@ -30,12 +30,7 @@ export function AssigneePicker({
   const [justSaved, setJustSaved] = useState(false);
 
   const dirty = selected !== (currentReviewerId ?? "");
-  // member는 (미배정→본인) 또는 (본인→미배정)만 허용
-  const memberAllowed =
-    isOwner ||
-    (currentReviewerId === null && selected === meId) ||
-    (currentReviewerId === meId && selected === "");
-  const submittable = canEdit && dirty && memberAllowed;
+  const submittable = canEdit && dirty;
 
   function handleSave() {
     setErrorMsg(null);
@@ -77,22 +72,11 @@ export function AssigneePicker({
       >
         <option value="">— 미배정 —</option>
         {reviewers.map((r) => (
-          <option
-            key={r.id}
-            value={r.id}
-            // member는 본인 외 다른 사람 선택 못 함 (대표 배정 요청은 별도)
-            disabled={!isOwner && r.id !== meId}
-          >
+          <option key={r.id} value={r.id}>
             {r.name} · {r.email}
-            {!isOwner && r.id !== meId ? " (대표 승인 필요)" : ""}
           </option>
         ))}
       </select>
-      {!isOwner ? (
-        <p className="mt-1.5 text-[11px] text-zinc-500">
-          본인 담당으로 가져오거나 미배정으로 되돌리는 것만 가능합니다. 다른 사람에게 배정은 대표 승인이 필요해요.
-        </p>
-      ) : null}
 
       {reviewers.length === 0 ? (
         <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
@@ -120,11 +104,9 @@ export function AssigneePicker({
         {pending
           ? "저장 중..."
           : !canEdit
-          ? "편집 권한 없음"
+          ? "로그인 필요"
           : !dirty
           ? "변경사항 없음"
-          : !memberAllowed
-          ? "대표 승인 필요"
           : "담당자 저장"}
       </button>
     </div>
