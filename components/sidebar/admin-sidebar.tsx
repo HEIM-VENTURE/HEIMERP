@@ -17,6 +17,7 @@ import {
   LineChart,
   Building2,
   Video,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/tips", label: "TIPS 운영사", icon: Landmark },
       { href: "/admin/companies", label: "기업 마스터", icon: Building2, comingSoon: true },
+      { href: "/admin/paid-customers", label: "결제 고객", icon: CreditCard },
     ],
   },
 ];
