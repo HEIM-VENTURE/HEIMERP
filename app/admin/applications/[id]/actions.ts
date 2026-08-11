@@ -23,7 +23,7 @@ async function requireAdmin(): Promise<
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, name, role, admin_rank")
+    .select("id, name, role")
     .eq("id", user.id)
     .maybeSingle();
   if (!profile || profile.role !== "admin") {
@@ -34,7 +34,7 @@ async function requireAdmin(): Promise<
     me: {
       id: profile.id as string,
       name: (profile.name as string) ?? "",
-      rank: ((profile.admin_rank as AdminRank) ?? "member"),
+      rank: "member" as AdminRank,
     },
   };
 }

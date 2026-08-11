@@ -85,16 +85,17 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  // admin_rank 컬럼은 조회하지 않는다 (rank 잠금 해제로 미사용, 0035 마이그레이션 미실행 환경도 안전)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, name, role, admin_rank")
+    .select("id, name, role")
     .eq("id", user.id)
     .maybeSingle();
   if (!profile || profile.role !== "admin") return null;
   return {
     id: profile.id as string,
     name: (profile.name as string) ?? "",
-    rank: (profile.admin_rank as "owner" | "member") ?? "member",
+    rank: "member",
   };
 }
 
