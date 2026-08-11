@@ -110,10 +110,101 @@ export async function saveDecisionAction(
     return { ok: false, error: `저장 실패: ${updateErr.message}` };
   }
 
+  // GO / more_docs → Apps Script webhook 호출 (이메일 발송)
+  //   실패해도 저장은 유지. email_error에 기록해두면 나중에 재시도 가능.
+  if (decision === "go" || decision === "more_docs") {
+    await triggerEmail(applicationId, decision, notes, admin);
+  }
+
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${applicationId}`);
   revalidatePath("/admin/dashboard");
   return { ok: true };
+}
+
+/**
+ * Apps Script webhook 호출 → Gmail 발송.
+ * 판정된 신청의 이메일/기업명/담당자 이름을 payload에 담아 POST.
+ * 성공 시 email_sent_at 세팅, 실패 시 email_error 기록.
+ */
+async function triggerEmail(
+  applicationId: string,
+  decision: "go" | "more_docs",
+  notes: string,
+  admin: ReturnType<typeof createAdminClient>
+): Promise<void> {
+  const webhookUrl = process.env.APPS_SCRIPT_WEBHOOK_URL;
+  const secret = process.env.APPS_SCRIPT_SHARED_SECRET;
+
+  if (!webhookUrl || !secret) {
+    console.warn("[email] APPS_SCRIPT_WEBHOOK_URL 또는 APPS_SCRIPT_SHARED_SECRET 미설정. 이메일 발송 건너뜀.");
+    await admin
+      .from("applications")
+      .update({ email_error: "Apps Script webhook 미설정" })
+      .eq("id", applicationId);
+    return;
+  }
+
+  // 이메일 발송에 필요한 필드 재조회
+  const { data: app } = await admin
+    .from("applications")
+    .select("application_no, company_name, contact_name, email")
+    .eq("id", applicationId)
+    .maybeSingle();
+
+  if (!app) {
+    console.error("[email] 신청서를 다시 조회할 수 없음");
+    return;
+  }
+
+  const payload = {
+    secret,
+    application_no: app.application_no as string,
+    decision,
+    company_name: app.company_name as string,
+    to_name: (app.contact_name as string) || "담당자",
+    to_email: app.email as string,
+    notes: notes.trim(),
+  };
+
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      // Apps Script Web App은 302 리다이렉트로 응답할 수 있음
+      redirect: "follow",
+    });
+    const text = await resp.text();
+    let json: { ok?: boolean; error?: string; sent_at?: string } = {};
+    try { json = JSON.parse(text); } catch { /* not json */ }
+
+    if (json.ok) {
+      await admin
+        .from("applications")
+        .update({
+          email_pending: false,
+          email_sent_at: json.sent_at || new Date().toISOString(),
+          email_error: null,
+        })
+        .eq("id", applicationId);
+    } else {
+      await admin
+        .from("applications")
+        .update({
+          email_error: `발송 실패: ${json.error || text.substring(0, 200)}`,
+        })
+        .eq("id", applicationId);
+    }
+  } catch (err) {
+    console.error("[email] webhook 호출 실패", err);
+    await admin
+      .from("applications")
+      .update({
+        email_error: `webhook 호출 실패: ${String(err).substring(0, 200)}`,
+      })
+      .eq("id", applicationId);
+  }
 }
 
 /**
