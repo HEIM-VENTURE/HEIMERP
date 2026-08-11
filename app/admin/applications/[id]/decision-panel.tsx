@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, AlertCircle, FileQuestion, XCircle, Send, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
+import { CheckCircle2, FileQuestion, XCircle, Send, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react";
 import type { ApplicationStatus } from "@/lib/mock-applications";
 
-type Decision = "go" | "conditional" | "more_docs" | "no_go";
+type Decision = "go" | "more_docs" | "no_go";
 
 const DECISIONS: {
   key: Decision;
@@ -23,15 +23,6 @@ const DECISIONS: {
     color: "#065F46",
     bg: "#D1FAE5",
     border: "#10B981",
-  },
-  {
-    key: "conditional",
-    label: "조건부 GO",
-    desc: "특정 자료·조건 충족 시",
-    icon: AlertCircle,
-    color: "#1E40AF",
-    bg: "#DBEAFE",
-    border: "#3B82F6",
   },
   {
     key: "more_docs",
@@ -65,17 +56,6 @@ const EMAIL_TEMPLATE: Record<Decision, { subject: string; body: string }> = {
 
 문의: admin@heimvi.com`,
   },
-  conditional: {
-    subject: "[하임벤처투자] 조건부 진행 안내",
-    body: `안녕하세요, 하임벤처투자입니다.
-
-제출해주신 신청서를 검토했습니다. 아래 조건 충족 시 진행 가능합니다:
-
-- [조건 1]
-- [조건 2]
-
-조건 충족 후 회신 부탁드립니다.`,
-  },
   more_docs: {
     subject: "[하임벤처투자] 추가 자료 요청",
     body: `안녕하세요, 하임벤처투자입니다.
@@ -101,7 +81,7 @@ export function DecisionPanel({
   initialNotes: string;
 }) {
   const [decision, setDecision] = useState<Decision | null>(
-    initialStatus === "go" || initialStatus === "conditional" || initialStatus === "more_docs" || initialStatus === "no_go"
+    initialStatus === "go" || initialStatus === "more_docs" || initialStatus === "no_go"
       ? initialStatus
       : null
   );
@@ -118,8 +98,8 @@ export function DecisionPanel({
         <h3 className="text-[13px] font-semibold text-zinc-900">검토 결정</h3>
       </div>
 
-      {/* 4 decision buttons */}
-      <div className="grid grid-cols-2 gap-2 mb-5">
+      {/* 3 decision buttons (GO / 자료요청 / NO-GO) */}
+      <div className="grid grid-cols-3 gap-2 mb-5">
         {DECISIONS.map((d) => {
           const active = decision === d.key;
           const Icon = d.icon;
@@ -164,13 +144,13 @@ export function DecisionPanel({
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
           placeholder={
-            decision === "conditional"
-              ? "예: MFDS 인증 로드맵 확인 후 착수. 유닛 이코노믹스 자료 보완 필요."
-              : decision === "more_docs"
+            decision === "more_docs"
               ? "예: 최근 3개월 매출 데이터, 주주명부 재제출 요청."
               : decision === "no_go"
               ? "예: 서비스 라인업 부적합. 트랙션 확보 후 재접수 안내."
-              : "결정 근거·조건·후속 조치를 정리해주세요."
+              : decision === "go"
+              ? "예: 진행 조건·후속 미팅 안건·담당 배정 등을 정리해주세요."
+              : "결정 근거·후속 조치를 정리해주세요."
           }
           className="w-full px-3 py-2.5 rounded-lg text-[13px] leading-relaxed bg-white border border-zinc-200 focus:outline-none focus:border-brand focus:shadow-[0_0_0_3px_rgba(109,93,211,0.1)] resize-none placeholder:text-zinc-400"
         />
@@ -234,8 +214,6 @@ export function DecisionPanel({
           ? "NO-GO 확정 (이메일 없음)"
           : decision === "more_docs"
           ? "자료 요청 이메일 발송"
-          : decision === "conditional"
-          ? "조건부 GO · 이메일 발송"
           : decision === "go"
           ? "GO 확정 · 캘린더 링크 발송"
           : "결정 선택 후 저장"}

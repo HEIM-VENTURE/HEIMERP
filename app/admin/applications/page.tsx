@@ -13,9 +13,7 @@ export const metadata = { title: "기업 접수 · HEIM ERP" };
 const TABS: { key: ApplicationStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "new", label: "신규" },
-  { key: "reviewing", label: "검토 중" },
   { key: "go", label: "GO" },
-  { key: "conditional", label: "조건부 GO" },
   { key: "more_docs", label: "자료 요청" },
   { key: "no_go", label: "NO-GO" },
 ];

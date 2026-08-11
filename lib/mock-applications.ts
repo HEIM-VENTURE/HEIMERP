@@ -4,12 +4,10 @@
  */
 
 export type ApplicationStatus =
-  | "new"          // 신규 접수 (미검토)
-  | "reviewing"    // 검토 중
-  | "go"           // GO 결정
-  | "conditional"  // 조건부 GO
-  | "more_docs"    // 자료 요청
-  | "no_go";       // NO-GO
+  | "new"        // 신규 접수 (미판정)
+  | "go"         // GO 결정
+  | "more_docs"  // 자료 요청
+  | "no_go";     // NO-GO
 
 export type Application = {
   id: string;
@@ -98,9 +96,7 @@ export const PRIORITY_LABEL: Record<string, string> = {
 
 export const STATUS_LABEL: Record<ApplicationStatus, string> = {
   new: "신규 접수",
-  reviewing: "검토 중",
   go: "GO",
-  conditional: "조건부 GO",
   more_docs: "자료 요청",
   no_go: "NO-GO",
 };
@@ -110,9 +106,7 @@ export const STATUS_COLOR: Record<
   { bg: string; text: string; dot: string }
 > = {
   new: { bg: "#F0F1F3", text: "#4B5563", dot: "#9CA3AF" },
-  reviewing: { bg: "#FEF3C7", text: "#92400E", dot: "#D97706" },
   go: { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
-  conditional: { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
   more_docs: { bg: "#FBEAE5", text: "#A83A20", dot: "#E5531F" },
   no_go: { bg: "#F3F4F6", text: "#6B7280", dot: "#9CA3AF" },
 };
@@ -125,7 +119,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     id: "app-2026-0042",
     application_no: "HEIM-APP-2026-0042",
     received_at: "2026-08-01T09:14:00+09:00",
-    status: "reviewing",
+    status: "new",
     company_name: "뉴로핏",
     business_number: "123-45-67890",
     ceo_name: "김도현",

@@ -77,7 +77,7 @@ export default async function AdminDashboardPage() {
 
   // Mock 접수 상태
   const pendingApplications = MOCK_APPLICATIONS.filter(
-    (a) => a.status === "new" || a.status === "reviewing"
+    (a) => a.status === "new"
   ).length;
 
   const recentChanges = [...allCompanies]
@@ -201,13 +201,13 @@ export default async function AdminDashboardPage() {
             link="/admin/applications"
           />
           {MOCK_APPLICATIONS.filter(
-            (a) => a.status === "new" || a.status === "reviewing"
+            (a) => a.status === "new"
           ).length === 0 ? (
             <EmptyLine>검토 대기 없음</EmptyLine>
           ) : (
             <div className="space-y-1">
               {MOCK_APPLICATIONS.filter(
-                (a) => a.status === "new" || a.status === "reviewing"
+                (a) => a.status === "new"
               )
                 .slice(0, 5)
                 .map((a) => {
