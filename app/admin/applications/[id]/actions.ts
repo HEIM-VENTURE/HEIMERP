@@ -88,6 +88,60 @@ export async function saveDecisionAction(
 }
 
 /**
+ * 담당자 배정.
+ *
+ * - reviewerId=null 이면 미배정으로 되돌림.
+ * - 판정 전에도 배정 가능 (판정 시 판정자로 덮어써지지 않도록 판정 로직에서 이미 판정자 = 담당자로 스냅샷됨).
+ */
+export async function assignReviewerAction(
+  applicationId: string,
+  reviewerId: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "로그인 세션이 만료되었습니다." };
+
+  const { data: me } = await supabase
+    .from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (me?.role !== "admin") return { ok: false, error: "관리자 권한이 필요합니다." };
+
+  const admin = createAdminClient();
+
+  // 미배정 처리
+  if (!reviewerId) {
+    const { error } = await admin
+      .from("applications")
+      .update({ reviewer_id: null, reviewer_name: null })
+      .eq("id", applicationId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/applications");
+    revalidatePath(`/admin/applications/${applicationId}`);
+    return { ok: true };
+  }
+
+  // 배정할 사람 확인
+  const { data: target, error: targetErr } = await admin
+    .from("profiles")
+    .select("id, name, role")
+    .eq("id", reviewerId)
+    .maybeSingle();
+  if (targetErr || !target) return { ok: false, error: "선택한 사용자를 찾을 수 없습니다." };
+  if (target.role !== "admin") return { ok: false, error: "관리자만 담당자로 배정할 수 있습니다." };
+
+  const { error: updateErr } = await admin
+    .from("applications")
+    .update({ reviewer_id: target.id, reviewer_name: target.name })
+    .eq("id", applicationId);
+  if (updateErr) return { ok: false, error: updateErr.message };
+
+  revalidatePath("/admin/applications");
+  revalidatePath(`/admin/applications/${applicationId}`);
+  return { ok: true };
+}
+
+/**
  * NO-GO 되돌리기 (아카이브 해제). 필요 시 사용.
  */
 export async function unarchiveAction(

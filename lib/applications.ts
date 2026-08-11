@@ -54,6 +54,26 @@ type FileMetaRow = {
 };
 
 /**
+ * 담당자 후보 목록 — role='admin'인 profiles.
+ * 배정 드롭다운에서 사용.
+ */
+export type Reviewer = { id: string; name: string; email: string };
+
+export async function listReviewers(): Promise<Reviewer[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, name, email")
+    .eq("role", "admin")
+    .order("name");
+  if (error) {
+    console.error("[applications.listReviewers] 조회 실패", error);
+    return [];
+  }
+  return (data ?? []) as Reviewer[];
+}
+
+/**
  * 활성 신청 목록 (archived 제외).
  */
 export async function listApplications(): Promise<Application[]> {

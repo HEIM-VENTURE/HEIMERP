@@ -9,8 +9,9 @@ import {
   STATUS_LABEL,
   STATUS_COLOR,
 } from "@/lib/mock-applications";
-import { getApplication } from "@/lib/applications";
+import { getApplication, listReviewers } from "@/lib/applications";
 import { DecisionPanel } from "./decision-panel";
+import { AssigneePicker } from "./assignee-picker";
 
 export const metadata = { title: "접수 검토 · HEIM ERP" };
 export const dynamic = "force-dynamic";
@@ -19,8 +20,21 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function ApplicationDetailPage({ params }: Props) {
   const { id } = await params;
-  const app = await getApplication(id);
+  const [app, reviewers] = await Promise.all([
+    getApplication(id),
+    listReviewers(),
+  ]);
   if (!app) return notFound();
+
+  // 담당자 id 조회 (mock 타입엔 없어서 raw DB에서 다시 뽑는다 — getApplication이 스냅샷 name만 리턴하므로)
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { data: reviewerRow } = await supabase
+    .from("applications")
+    .select("reviewer_id")
+    .eq("id", id)
+    .maybeSingle();
+  const currentReviewerId = (reviewerRow?.reviewer_id as string | null) ?? null;
 
   const color = STATUS_COLOR[app.status];
   const receivedDate = new Date(app.received_at).toLocaleString("ko-KR", {
@@ -241,6 +255,14 @@ export default async function ApplicationDetailPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* Assignee picker */}
+          <AssigneePicker
+            applicationId={app.id}
+            reviewers={reviewers}
+            currentReviewerId={currentReviewerId}
+            currentReviewerName={app.reviewer}
+          />
 
           {/* Decision panel */}
           <DecisionPanel
