@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText, Download, Sparkles, Clock, User, Mail, Phone, Globe, Building2 } from "lucide-react";
 import {
-  findApplicationById,
   GROWTH_STAGE_LABEL,
   REVENUE_LABEL,
   TREND_LABEL,
@@ -10,15 +9,17 @@ import {
   STATUS_LABEL,
   STATUS_COLOR,
 } from "@/lib/mock-applications";
+import { getApplication } from "@/lib/applications";
 import { DecisionPanel } from "./decision-panel";
 
 export const metadata = { title: "접수 검토 · HEIM ERP" };
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function ApplicationDetailPage({ params }: Props) {
   const { id } = await params;
-  const app = findApplicationById(id);
+  const app = await getApplication(id);
   if (!app) return notFound();
 
   const color = STATUS_COLOR[app.status];
@@ -242,7 +243,11 @@ export default async function ApplicationDetailPage({ params }: Props) {
           )}
 
           {/* Decision panel */}
-          <DecisionPanel initialStatus={app.status} initialNotes={app.review_notes ?? ""} />
+          <DecisionPanel
+            applicationId={app.id}
+            initialStatus={app.status}
+            initialNotes={app.review_notes ?? ""}
+          />
         </div>
       </div>
     </>

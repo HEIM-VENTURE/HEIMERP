@@ -1,14 +1,15 @@
 import Link from "next/link";
 import {
-  MOCK_APPLICATIONS,
   STATUS_LABEL,
   STATUS_COLOR,
   GROWTH_STAGE_LABEL,
   REVENUE_LABEL,
   type ApplicationStatus,
 } from "@/lib/mock-applications";
+import { listApplications } from "@/lib/applications";
 
 export const metadata = { title: "기업 접수 · HEIM ERP" };
+export const dynamic = "force-dynamic";
 
 const TABS: { key: ApplicationStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -26,16 +27,11 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
   const params = await searchParams;
   const activeTab = (params.status ?? "all") as ApplicationStatus | "all";
 
-  const rows =
-    activeTab === "all"
-      ? MOCK_APPLICATIONS
-      : MOCK_APPLICATIONS.filter((a) => a.status === activeTab);
+  const all = await listApplications();
+  const rows = activeTab === "all" ? all : all.filter((a) => a.status === activeTab);
 
   const counts = TABS.reduce<Record<string, number>>((acc, t) => {
-    acc[t.key] =
-      t.key === "all"
-        ? MOCK_APPLICATIONS.length
-        : MOCK_APPLICATIONS.filter((a) => a.status === t.key).length;
+    acc[t.key] = t.key === "all" ? all.length : all.filter((a) => a.status === t.key).length;
     return acc;
   }, {});
 
@@ -49,7 +45,7 @@ export default async function ApplicationsListPage({ searchParams }: Props) {
           </p>
         </div>
         <div className="text-xs text-zinc-400">
-          <span className="font-mono">MOCK 데이터</span> · Phase 1c 완성 후 실데이터 표시
+          Supabase 실데이터 · NO-GO 처리된 신청은 목록에서 숨김
         </div>
       </div>
 

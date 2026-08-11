@@ -16,7 +16,8 @@ import {
   SALES_STAGE_COLORS,
   CONSULTING_STAGE_LABELS,
 } from "@/lib/labels";
-import { MOCK_APPLICATIONS, STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
+import { STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
+import { listApplications } from "@/lib/applications";
 import { MOCK_PROJECTS } from "@/lib/mock-projects";
 import { MOCK_DEALS } from "@/lib/mock-deals";
 
@@ -75,8 +76,9 @@ export default async function AdminDashboardPage() {
     0
   );
 
-  // Mock 접수 상태
-  const pendingApplications = MOCK_APPLICATIONS.filter(
+  // 실제 접수 상태 (활성만)
+  const applications = await listApplications();
+  const pendingApplications = applications.filter(
     (a) => a.status === "new"
   ).length;
 
@@ -197,16 +199,14 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHead
             title="검토 대기 · 신규 접수"
-            hint={`${MOCK_APPLICATIONS.filter((a) => a.status === "new").length}건 미배정`}
+            hint={`${pendingApplications}건 미배정`}
             link="/admin/applications"
           />
-          {MOCK_APPLICATIONS.filter(
-            (a) => a.status === "new"
-          ).length === 0 ? (
+          {pendingApplications === 0 ? (
             <EmptyLine>검토 대기 없음</EmptyLine>
           ) : (
             <div className="space-y-1">
-              {MOCK_APPLICATIONS.filter(
+              {applications.filter(
                 (a) => a.status === "new"
               )
                 .slice(0, 5)
