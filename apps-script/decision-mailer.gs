@@ -143,17 +143,18 @@ function buildMail(p) {
   var footer =
     '\n\n————————————\n' +
     '하임벤처투자\n' +
-    '문의: hello@heimvi.com | 02-2038-4118\n' +
-    'https://heim-erp.vercel.app';
+    '문의: hello@heimvi.com | 02-2038-4118';
 
   if (p.decision === 'go') {
     return {
-      subject: '[하임벤처투자] ' + p.company_name + ' 님, 프로젝트 진행 확정 안내 (' + p.application_no + ')',
+      subject: '[하임벤처투자] ' + p.company_name + ' 님, 초도 미팅 · 기업 진단 안내',
       body:
         greeting +
-        '제출해주신 신청서를 검토한 결과, 함께 프로젝트를 진행하기로 결정했습니다.\n\n' +
-        '아래 링크에서 초도 미팅 일정을 잡아주세요.\n' +
+        '제출해주신 신청서를 잘 검토했습니다.\n\n' +
+        '초도 미팅 일정을 잡고, 미팅에서 기업 진단을 진행하고자 합니다.\n' +
+        '아래 링크에서 편하신 시간을 선택해주세요.\n\n' +
         CALENDAR_LINK + '\n\n' +
+        '미팅에서 뵙겠습니다.\n\n' +
         (p.notes ? '검토 의견:\n' + p.notes + '\n\n' : '') +
         '접수번호: ' + p.application_no +
         footer,
@@ -162,7 +163,7 @@ function buildMail(p) {
 
   // more_docs: 검토의견 그대로 본문에 삽입
   return {
-    subject: '[하임벤처투자] ' + p.company_name + ' 님, 추가 자료 요청 (' + p.application_no + ')',
+    subject: '[하임벤처투자] ' + p.company_name + ' 님, 추가 자료 요청',
     body:
       greeting +
       '제출해주신 신청서를 검토했습니다. 판단을 위해 아래 자료가 추가로 필요합니다.\n\n' +
