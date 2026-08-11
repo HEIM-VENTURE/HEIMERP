@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PaidCustomerTable } from "./table";
 
-export const metadata = { title: "결제 고객 · HEIM ERP" };
+export const metadata = { title: "고객 현황표 · HEIM ERP" };
 export const dynamic = "force-dynamic";
 
 type PaidCustomer = {
@@ -62,9 +62,9 @@ export default async function PaidCustomersPage() {
     <>
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">결제 고객</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">고객 현황표</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            2026년 7월 30일 기준 결제 고객 리스트. 대표님 현황 파악용.
+            전체 고객 현황을 한 화면에서 관리합니다. 셀을 클릭해 바로 수정하거나 상세를 열어 전체 항목을 편집하세요.
           </p>
         </div>
         <div className="flex items-center gap-4 text-[12px]">

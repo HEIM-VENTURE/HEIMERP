@@ -2,30 +2,20 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, X, HelpCircle, Download, LinkIcon } from "lucide-react";
+import { Download, LinkIcon, PanelRightOpen } from "lucide-react";
 import { SALES_STAGE_LABELS, SALES_STAGE_COLORS } from "@/lib/labels";
+import {
+  TextEditCell,
+  PaidToggleCell,
+  UrgencySelectCell,
+  statusBadge,
+  programBadges,
+} from "./edit-cells";
+import { PaidCustomerDetailPanel, type DetailPanelRow } from "./detail-panel";
 
 type SalesStageKey = keyof typeof SALES_STAGE_LABELS;
 
-type PaidCustomer = {
-  id: string;
-  no: number | null;
-  company_name: string;
-  is_paid: boolean | null;
-  new_corp_setup: string | null;
-  new_company_name: string | null;
-  target_program: string | null;
-  urgency: number | null;
-  legal_name: string | null;
-  established_at: string | null;
-  headcount: string | null;
-  ir_deck_tips: string | null;
-  ir_deck_lips: string | null;
-  demoday_1_a: string | null;
-  demoday_1_b: string | null;
-  demoday_2_a: string | null;
-  demoday_2_b: string | null;
-  offline: string | null;
+type PaidCustomer = DetailPanelRow & {
   company_id: number | null;
   company?: {
     id: number;
@@ -46,6 +36,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const [program, setProgram] = useState<ProgramFilter>("all");
   const [pipeline, setPipeline] = useState<PipelineFilter>("all");
   const [q, setQ] = useState("");
+  const [detailRow, setDetailRow] = useState<PaidCustomer | null>(null);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -57,7 +48,10 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       if (pipeline === "unlinked" && r.company) return false;
       if (q.trim()) {
         const needle = q.trim().toLowerCase();
-        const hay = [r.company_name, r.legal_name, r.new_company_name].filter(Boolean).join(" ").toLowerCase();
+        const hay = [r.company_name, r.legal_name, r.new_company_name]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
@@ -68,17 +62,13 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const unlinkedCount = rows.length - linkedCount;
 
   async function handleExport() {
-    // xlsx 라이브러리는 무거워서 필요할 때만 동적 로드
     const XLSX = await import("xlsx");
-
-    // 원본 엑셀과 동일한 컬럼 순서·이름으로 매핑 + 파이프라인 단계
     const data = filtered.map((r) => ({
       "No.": r.no ?? "",
       "회사명": r.company_name ?? "",
-      "파이프라인 단계":
-        r.company
-          ? (SALES_STAGE_LABELS[r.company.sales_stage as SalesStageKey] ?? "등록됨")
-          : "미등록",
+      "파이프라인 단계": r.company
+        ? (SALES_STAGE_LABELS[r.company.sales_stage as SalesStageKey] ?? "등록됨")
+        : "미등록",
       "결제여부": r.is_paid === true ? "O" : r.is_paid === false ? "X" : "",
       "신규법인 설립": r.new_corp_setup ?? "",
       "신규회사명": r.new_company_name ?? "",
@@ -94,22 +84,23 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       "2차 데모데이 (A)": r.demoday_2_a ?? "",
       "2차 데모데이 (B)": r.demoday_2_b ?? "",
       "오프라인": r.offline ?? "",
+      "메모": r.memo ?? "",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-    // 컬럼 폭 힌트 (파이프라인 컬럼 포함해서 18개)
     (ws["!cols"] as unknown) = [
       { wch: 5 }, { wch: 22 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 14 },
       { wch: 14 }, { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 14 },
       { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 10 },
+      { wch: 30 },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "결제고객");
+    XLSX.utils.book_append_sheet(wb, ws, "고객현황표");
 
     const today = new Date();
     const yyyymmdd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
-    XLSX.writeFile(wb, `결제고객리스트_${yyyymmdd}.xlsx`);
+    XLSX.writeFile(wb, `고객현황표_${yyyymmdd}.xlsx`);
   }
 
   return (
@@ -186,64 +177,223 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
             <thead className="text-[11px] text-zinc-500 bg-zinc-50/80 border-b border-zinc-200">
               <tr>
                 <Th w="w-10">#</Th>
-                <Th w="w-52">회사명 · 법인명</Th>
+                <Th w="w-56">회사명 · 법인명</Th>
                 <Th w="w-24">파이프라인</Th>
                 <Th w="w-16">결제</Th>
                 <Th w="w-14">긴급</Th>
                 <Th w="w-32">타깃</Th>
-                <Th w="w-24">설립일</Th>
-                <Th w="w-20">인원</Th>
-                <Th w="w-20">신규법인</Th>
+                <Th w="w-28">설립일</Th>
+                <Th w="w-24">인원</Th>
+                <Th w="w-24">신규법인</Th>
                 <Th w="w-20">IR팁스</Th>
                 <Th w="w-20">IR립스</Th>
-                <Th w="w-32">1차 데모데이</Th>
-                <Th w="w-32">2차 데모데이</Th>
+                <Th w="w-28">1차 데모데이</Th>
+                <Th w="w-28">2차 데모데이</Th>
                 <Th w="w-20">오프라인</Th>
+                <Th w="w-10">{" "}</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-50/70 transition-colors">
+                <tr key={r.id} className="hover:bg-zinc-50/40 transition-colors align-top">
                   <Td>
                     <span className="tabular-nums text-zinc-400">{r.no ?? "-"}</span>
                   </Td>
                   <Td>
-                    {r.company ? (
-                      <Link
-                        href={`/admin/companies/${r.company.id}`}
-                        className="font-medium text-zinc-900 hover:text-brand hover:underline truncate inline-flex items-center gap-1"
-                      >
-                        {r.company_name}
-                        <LinkIcon className="w-3 h-3 text-zinc-400" />
-                      </Link>
-                    ) : (
-                      <div className="font-medium text-zinc-900 truncate">{r.company_name}</div>
-                    )}
-                    {r.legal_name && r.legal_name !== r.company_name ? (
-                      <div className="text-[10.5px] text-zinc-400 truncate">{r.legal_name}</div>
-                    ) : null}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 min-w-0">
+                        <TextEditCell
+                          id={r.id}
+                          field="company_name"
+                          value={r.company_name}
+                          render={(v) => (
+                            <span className="font-medium text-zinc-900 truncate block">
+                              {v ?? <span className="text-zinc-300">회사명 없음</span>}
+                            </span>
+                          )}
+                        />
+                      </div>
+                      {r.company ? (
+                        <Link
+                          href={`/admin/companies/${r.company.id}`}
+                          className="p-1 rounded hover:bg-brand/10 text-zinc-400 hover:text-brand shrink-0"
+                          title={`${r.company.name} 기업 마스터로 이동`}
+                        >
+                          <LinkIcon className="w-3 h-3" />
+                        </Link>
+                      ) : null}
+                    </div>
+                    <TextEditCell
+                      id={r.id}
+                      field="legal_name"
+                      value={r.legal_name}
+                      placeholder="법인 등기명"
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[10.5px] text-zinc-400 truncate block">{v}</span>
+                        ) : (
+                          <span className="text-[10.5px] text-zinc-300">법인명 —</span>
+                        )
+                      }
+                    />
                     {r.new_company_name ? (
-                      <div className="text-[10.5px] text-brand mt-0.5">신규: {r.new_company_name}</div>
+                      <div className="text-[10.5px] text-brand mt-0.5">
+                        신규: {r.new_company_name}
+                      </div>
                     ) : null}
                   </Td>
-                  <Td><PipelineBadge company={r.company} /></Td>
-                  <Td><PaidBadge value={r.is_paid} /></Td>
-                  <Td><UrgencyBadge value={r.urgency} /></Td>
-                  <Td>{splitProgram(r.target_program)}</Td>
-                  <Td className="text-[11px] text-zinc-600 tabular-nums">{r.established_at ?? "-"}</Td>
-                  <Td className="text-[11px] text-zinc-600">{r.headcount ?? "-"}</Td>
-                  <Td>{r.new_corp_setup ? <span className="text-[11px] text-zinc-700">{r.new_corp_setup}</span> : "-"}</Td>
-                  <Td>{stateCell(r.ir_deck_tips)}</Td>
-                  <Td>{stateCell(r.ir_deck_lips)}</Td>
-                  <Td className="text-[11px] text-zinc-600">
-                    {r.demoday_1_a || "-"}
-                    {r.demoday_1_b ? <div className="text-[10.5px] text-zinc-400">{r.demoday_1_b}</div> : null}
+                  <Td>
+                    <PipelineBadge company={r.company} />
                   </Td>
-                  <Td className="text-[11px] text-zinc-600">
-                    {r.demoday_2_a || "-"}
-                    {r.demoday_2_b ? <div className="text-[10.5px] text-zinc-400">{r.demoday_2_b}</div> : null}
+                  <Td>
+                    <PaidToggleCell id={r.id} value={r.is_paid} />
                   </Td>
-                  <Td>{stateCell(r.offline)}</Td>
+                  <Td>
+                    <UrgencySelectCell id={r.id} value={r.urgency} />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="target_program"
+                      value={r.target_program}
+                      placeholder="팁스,립스,투자"
+                      render={programBadges}
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="established_at"
+                      value={r.established_at}
+                      placeholder="YYYY-MM-DD"
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[11px] text-zinc-600 tabular-nums">{v}</span>
+                        ) : (
+                          <span className="text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="headcount"
+                      value={r.headcount}
+                      placeholder="예: 6명"
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[11px] text-zinc-600">{v}</span>
+                        ) : (
+                          <span className="text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="new_corp_setup"
+                      value={r.new_corp_setup}
+                      placeholder="O · ? · 설립예정"
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[11px] text-zinc-700">{v}</span>
+                        ) : (
+                          <span className="text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="ir_deck_tips"
+                      value={r.ir_deck_tips}
+                      placeholder="O · 1주후"
+                      render={statusBadge}
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="ir_deck_lips"
+                      value={r.ir_deck_lips}
+                      placeholder="O · 2주후"
+                      render={statusBadge}
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="demoday_1_a"
+                      value={r.demoday_1_a}
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[11px] text-zinc-600">{v}</span>
+                        ) : (
+                          <span className="text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                    <TextEditCell
+                      id={r.id}
+                      field="demoday_1_b"
+                      value={r.demoday_1_b}
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[10.5px] text-zinc-400">{v}</span>
+                        ) : (
+                          <span className="text-[10.5px] text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="demoday_2_a"
+                      value={r.demoday_2_a}
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[11px] text-zinc-600">{v}</span>
+                        ) : (
+                          <span className="text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                    <TextEditCell
+                      id={r.id}
+                      field="demoday_2_b"
+                      value={r.demoday_2_b}
+                      render={(v) =>
+                        v ? (
+                          <span className="text-[10.5px] text-zinc-400">{v}</span>
+                        ) : (
+                          <span className="text-[10.5px] text-zinc-300">-</span>
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <TextEditCell
+                      id={r.id}
+                      field="offline"
+                      value={r.offline}
+                      render={statusBadge}
+                    />
+                  </Td>
+                  <Td className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setDetailRow(r)}
+                      className="inline-flex items-center gap-1 p-1.5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900"
+                      title="상세 편집"
+                      aria-label="상세 편집"
+                    >
+                      <PanelRightOpen className="w-3.5 h-3.5" />
+                    </button>
+                  </Td>
                 </tr>
               ))}
             </tbody>
@@ -253,6 +403,10 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           ) : null}
         </div>
       </div>
+
+      {detailRow ? (
+        <PaidCustomerDetailPanel row={detailRow} onClose={() => setDetailRow(null)} />
+      ) : null}
     </>
   );
 }
@@ -281,72 +435,13 @@ function PipelineBadge({ company }: { company: PaidCustomer["company"] }) {
   }
   const c = SALES_STAGE_COLORS[stage];
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-medium ${c.badge}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-medium ${c.badge}`}
+    >
       <span className={`w-1 h-1 rounded-full ${c.dot}`} />
       {SALES_STAGE_LABELS[stage]}
     </span>
   );
-}
-
-function PaidBadge({ value }: { value: boolean | null }) {
-  if (value === true)
-    return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10.5px] font-medium">
-        <Check className="w-2.5 h-2.5" /> 결제
-      </span>
-    );
-  if (value === false)
-    return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10.5px] font-medium">
-        <X className="w-2.5 h-2.5" /> 미결제
-      </span>
-    );
-  return <span className="text-zinc-300">-</span>;
-}
-
-function UrgencyBadge({ value }: { value: number | null }) {
-  if (!value) return <span className="text-zinc-300">-</span>;
-  const styles: Record<number, string> = {
-    1: "bg-rose-50 text-rose-700",
-    2: "bg-amber-50 text-amber-700",
-    3: "bg-zinc-100 text-zinc-600",
-  };
-  return (
-    <span className={`inline-block px-1.5 py-0.5 rounded text-[10.5px] font-semibold tabular-nums ${styles[value] ?? "bg-zinc-100 text-zinc-600"}`}>
-      {value}
-    </span>
-  );
-}
-
-function splitProgram(prog: string | null) {
-  if (!prog) return <span className="text-zinc-300">-</span>;
-  const parts = prog.split(",").map((s) => s.trim()).filter(Boolean);
-  return (
-    <div className="flex flex-wrap gap-0.5">
-      {parts.map((p) => (
-        <span key={p} className="inline-block px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[10.5px]">
-          {p}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function stateCell(val: string | null) {
-  if (!val) return <span className="text-zinc-300">-</span>;
-  if (val === "O")
-    return (
-      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10.5px] font-medium">
-        <Check className="w-2.5 h-2.5" />
-      </span>
-    );
-  if (val === "?")
-    return (
-      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10.5px]">
-        <HelpCircle className="w-2.5 h-2.5" />
-      </span>
-    );
-  return <span className="text-[11px] text-zinc-700">{val}</span>;
 }
 
 function FilterGroup<T extends string | number>({
