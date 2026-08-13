@@ -170,9 +170,9 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
         </button>
       </div>
 
-      {/* 표 */}
-      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* 표 — 컨테이너 자체가 x/y 스크롤. thead가 이 컨테이너 상단에 sticky */}
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-14rem)]">
+        <div>
           <table className="w-full text-[12.5px]">
             <thead className="text-[11px] text-zinc-500 bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgb(228_228_231)]">
               <tr>
