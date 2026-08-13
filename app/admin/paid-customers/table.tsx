@@ -352,56 +352,60 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                     />
                   </Td>
                   <Td>
-                    <TextEditCell
-                      id={r.id}
-                      field="demoday_1_a"
-                      value={r.demoday_1_a}
-                      render={(v) =>
-                        v ? (
-                          <span className="text-[11px] text-zinc-600">{v}</span>
-                        ) : (
-                          <span className="text-zinc-300">-</span>
-                        )
-                      }
-                    />
-                    <TextEditCell
-                      id={r.id}
-                      field="demoday_1_b"
-                      value={r.demoday_1_b}
-                      render={(v) =>
-                        v ? (
-                          <span className="text-[10.5px] text-zinc-400">{v}</span>
-                        ) : (
-                          <span className="text-[10.5px] text-zinc-300">-</span>
-                        )
-                      }
-                    />
+                    <div className="space-y-1">
+                      <TextEditCell
+                        id={r.id}
+                        field="demoday_1_a"
+                        value={r.demoday_1_a}
+                        render={(v) =>
+                          v ? (
+                            <span className="text-[11px] text-zinc-700 whitespace-pre-line">{v}</span>
+                          ) : (
+                            <span className="text-zinc-300">-</span>
+                          )
+                        }
+                      />
+                      <TextEditCell
+                        id={r.id}
+                        field="demoday_1_b"
+                        value={r.demoday_1_b}
+                        render={(v) =>
+                          v ? (
+                            <span className="text-[11px] text-zinc-700 whitespace-pre-line">{v}</span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-300">-</span>
+                          )
+                        }
+                      />
+                    </div>
                   </Td>
                   <Td>
-                    <TextEditCell
-                      id={r.id}
-                      field="demoday_2_a"
-                      value={r.demoday_2_a}
-                      render={(v) =>
-                        v ? (
-                          <span className="text-[11px] text-zinc-600">{v}</span>
-                        ) : (
-                          <span className="text-zinc-300">-</span>
-                        )
-                      }
-                    />
-                    <TextEditCell
-                      id={r.id}
-                      field="demoday_2_b"
-                      value={r.demoday_2_b}
-                      render={(v) =>
-                        v ? (
-                          <span className="text-[10.5px] text-zinc-400">{v}</span>
-                        ) : (
-                          <span className="text-[10.5px] text-zinc-300">-</span>
-                        )
-                      }
-                    />
+                    <div className="space-y-1">
+                      <TextEditCell
+                        id={r.id}
+                        field="demoday_2_a"
+                        value={r.demoday_2_a}
+                        render={(v) =>
+                          v ? (
+                            <span className="text-[11px] text-zinc-700 whitespace-pre-line">{v}</span>
+                          ) : (
+                            <span className="text-zinc-300">-</span>
+                          )
+                        }
+                      />
+                      <TextEditCell
+                        id={r.id}
+                        field="demoday_2_b"
+                        value={r.demoday_2_b}
+                        render={(v) =>
+                          v ? (
+                            <span className="text-[11px] text-zinc-700 whitespace-pre-line">{v}</span>
+                          ) : (
+                            <span className="text-[11px] text-zinc-300">-</span>
+                          )
+                        }
+                      />
+                    </div>
                   </Td>
                   <Td>
                     <TextEditCell
