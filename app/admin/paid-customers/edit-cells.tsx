@@ -292,3 +292,79 @@ export function programBadges(v: string | null) {
     </div>
   );
 }
+
+// ─────────────────────────────────────────────
+// ProgramCheckCell — target_program 문자열 안의 특정 프로그램(팁스/립스/투자)
+// 하나만 표현하는 셀. 클릭 시 그 프로그램만 include ↔ exclude 토글.
+// ─────────────────────────────────────────────
+export const PROGRAM_ORDER = ["팁스", "립스", "투자"] as const;
+export type ProgramKind = (typeof PROGRAM_ORDER)[number];
+
+function parseProgramSet(v: string | null): Set<string> {
+  if (!v) return new Set();
+  return new Set(
+    v
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function serializeProgramSet(set: Set<string>): string | null {
+  const kept = PROGRAM_ORDER.filter((p) => set.has(p));
+  // 원본에 있던 순서 외 값들(예: "기타")도 뒤에 붙여 유지
+  const extras = Array.from(set).filter(
+    (v) => !(PROGRAM_ORDER as readonly string[]).includes(v),
+  );
+  const arr = [...kept, ...extras];
+  return arr.length === 0 ? null : arr.join(",");
+}
+
+export function ProgramCheckCell({
+  id,
+  kind,
+  value,
+}: {
+  id: string;
+  kind: ProgramKind;
+  value: string | null;
+}) {
+  const [local, setLocal] = useState<string | null>(value);
+  const { save, pending } = useSaver(id, "target_program");
+
+  useEffect(() => {
+    setLocal(value);
+  }, [value]);
+
+  const active = parseProgramSet(local).has(kind);
+
+  const toggle = () => {
+    const set = parseProgramSet(local);
+    if (set.has(kind)) set.delete(kind);
+    else set.add(kind);
+    const next = serializeProgramSet(set);
+    const prev = local;
+    setLocal(next);
+    save(next, () => setLocal(prev));
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={pending}
+      className={`inline-flex items-center gap-0.5 rounded transition-colors ${pending ? "opacity-60" : ""}`}
+      title={active ? `${kind} 대상에서 제외` : `${kind} 대상에 포함`}
+    >
+      {active ? (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10.5px] font-medium hover:bg-emerald-100">
+          <Check className="w-2.5 h-2.5" />
+        </span>
+      ) : (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-dashed border-zinc-200 text-zinc-300 text-[10.5px] hover:border-zinc-300 hover:text-zinc-400">
+          +
+        </span>
+      )}
+    </button>
+  );
+}

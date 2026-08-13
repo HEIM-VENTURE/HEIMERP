@@ -8,8 +8,8 @@ import {
   TextEditCell,
   PaidToggleCell,
   UrgencySelectCell,
+  ProgramCheckCell,
   statusBadge,
-  programBadges,
 } from "./edit-cells";
 import { PaidCustomerDetailPanel, type DetailPanelRow } from "./detail-panel";
 
@@ -181,7 +181,9 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                 <Th w="w-24">파이프라인</Th>
                 <Th w="w-16">결제</Th>
                 <Th w="w-14">긴급</Th>
-                <Th w="w-32">타깃</Th>
+                <Th w="w-14">팁스</Th>
+                <Th w="w-14">립스</Th>
+                <Th w="w-14">투자</Th>
                 <Th w="w-28">설립일</Th>
                 <Th w="w-24">인원</Th>
                 <Th w="w-24">신규법인</Th>
@@ -252,13 +254,13 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                     <UrgencySelectCell id={r.id} value={r.urgency} />
                   </Td>
                   <Td>
-                    <TextEditCell
-                      id={r.id}
-                      field="target_program"
-                      value={r.target_program}
-                      placeholder="팁스,립스,투자"
-                      render={programBadges}
-                    />
+                    <ProgramCheckCell id={r.id} kind="팁스" value={r.target_program} />
+                  </Td>
+                  <Td>
+                    <ProgramCheckCell id={r.id} kind="립스" value={r.target_program} />
+                  </Td>
+                  <Td>
+                    <ProgramCheckCell id={r.id} kind="투자" value={r.target_program} />
                   </Td>
                   <Td>
                     <TextEditCell
