@@ -60,14 +60,14 @@ export default async function PaidCustomersPage() {
 
   return (
     <>
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">고객 현황표</h1>
-          <p className="text-sm text-zinc-500 mt-1">
+      <div className="flex flex-wrap items-end justify-between gap-y-3 mb-4 sm:mb-6">
+        <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">고객 현황표</h1>
+          <p className="text-[12px] sm:text-sm text-zinc-500 mt-1">
             전체 고객 현황을 한 화면에서 관리합니다. 셀을 클릭해 바로 수정하거나 상세를 열어 전체 항목을 편집하세요.
           </p>
         </div>
-        <div className="flex items-center gap-4 text-[12px]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] shrink-0">
           <StatBadge label="전체" value={totalCount} />
           <StatBadge label="결제 완료" value={paidCount} color="#237A4E" />
           <StatBadge label="긴급도 1" value={urgentCount} color="#C0343A" />

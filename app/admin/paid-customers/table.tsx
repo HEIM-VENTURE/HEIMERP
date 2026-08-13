@@ -126,13 +126,13 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   return (
     <>
       {/* 필터 바 */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4 flex-wrap">
         <input
           type="text"
           placeholder="회사명 / 법인명 검색"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="px-3 py-2 rounded-md border border-zinc-200 text-[13px] w-64 focus:outline-none focus:border-brand"
+          className="px-3 py-2 rounded-md border border-zinc-200 text-[13px] w-full sm:w-64 focus:outline-none focus:border-brand"
         />
         <FilterGroup
           label="긴급도"
@@ -179,24 +179,27 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           ]}
           onChange={(v) => setPipeline(v as PipelineFilter)}
         />
-        <span className="ml-auto text-[12px] text-zinc-500">
-          {filtered.length} / {rows.length}건
-        </span>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-900 text-white text-[12px] font-medium hover:bg-zinc-800 transition-colors"
-          title="현재 필터된 목록을 엑셀 파일로 다운로드"
-        >
-          <Download className="w-3.5 h-3.5" />
-          엑셀 다운로드
-        </button>
+        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto justify-between sm:justify-end">
+          <span className="text-[12px] text-zinc-500">
+            {filtered.length} / {rows.length}건
+          </span>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-900 text-white text-[12px] font-medium hover:bg-zinc-800 transition-colors shrink-0"
+            title="현재 필터된 목록을 엑셀 파일로 다운로드"
+          >
+            <Download className="w-3.5 h-3.5" />
+            엑셀 다운로드
+          </button>
+        </div>
       </div>
 
-      {/* 표 — 컨테이너 자체가 x/y 스크롤. thead가 이 컨테이너 상단에 sticky */}
-      <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-14rem)]">
+      {/* 표 — 컨테이너 자체가 x/y 스크롤. thead가 이 컨테이너 상단에 sticky.
+          모바일은 상단 헤더가 크니 max-h를 더 여유있게, lg 이상은 타이트하게. */}
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-13rem)]">
         <div>
-          <table className="w-full text-[12.5px]">
+          <table className="min-w-[1400px] w-full text-[12.5px]">
             <thead className="text-[11px] text-zinc-500 bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgb(228_228_231)]">
               <tr>
                 <Th w="w-10">#</Th>
