@@ -72,7 +72,7 @@ export default async function ApplyPage({ searchParams }: Props) {
       className="min-h-screen font-sans"
       style={{ backgroundColor: "#FFFFFF", color: "#1F2A36" }}
     >
-      <div className="min-h-screen grid sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="min-h-screen grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* ═══════════════════════════════════════════════
             LEFT PANE — Brand / Trust
            ═══════════════════════════════════════════════ */}
@@ -80,7 +80,7 @@ export default async function ApplyPage({ searchParams }: Props) {
           {/* aside 자체는 grid 로 인해 전체 세로 길이 채움
               내부 sticky 컨테이너는 뷰포트 높이 = 스크롤해도 계속 보임 */}
           <div
-            className="sm:sticky sm:top-0 relative overflow-hidden sm:h-screen min-h-[420px] sm:min-h-[600px]"
+            className="lg:sticky lg:top-0 relative overflow-hidden lg:h-screen min-h-[360px] sm:min-h-[440px] lg:min-h-[600px]"
             style={{
               backgroundImage:
                 "linear-gradient(180deg, rgba(20,30,45,0.55) 0%, rgba(20,30,45,0.35) 40%, rgba(20,30,45,0.85) 100%), url('/apply-hero.jpg')",
@@ -90,7 +90,7 @@ export default async function ApplyPage({ searchParams }: Props) {
             }}
           >
             {/* 콘텐츠 */}
-            <div className="relative flex flex-col justify-between h-full px-6 sm:px-10 lg:px-14 py-8 sm:py-10 lg:py-14">
+            <div className="relative flex flex-col justify-between h-full px-6 sm:px-10 lg:px-14 py-8 sm:py-10 lg:py-14 gap-8 sm:gap-10">
               {/* Logo (white version for dark background) */}
               <div>
                 <Image
@@ -99,22 +99,22 @@ export default async function ApplyPage({ searchParams }: Props) {
                   width={460}
                   height={140}
                   priority
-                  className="w-[180px] sm:w-[240px] lg:w-[280px] h-auto"
+                  className="w-[160px] sm:w-[220px] md:w-[260px] lg:w-[280px] h-auto"
                 />
               </div>
 
               {/* Hero — 중간 */}
-              <div className="mt-10 sm:mt-0">
-                <h1 className="text-[24px] sm:text-[38px] lg:text-[56px] leading-[1.25] sm:leading-[1.15] tracking-[-0.02em] sm:tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
+              <div>
+                <h1 className="text-[26px] sm:text-[36px] md:text-[44px] lg:text-[52px] xl:text-[56px] leading-[1.2] tracking-[-0.02em] lg:tracking-[-0.03em] font-semibold text-white text-balance drop-shadow-lg">
                   다음 라운드까지,
                   <br />
                   <span className="font-normal" style={{ color: "#FFB59E" }}>
                     실행 파트너로
-                    <br className="hidden lg:block" />
+                    <br className="hidden xl:block" />
                     함께합니다.
                   </span>
                 </h1>
-                <p className="mt-4 sm:mt-7 text-[12.5px] sm:text-[16px] lg:text-[18px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
+                <p className="mt-4 sm:mt-6 text-[13.5px] sm:text-[15.5px] md:text-[16.5px] lg:text-[17px] leading-[1.65] text-white/90 max-w-md drop-shadow font-medium">
                   하임벤처투자는 TIPS 선정 · 투자 유치 · 성장 전략까지
                   실행 단계까지 책임지는 파트너입니다.
                 </p>
@@ -158,7 +158,7 @@ export default async function ApplyPage({ searchParams }: Props) {
             RIGHT PANE — Form
            ═══════════════════════════════════════════════ */}
         <main className="relative" style={{ background: "#FFFFFF" }}>
-          <div className="mx-auto max-w-2xl px-6 sm:px-8 lg:px-14 py-10 sm:py-14 lg:py-20">
+          <div className="mx-auto max-w-2xl px-5 sm:px-8 lg:px-12 xl:px-14 py-8 sm:py-12 lg:py-16 xl:py-20">
             <div
               className="text-[12px] font-medium mb-5"
               style={{ color: "#C74815" }}
@@ -166,12 +166,12 @@ export default async function ApplyPage({ searchParams }: Props) {
               신청서 · 약 5분 소요
             </div>
             <h2
-              className="text-[28px] sm:text-[32px] lg:text-[38px] leading-[1.2] tracking-[-0.025em] font-semibold mb-4 sm:mb-5 text-balance"
+              className="text-[26px] sm:text-[32px] lg:text-[36px] xl:text-[38px] leading-[1.2] tracking-[-0.025em] font-semibold mb-3 sm:mb-4 lg:mb-5 text-balance"
               style={{ color: "#1F2A36" }}
             >
               기업 접수 신청서
             </h2>
-            <p className="text-[14.5px] sm:text-[15.5px] lg:text-[16.5px] leading-relaxed mb-10 sm:mb-12" style={{ color: "#5D6B7A" }}>
+            <p className="text-[14px] sm:text-[15.5px] lg:text-[16px] xl:text-[16.5px] leading-relaxed mb-8 sm:mb-10 lg:mb-12" style={{ color: "#5D6B7A" }}>
               접수 후 <b style={{ color: "#1F2A36" }}>5영업일 이내</b>에 이메일로 회신드립니다.
               정확한 수치를 모르시는 경우 가장 가까운 항목을 선택해주세요.
             </p>
@@ -473,7 +473,7 @@ function Section({
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">{children}</div>;
+  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">{children}</div>;
 }
 
 function Field({
@@ -586,7 +586,7 @@ function RadioList({
   options: { value: string; label: string }[];
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
       {options.map((o) => (
         <label
           key={o.value}
@@ -615,7 +615,7 @@ function CheckList({
   options: { value: string; label: string }[];
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
       {options.map((o) => (
         <label
           key={o.value}
