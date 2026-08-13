@@ -27,8 +27,20 @@ type PaidCustomer = DetailPanelRow & {
 
 type UrgencyFilter = "all" | 1 | 2 | 3;
 type PaidFilter = "all" | "paid" | "unpaid";
-type ProgramFilter = "all" | "팁스" | "립스" | "투자";
+type ProgramFilter =
+  | "all"
+  | "팁스"
+  | "립스"
+  | "투자"
+  | "팁스만"
+  | "립스만"
+  | "투자만";
 type PipelineFilter = "all" | "linked" | "unlinked";
+
+function programSet(v: string | null): Set<string> {
+  if (!v) return new Set();
+  return new Set(v.split(",").map((s) => s.trim()).filter(Boolean));
+}
 
 export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const [urgency, setUrgency] = useState<UrgencyFilter>("all");
@@ -43,7 +55,15 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       if (urgency !== "all" && r.urgency !== urgency) return false;
       if (paid === "paid" && r.is_paid !== true) return false;
       if (paid === "unpaid" && r.is_paid !== false) return false;
-      if (program !== "all" && !(r.target_program ?? "").includes(program)) return false;
+      if (program !== "all") {
+        const set = programSet(r.target_program);
+        if (program.endsWith("만")) {
+          const only = program.slice(0, 2);
+          if (!(set.size === 1 && set.has(only))) return false;
+        } else {
+          if (!set.has(program)) return false;
+        }
+      }
       if (pipeline === "linked" && !r.company) return false;
       if (pipeline === "unlinked" && r.company) return false;
       if (q.trim()) {
@@ -141,8 +161,11 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           options={[
             { key: "all", label: "전체" },
             { key: "팁스", label: "팁스" },
+            { key: "팁스만", label: "팁스만" },
             { key: "립스", label: "립스" },
+            { key: "립스만", label: "립스만" },
             { key: "투자", label: "투자" },
+            { key: "투자만", label: "투자만" },
           ]}
           onChange={(v) => setProgram(v as ProgramFilter)}
         />
