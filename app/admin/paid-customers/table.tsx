@@ -174,7 +174,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
       <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[12.5px]">
-            <thead className="text-[11px] text-zinc-500 bg-zinc-50/80 border-b border-zinc-200">
+            <thead className="text-[11px] text-zinc-500 bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgb(228_228_231)]">
               <tr>
                 <Th w="w-10">#</Th>
                 <Th w="w-56">회사명 · 법인명</Th>
