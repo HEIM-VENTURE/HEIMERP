@@ -34,11 +34,11 @@ export function AdminShell({
         aria-hidden="true"
       />
 
-      {/* 사이드바 래퍼 — lg 미만 fixed translate, lg 이상 static */}
+      {/* 사이드바 래퍼 — lg 미만 fixed translate, lg 이상 sticky (페이지 스크롤과 무관하게 고정) */}
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-40 transition-transform duration-200 ease-out",
-          "lg:static lg:translate-x-0 lg:z-auto",
+          "lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:z-auto lg:shrink-0",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >

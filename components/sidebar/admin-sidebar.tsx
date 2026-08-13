@@ -107,7 +107,7 @@ export function AdminSidebar({ profile, onNavigate }: Props) {
   return (
     <aside
       className={cn(
-        "min-h-screen bg-white border-r border-zinc-200 py-5 flex flex-col shrink-0 transition-[width] duration-200 ease-out",
+        "h-screen bg-white border-r border-zinc-200 py-5 flex flex-col shrink-0 transition-[width] duration-200 ease-out",
         collapsed ? "w-16 px-2" : "w-60 px-3",
       )}
     >
