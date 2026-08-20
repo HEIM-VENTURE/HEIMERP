@@ -70,7 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "자료실",
     items: [
       { href: "/admin/tips", label: "TIPS 운영사", icon: Landmark },
-      { href: "/admin/companies", label: "기업 마스터", icon: Building2, comingSoon: true },
+      { href: "/admin/companies", label: "기업 마스터", icon: Building2 },
       { href: "/admin/paid-customers", label: "고객 현황표", icon: ClipboardList },
     ],
   },
