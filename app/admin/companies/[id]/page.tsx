@@ -356,109 +356,43 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
         </div>
       </div>
 
-      {/* 2단 레이아웃: 좌측 활동 피드, 우측 사이드 */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* 활동 피드 */}
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-zinc-900">활동 피드</h2>
-            <span className="text-xs text-zinc-400">{activities.length}개 이벤트</span>
-          </div>
-          {activities.length === 0 ? (
-            <div className="text-center py-6 text-sm text-zinc-400">아직 활동이 없습니다</div>
-          ) : (
-            <div className="space-y-3">
-              {activities.map((a, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm">
-                  <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${a.color}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-zinc-900">{a.title}</div>
-                      <span className="text-xs text-zinc-400 shrink-0">{formatRelative(a.when)}</span>
-                    </div>
-                    {a.sub ? <div className="text-xs text-zinc-500 mt-0.5">{a.sub}</div> : null}
-                    {a.meeting ? <MeetingViewer meeting={a.meeting} /> : null}
-                  </div>
-                </div>
-              ))}
+      {/* 2단 레이아웃:
+          - 좌측 (넓음, 이력·활동·산출물): 활동 피드 → 계약 → 자료 → 프로젝트/투자딜 placeholder
+          - 우측 (좁음, 요약·참조, lg 이상 sticky): 기본 정보 → TIPS → 진행중 To-do
+          - lg 미만: 자동 세로 스택 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── 좌측 (이력·활동) ── */}
+        <div className="lg:col-span-2 space-y-6 min-w-0">
+          {/* 활동 피드 */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold text-zinc-900">활동 피드</h2>
+              <span className="text-xs text-zinc-400">{activities.length}개 이벤트</span>
             </div>
-          )}
-        </div>
-
-        {/* 우측 사이드 */}
-        <div className="space-y-4">
-          {/* 기본 정보 */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-zinc-900 mb-3">기본 정보</h3>
-            <div className="space-y-2 text-xs">
-              <Info label="대표자" value={company.ceo_name} />
-              <Info label="담당 PM" value={company.custom_fields?.pm ?? null} />
-              <Info label="연락처" value={company.phone} />
-              <Info label="이메일" value={company.email} />
-              <Info label="설립일" value={company.founded_at} />
-              <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
-              <Info label="접수일" value={company.received_at} />
-              <Info label="계약일" value={company.contracted_at} />
-            </div>
-
-            {company.inquiry_purpose ? (
-              <div className="mt-4 pt-3 border-t border-zinc-100">
-                <div className="text-xs text-zinc-500 mb-1.5">접수 목적 / 메모</div>
-                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
-                  {company.inquiry_purpose}
-                </div>
-              </div>
-            ) : null}
-
-            {company.notes ? (
-              <div className="mt-3 pt-3 border-t border-zinc-100">
-                <div className="text-xs text-zinc-500 mb-1.5">추가 메모</div>
-                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
-                  {company.notes}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {/* TIPS 운영사 매칭 (여러 곳 가능) */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-zinc-900 mb-3">TIPS 운영사 매칭</h3>
-            <TipsMatches
-              companyId={company.id}
-              matches={tipsMatches}
-              operators={tipsList}
-            />
-          </div>
-
-          {/* 미완료 To-do */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-zinc-900">진행중 To-do</h3>
-              <span className="text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">{openTodos.length}</span>
-            </div>
-            {openTodos.length === 0 ? (
-              <div className="text-xs text-zinc-400 text-center py-2">없음 ✨</div>
+            {activities.length === 0 ? (
+              <div className="text-center py-6 text-sm text-zinc-400">아직 활동이 없습니다</div>
             ) : (
-              <div className="space-y-2 text-xs">
-                {openTodos.slice(0, 6).map((t: any) => (
-                  <div key={t.id} className="flex items-start gap-2">
-                    <span className="text-zinc-300 mt-0.5">○</span>
+              <div className="space-y-3">
+                {activities.map((a, i) => (
+                  <div key={i} className="flex items-start gap-3 text-sm">
+                    <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${a.color}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-zinc-700 truncate">{t.title}</div>
-                      <div className="text-zinc-400">{t.due_date ?? "—"}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-zinc-900">{a.title}</div>
+                        <span className="text-xs text-zinc-400 shrink-0">{formatRelative(a.when)}</span>
+                      </div>
+                      {a.sub ? <div className="text-xs text-zinc-500 mt-0.5">{a.sub}</div> : null}
+                      {a.meeting ? <MeetingViewer meeting={a.meeting} /> : null}
                     </div>
                   </div>
                 ))}
-                {openTodos.length > 6 ? (
-                  <div className="text-xs text-zinc-400 pt-1">+ {openTodos.length - 6}개 더</div>
-                ) : null}
               </div>
             )}
           </div>
 
           {/* 계약 */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-zinc-900">계약</h3>
               <NewContractModal
                 companies={[{
@@ -514,34 +448,107 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           {/* 자료 */}
           <FileManager companyId={company.id} files={files as any} />
 
-          {/* 프로젝트 (곧 공개) */}
-          <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <Kanban className="w-4 h-4 text-zinc-300" />
-              <h3 className="text-sm font-semibold text-zinc-400">프로젝트</h3>
-              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
-                soon
-              </span>
+          {/* 프로젝트 · 투자 딜 placeholder (2열 그리드) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Kanban className="w-4 h-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-400">프로젝트</h3>
+                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
+                  soon
+                </span>
+              </div>
+              <p className="text-[11.5px] text-zinc-400 leading-relaxed">
+                이 기업의 프로젝트가 여기에 표시됩니다 (TIPS·IR·투자유치·성장전략 각각 분리).
+              </p>
             </div>
-            <p className="text-[11.5px] text-zinc-400 leading-relaxed">
-              이 기업의 프로젝트가 여기에 표시됩니다 (TIPS·IR·투자유치·성장전략 각각 분리).
-            </p>
-          </div>
 
-          {/* 투자 딜 (곧 공개) */}
-          <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <Coins className="w-4 h-4 text-zinc-300" />
-              <h3 className="text-sm font-semibold text-zinc-400">투자 딜</h3>
-              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
-                soon
-              </span>
+            <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Coins className="w-4 h-4 text-zinc-300" />
+                <h3 className="text-sm font-semibold text-zinc-400">투자 딜</h3>
+                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
+                  soon
+                </span>
+              </div>
+              <p className="text-[11.5px] text-zinc-400 leading-relaxed">
+                투자자 태핑·미팅·심의 이력이 여기에 축적됩니다.
+              </p>
             </div>
-            <p className="text-[11.5px] text-zinc-400 leading-relaxed">
-              투자자 태핑·미팅·심의 이력이 여기에 축적됩니다.
-            </p>
           </div>
         </div>
+
+        {/* ── 우측 (요약·참조 · lg 이상 sticky) ── */}
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start min-w-0">
+          {/* 기본 정보 */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-zinc-900 mb-3">기본 정보</h3>
+            <div className="space-y-2 text-xs">
+              <Info label="대표자" value={company.ceo_name} />
+              <Info label="담당 PM" value={company.custom_fields?.pm ?? null} />
+              <Info label="연락처" value={company.phone} />
+              <Info label="이메일" value={company.email} />
+              <Info label="설립일" value={company.founded_at} />
+              <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
+              <Info label="접수일" value={company.received_at} />
+              <Info label="계약일" value={company.contracted_at} />
+            </div>
+
+            {company.inquiry_purpose ? (
+              <div className="mt-4 pt-3 border-t border-zinc-100">
+                <div className="text-xs text-zinc-500 mb-1.5">접수 목적 / 메모</div>
+                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
+                  {company.inquiry_purpose}
+                </div>
+              </div>
+            ) : null}
+
+            {company.notes ? (
+              <div className="mt-3 pt-3 border-t border-zinc-100">
+                <div className="text-xs text-zinc-500 mb-1.5">추가 메모</div>
+                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
+                  {company.notes}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* TIPS 운영사 매칭 (여러 곳 가능) */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-zinc-900 mb-3">TIPS 운영사 매칭</h3>
+            <TipsMatches
+              companyId={company.id}
+              matches={tipsMatches}
+              operators={tipsList}
+            />
+          </div>
+
+          {/* 진행중 To-do */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-zinc-900">진행중 To-do</h3>
+              <span className="text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">{openTodos.length}</span>
+            </div>
+            {openTodos.length === 0 ? (
+              <div className="text-xs text-zinc-400 text-center py-2">없음 ✨</div>
+            ) : (
+              <div className="space-y-2 text-xs">
+                {openTodos.slice(0, 6).map((t: any) => (
+                  <div key={t.id} className="flex items-start gap-2">
+                    <span className="text-zinc-300 mt-0.5">○</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-zinc-700 truncate">{t.title}</div>
+                      <div className="text-zinc-400">{t.due_date ?? "—"}</div>
+                    </div>
+                  </div>
+                ))}
+                {openTodos.length > 6 ? (
+                  <div className="text-xs text-zinc-400 pt-1">+ {openTodos.length - 6}개 더</div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
     </>
   );
