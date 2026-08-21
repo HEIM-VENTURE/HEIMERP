@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Download, LinkIcon, PanelRightOpen } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Download, LinkIcon, PanelRightOpen, Columns3, Check as CheckIcon } from "lucide-react";
 import { SALES_STAGE_LABELS, SALES_STAGE_COLORS } from "@/lib/labels";
 import {
   TextEditCell,
@@ -42,6 +42,36 @@ function programSet(v: string | null): Set<string> {
   return new Set(v.split(",").map((s) => s.trim()).filter(Boolean));
 }
 
+// ── 컬럼 정의 ──
+// key = state 저장·조건 렌더 식별자, label = 팝오버·헤더 텍스트, locked = 필수
+type ColKey =
+  | "no" | "name" | "pipeline" | "paid" | "urgency"
+  | "tips" | "lips" | "invest"
+  | "founded" | "headcount" | "new_corp"
+  | "ir_tips" | "ir_lips" | "demoday_1" | "demoday_2" | "offline";
+
+const COLUMNS: { key: ColKey; label: string; locked?: boolean }[] = [
+  { key: "no",        label: "#" },
+  { key: "name",      label: "회사명 · 법인명", locked: true },
+  { key: "pipeline",  label: "파이프라인" },
+  { key: "paid",      label: "결제" },
+  { key: "urgency",   label: "긴급" },
+  { key: "tips",      label: "팁스" },
+  { key: "lips",      label: "립스" },
+  { key: "invest",    label: "투자" },
+  { key: "founded",   label: "설립일" },
+  { key: "headcount", label: "인원" },
+  { key: "new_corp",  label: "신규법인" },
+  { key: "ir_tips",   label: "IR팁스" },
+  { key: "ir_lips",   label: "IR립스" },
+  { key: "demoday_1", label: "1차 데모데이" },
+  { key: "demoday_2", label: "2차 데모데이" },
+  { key: "offline",   label: "오프라인" },
+];
+
+const DEFAULT_VISIBLE: ColKey[] = COLUMNS.map((c) => c.key);
+const COL_STORAGE_KEY = "heim-erp:paid-customers:visible-cols";
+
 export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const [urgency, setUrgency] = useState<UrgencyFilter>("all");
   const [paid, setPaid] = useState<PaidFilter>("all");
@@ -49,6 +79,37 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
   const [pipeline, setPipeline] = useState<PipelineFilter>("all");
   const [q, setQ] = useState("");
   const [detailRow, setDetailRow] = useState<PaidCustomer | null>(null);
+
+  // 표시 컬럼 상태 (localStorage 지속)
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => new Set(DEFAULT_VISIBLE));
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COL_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as string[];
+      const valid = new Set(COLUMNS.map((c) => c.key));
+      const next = new Set<ColKey>();
+      for (const k of parsed) if (valid.has(k as ColKey)) next.add(k as ColKey);
+      // locked 컬럼은 무조건 켜져 있어야 함
+      for (const c of COLUMNS) if (c.locked) next.add(c.key);
+      if (next.size > 0) setVisibleCols(next);
+    } catch {}
+  }, []);
+  const persistCols = (next: Set<ColKey>) => {
+    setVisibleCols(next);
+    try {
+      localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(Array.from(next)));
+    } catch {}
+  };
+  const toggleCol = (key: ColKey) => {
+    const col = COLUMNS.find((c) => c.key === key);
+    if (col?.locked) return;
+    const next = new Set(visibleCols);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    persistCols(next);
+  };
+  const show = (key: ColKey) => visibleCols.has(key);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -183,6 +244,12 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           <span className="text-[12px] text-zinc-500">
             {filtered.length} / {rows.length}건
           </span>
+          <ColumnPicker
+            visibleCols={visibleCols}
+            toggleCol={toggleCol}
+            onAll={() => persistCols(new Set(COLUMNS.map((c) => c.key)))}
+            onDefault={() => persistCols(new Set(DEFAULT_VISIBLE))}
+          />
           <button
             type="button"
             onClick={handleExport}
@@ -190,7 +257,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
             title="현재 필터된 목록을 엑셀 파일로 다운로드"
           >
             <Download className="w-3.5 h-3.5" />
-            엑셀 다운로드
+            엑셀
           </button>
         </div>
       </div>
@@ -199,35 +266,38 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
           모바일은 상단 헤더가 크니 max-h를 더 여유있게, lg 이상은 타이트하게. */}
       <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-13rem)]">
         <div>
-          <table className="min-w-[1400px] w-full text-[12.5px]">
+          <table
+            className="w-full text-[12.5px]"
+            style={{ minWidth: `${Math.max(600, visibleCols.size * 95 + 60)}px` }}
+          >
             <thead className="text-[11px] text-zinc-500 bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgb(228_228_231)]">
               <tr>
-                <Th w="w-10">#</Th>
-                <Th w="w-56">회사명 · 법인명</Th>
-                <Th w="w-24">파이프라인</Th>
-                <Th w="w-16">결제</Th>
-                <Th w="w-14">긴급</Th>
-                <Th w="w-14">팁스</Th>
-                <Th w="w-14">립스</Th>
-                <Th w="w-14">투자</Th>
-                <Th w="w-28">설립일</Th>
-                <Th w="w-24">인원</Th>
-                <Th w="w-24">신규법인</Th>
-                <Th w="w-20">IR팁스</Th>
-                <Th w="w-20">IR립스</Th>
-                <Th w="w-28">1차 데모데이</Th>
-                <Th w="w-28">2차 데모데이</Th>
-                <Th w="w-20">오프라인</Th>
+                {show("no")        && <Th w="w-10">#</Th>}
+                {show("name")      && <Th w="w-56">회사명 · 법인명</Th>}
+                {show("pipeline")  && <Th w="w-24">파이프라인</Th>}
+                {show("paid")      && <Th w="w-16">결제</Th>}
+                {show("urgency")   && <Th w="w-14">긴급</Th>}
+                {show("tips")      && <Th w="w-14">팁스</Th>}
+                {show("lips")      && <Th w="w-14">립스</Th>}
+                {show("invest")    && <Th w="w-14">투자</Th>}
+                {show("founded")   && <Th w="w-28">설립일</Th>}
+                {show("headcount") && <Th w="w-24">인원</Th>}
+                {show("new_corp")  && <Th w="w-24">신규법인</Th>}
+                {show("ir_tips")   && <Th w="w-20">IR팁스</Th>}
+                {show("ir_lips")   && <Th w="w-20">IR립스</Th>}
+                {show("demoday_1") && <Th w="w-28">1차 데모데이</Th>}
+                {show("demoday_2") && <Th w="w-28">2차 데모데이</Th>}
+                {show("offline")   && <Th w="w-20">오프라인</Th>}
                 <Th w="w-10">{" "}</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-zinc-50/40 transition-colors align-top">
-                  <Td>
+                  <Td hidden={!show("no")}>
                     <span className="tabular-nums text-zinc-400">{r.no ?? "-"}</span>
                   </Td>
-                  <Td>
+                  <Td hidden={!show("name")}>
                     <div className="flex items-center gap-1">
                       <div className="flex-1 min-w-0">
                         <TextEditCell
@@ -270,25 +340,25 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       </div>
                     ) : null}
                   </Td>
-                  <Td>
+                  <Td hidden={!show("pipeline")}>
                     <PipelineBadge company={r.company} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("paid")}>
                     <PaidToggleCell id={r.id} value={r.is_paid} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("urgency")}>
                     <UrgencySelectCell id={r.id} value={r.urgency} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("tips")}>
                     <ProgramCheckCell id={r.id} kind="팁스" value={r.target_program} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("lips")}>
                     <ProgramCheckCell id={r.id} kind="립스" value={r.target_program} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("invest")}>
                     <ProgramCheckCell id={r.id} kind="투자" value={r.target_program} />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("founded")}>
                     <TextEditCell
                       id={r.id}
                       field="established_at"
@@ -303,7 +373,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       }
                     />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("headcount")}>
                     <TextEditCell
                       id={r.id}
                       field="headcount"
@@ -318,7 +388,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       }
                     />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("new_corp")}>
                     <TextEditCell
                       id={r.id}
                       field="new_corp_setup"
@@ -333,7 +403,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       }
                     />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("ir_tips")}>
                     <TextEditCell
                       id={r.id}
                       field="ir_deck_tips"
@@ -342,7 +412,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       render={statusBadge}
                     />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("ir_lips")}>
                     <TextEditCell
                       id={r.id}
                       field="ir_deck_lips"
@@ -351,7 +421,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       render={statusBadge}
                     />
                   </Td>
-                  <Td>
+                  <Td hidden={!show("demoday_1")}>
                     <div className="space-y-1">
                       <TextEditCell
                         id={r.id}
@@ -379,7 +449,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       />
                     </div>
                   </Td>
-                  <Td>
+                  <Td hidden={!show("demoday_2")}>
                     <div className="space-y-1">
                       <TextEditCell
                         id={r.id}
@@ -407,7 +477,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
                       />
                     </div>
                   </Td>
-                  <Td>
+                  <Td hidden={!show("offline")}>
                     <TextEditCell
                       id={r.id}
                       field="offline"
@@ -449,7 +519,16 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
 function Th({ children, w }: { children: React.ReactNode; w?: string }) {
   return <th className={`text-left px-3 py-2.5 font-medium ${w ?? ""}`}>{children}</th>;
 }
-function Td({ children, className }: { children: React.ReactNode; className?: string }) {
+function Td({
+  children,
+  className,
+  hidden,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  hidden?: boolean;
+}) {
+  if (hidden) return null;
   return <td className={`px-3 py-2.5 align-top ${className ?? ""}`}>{children}</td>;
 }
 
@@ -505,6 +584,100 @@ function FilterGroup<T extends string | number>({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function ColumnPicker({
+  visibleCols,
+  toggleCol,
+  onAll,
+  onDefault,
+}: {
+  visibleCols: Set<ColKey>;
+  toggleCol: (k: ColKey) => void;
+  onAll: () => void;
+  onDefault: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-200 text-zinc-700 text-[12px] font-medium hover:bg-zinc-50 transition-colors shrink-0"
+        title="표시할 컬럼 선택"
+      >
+        <Columns3 className="w-3.5 h-3.5" />
+        컬럼 {visibleCols.size}/{COLUMNS.length}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-lg shadow-lg py-1.5 w-56">
+          <div className="text-[10px] uppercase text-zinc-400 px-3 py-1.5">표시할 컬럼</div>
+          <div className="max-h-80 overflow-y-auto">
+            {COLUMNS.map((c) => {
+              const active = visibleCols.has(c.key);
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => toggleCol(c.key)}
+                  disabled={c.locked}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12.5px] text-left hover:bg-zinc-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      active
+                        ? "bg-zinc-900 border-zinc-900 text-white"
+                        : "bg-white border-zinc-300"
+                    }`}
+                  >
+                    {active ? <CheckIcon className="w-3 h-3" strokeWidth={3} /> : null}
+                  </span>
+                  <span className="flex-1 text-zinc-700">{c.label}</span>
+                  {c.locked ? (
+                    <span className="text-[9.5px] text-zinc-400">필수</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-zinc-100 mt-1 px-2 py-1 flex gap-1">
+            <button
+              type="button"
+              onClick={onAll}
+              className="flex-1 text-[11px] text-zinc-600 hover:bg-zinc-100 rounded px-2 py-1"
+            >
+              모두 선택
+            </button>
+            <button
+              type="button"
+              onClick={onDefault}
+              className="flex-1 text-[11px] text-zinc-600 hover:bg-zinc-100 rounded px-2 py-1"
+            >
+              기본값
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
