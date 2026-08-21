@@ -175,6 +175,7 @@ function rowToApplication(row: DbRow): Application {
     ai_summary: row.ai_summary,
     review_notes: row.review_notes,
     decided_at: row.decided_at,
+    company_id: (row as unknown as { company_id: number | null }).company_id ?? null,
   };
 }
 

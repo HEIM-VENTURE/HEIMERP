@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, Download, Sparkles, Clock, User, Mail, Phone, Globe, Building2 } from "lucide-react";
+import { ArrowLeft, FileText, Download, Sparkles, Clock, User, Mail, Phone, Globe, Building2, ArrowUpRight } from "lucide-react";
 import {
   GROWTH_STAGE_LABEL,
   REVENUE_LABEL,
@@ -78,22 +78,43 @@ export default async function ApplicationDetailPage({ params }: Props) {
             <h1 className="text-[28px] font-bold text-zinc-900 tracking-tight">{app.company_name}</h1>
             <div className="text-[13.5px] text-zinc-600 mt-1.5">{app.tagline}</div>
           </div>
-          <dl className="text-right text-[12px] text-zinc-500 space-y-1 shrink-0">
-            <div>
-              <dt className="inline">접수: </dt>
-              <dd className="inline text-zinc-800">{receivedDate}</dd>
-            </div>
-            <div>
-              <dt className="inline">검토 기한: </dt>
-              <dd className="inline text-zinc-800">{app.review_deadline}</dd>
-            </div>
-            <div>
-              <dt className="inline">담당: </dt>
-              <dd className="inline text-zinc-800">
-                {app.reviewer ?? <span className="text-zinc-300">미배정</span>}
-              </dd>
-            </div>
-          </dl>
+          <div className="flex flex-col items-end gap-3 shrink-0">
+            <dl className="text-right text-[12px] text-zinc-500 space-y-1">
+              <div>
+                <dt className="inline">접수: </dt>
+                <dd className="inline text-zinc-800">{receivedDate}</dd>
+              </div>
+              <div>
+                <dt className="inline">검토 기한: </dt>
+                <dd className="inline text-zinc-800">{app.review_deadline}</dd>
+              </div>
+              <div>
+                <dt className="inline">담당: </dt>
+                <dd className="inline text-zinc-800">
+                  {app.reviewer ?? <span className="text-zinc-300">미배정</span>}
+                </dd>
+              </div>
+            </dl>
+            {app.company_id ? (
+              <Link
+                href={`/admin/companies/${app.company_id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand/30 bg-brand/5 text-brand text-[12px] font-medium hover:bg-brand/10 transition-colors"
+                title="이 접수와 연결된 기업 마스터 상세로 이동"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                기업 마스터 열기
+                <ArrowUpRight className="w-3 h-3" />
+              </Link>
+            ) : app.status === "go" ? (
+              <span className="text-[11px] text-zinc-400 italic">
+                기업 마스터 연결 실패 — GO 재저장 or 수동 등록 필요
+              </span>
+            ) : (
+              <span className="text-[11px] text-zinc-400 italic">
+                GO 판정 시 기업 마스터 자동 생성
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

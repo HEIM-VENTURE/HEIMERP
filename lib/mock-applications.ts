@@ -48,6 +48,7 @@ export type Application = {
   } | null;
   review_notes: string | null;
   decided_at: string | null;
+  company_id: number | null;
 };
 
 export const GROWTH_STAGE_LABEL: Record<string, string> = {
@@ -169,6 +170,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     },
     review_notes: null,
     decided_at: null,
+    company_id: null,
   },
   {
     id: "app-2026-0041",
@@ -202,6 +204,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     ai_summary: null,
     review_notes: null,
     decided_at: null,
+    company_id: null,
   },
   {
     id: "app-2026-0040",
@@ -235,6 +238,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     review_notes:
       "TIPS 3주차 심사 참여 확정. 시리즈 A 리드 투자자 3곳 소싱 착수.",
     decided_at: "2026-07-31T14:30:00+09:00",
+    company_id: null,
   },
   {
     id: "app-2026-0039",
@@ -267,6 +271,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     ai_summary: null,
     review_notes: "매출·유저 데이터·시장 규모 자료 보완 필요.",
     decided_at: "2026-07-30T10:15:00+09:00",
+    company_id: null,
   },
   {
     id: "app-2026-0038",
@@ -300,6 +305,7 @@ export const MOCK_APPLICATIONS: Application[] = [
     review_notes:
       "당사 서비스 라인업 (딥테크·초기 매출 이상 스타트업 대상)과 부적합. 이후 트랙션 확보 시 재접수 안내.",
     decided_at: "2026-07-29T16:00:00+09:00",
+    company_id: null,
   },
 ];
 
