@@ -92,7 +92,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes] = await Promise.all([
     supabase
       .from("companies")
       .select("*")
@@ -109,6 +109,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       .select("id, tips_operator_id, valuation, investment, program")
       .eq("company_id", id)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("applications")
+      .select("id, application_no, received_at, status")
+      .eq("company_id", id)
+      .order("received_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const company = companyRes.data as Company | null;
@@ -121,6 +128,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const contracts = contractsRes.data ?? [];
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
   const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null; program: "TIPS" | "LIPS" }[]) ?? [];
+  const application = applicationRes.data as { id: string; application_no: string; received_at: string; status: string } | null;
 
   const currentIdx = getCurrentUnifiedStageIndex(company);
 
@@ -254,7 +262,17 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 items-start">
+            {application ? (
+              <Link
+                href={`/admin/applications/${application.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-700 text-[12px] font-medium hover:border-brand/40 hover:text-brand hover:bg-brand/5 transition-colors"
+                title={`원 신청서 ${application.application_no} 보기`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                원 신청서
+              </Link>
+            ) : null}
             <EditCompanyModal
               company={{
                 id: company.id,
