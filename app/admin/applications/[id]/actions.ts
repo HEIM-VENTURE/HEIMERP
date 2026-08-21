@@ -116,6 +116,15 @@ export async function saveDecisionAction(
     return { ok: false, error: `저장 실패: ${updateErr.message}` };
   }
 
+  // GO 판정 시 companies 자동 생성 (이미 연결된 company_id 있으면 스킵)
+  if (decision === "go") {
+    const linked = await ensureCompanyForApplication(applicationId, me, admin);
+    if (!linked.ok) {
+      console.warn("[decision] companies 자동 생성 실패", linked.error);
+      // 실패해도 판정 저장·이메일은 계속. 사장님이 수동으로 등록 가능.
+    }
+  }
+
   // 이메일 발송: GO / more_docs이고, 중복 발송 아닐 때만
   if ((decision === "go" || decision === "more_docs") && !sameDecisionAlreadySent) {
     await triggerEmail(applicationId, decision as EmailKind, notes, admin);
@@ -124,7 +133,96 @@ export async function saveDecisionAction(
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${applicationId}`);
   revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/companies");
   return { ok: true, alreadySent: sameDecisionAlreadySent };
+}
+
+/**
+ * GO 판정된 신청서로부터 companies 새 행 생성 및 applications.company_id 연결.
+ * 이미 company_id 있으면 스킵 (재판정 시 중복 방지).
+ * companies.consultant_id 는 신청서 담당자(reviewer_id) 그대로.
+ * sales_stage 는 'received' — 자동 To-do 3개(기수 카톡방/신규 검토/1차 미팅) 자동 생성.
+ */
+async function ensureCompanyForApplication(
+  applicationId: string,
+  me: { id: string; name: string },
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<{ ok: true; companyId: number | null } | { ok: false; error: string }> {
+  const { data: app, error: appErr } = await admin
+    .from("applications")
+    .select(
+      "id, application_no, company_name, business_number, ceo_name, phone, email, headcount, website, tagline, growth_stage, revenue_range, growth_trend, priorities, goals, channel, contact_name, contact_role, reviewer_id, reviewer_name, received_at, company_id",
+    )
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (appErr || !app) {
+    return { ok: false, error: appErr?.message ?? "신청서 조회 실패" };
+  }
+  if (app.company_id) {
+    return { ok: true, companyId: app.company_id as number };
+  }
+
+  const receivedDate =
+    typeof app.received_at === "string" ? app.received_at.split("T")[0] : null;
+
+  const notesLines: string[] = [
+    `접수번호: ${app.application_no}`,
+    `담당자(신청): ${app.contact_name}${app.contact_role ? ` · ${app.contact_role}` : ""}`,
+    `성장 단계: ${app.growth_stage}`,
+    `12개월 매출: ${app.revenue_range}`,
+    `6개월 추세: ${app.growth_trend}`,
+  ];
+  if (Array.isArray(app.priorities) && app.priorities.length) {
+    notesLines.push(`우선순위: ${(app.priorities as string[]).join(", ")}`);
+  }
+  if (app.channel) notesLines.push(`유입 경로: ${app.channel}`);
+  notesLines.push(`GO 판정: ${me.name} (${new Date().toISOString().split("T")[0]})`);
+
+  const insertPayload: Record<string, unknown> = {
+    name: app.company_name,
+    ceo_name: app.ceo_name,
+    phone: app.phone,
+    email: app.email,
+    main_item: app.tagline,
+    last_year_revenue: null,
+    inquiry_purpose: app.goals || null,
+    consultant_id: app.reviewer_id ?? null,
+    sales_stage: "received",
+    source: "application",
+    received_at: receivedDate,
+    submitter_name: app.contact_name,
+    submitter_phone: app.phone,
+    submitter_email: app.email,
+    custom_fields: {
+      application_id: app.id,
+      application_no: app.application_no,
+      website: app.website ?? null,
+      business_number: app.business_number ?? null,
+      headcount: app.headcount ?? null,
+    },
+    notes: notesLines.join("\n"),
+  };
+
+  const { data: created, error: insertErr } = await admin
+    .from("companies")
+    .insert(insertPayload)
+    .select("id")
+    .single();
+
+  if (insertErr || !created) {
+    return { ok: false, error: insertErr?.message ?? "companies INSERT 실패" };
+  }
+
+  const newId = created.id as number;
+  const { error: linkErr } = await admin
+    .from("applications")
+    .update({ company_id: newId })
+    .eq("id", applicationId);
+  if (linkErr) {
+    return { ok: false, error: `연결 실패: ${linkErr.message}` };
+  }
+
+  return { ok: true, companyId: newId };
 }
 
 type EmailKind = "go" | "more_docs" | "meeting_info" | "custom";
