@@ -27,6 +27,7 @@ import {
 import { StageChanger } from "./stage-changer";
 import { TipsMatches } from "./tips-match";
 import { NewMeetingModal } from "./new-meeting-modal";
+import { EditableCompanyField } from "./inline-edit";
 import {
   NewContractModal,
   EditContractRow,
@@ -498,37 +499,97 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
 
         {/* ── 우측 (요약·참조 · lg 이상 sticky) ── */}
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start min-w-0">
-          {/* 기본 정보 */}
+          {/* 기본 정보 (셀 클릭 인라인 편집) */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-zinc-900 mb-3">기본 정보</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-zinc-900">기본 정보</h3>
+              <span className="text-[10px] text-zinc-400">셀 클릭 → 편집</span>
+            </div>
             <div className="space-y-2 text-xs">
-              <Info label="대표자" value={company.ceo_name} />
+              <EditableCompanyField
+                companyId={company.id}
+                field="ceo_name"
+                label="대표자"
+                value={company.ceo_name}
+                placeholder="홍길동"
+              />
               <Info label="담당 PM" value={company.custom_fields?.pm ?? null} />
-              <Info label="연락처" value={company.phone} />
-              <Info label="이메일" value={company.email} />
-              <Info label="설립일" value={company.founded_at} />
-              <Info label="매출(전년)" value={formatRevenue(company.last_year_revenue)} />
+              <EditableCompanyField
+                companyId={company.id}
+                field="phone"
+                label="연락처"
+                value={company.phone}
+                placeholder="010-0000-0000"
+              />
+              <EditableCompanyField
+                companyId={company.id}
+                field="email"
+                label="이메일"
+                value={company.email}
+                placeholder="hello@company.com"
+              />
+              <EditableCompanyField
+                companyId={company.id}
+                field="founded_at"
+                label="설립일"
+                value={company.founded_at}
+                placeholder="YYYY-MM-DD"
+                type="date"
+              />
+              <EditableCompanyField
+                companyId={company.id}
+                field="last_year_revenue"
+                label="매출(전년)"
+                value={company.last_year_revenue}
+                placeholder="백만원 단위"
+                type="number"
+                render={(v) => {
+                  if (v == null || v === "") return <span className="text-zinc-300">—</span>;
+                  const num = typeof v === "number" ? v : Number(v);
+                  return <span className="text-zinc-900 tabular-nums">{formatRevenue(num) ?? "—"}</span>;
+                }}
+              />
               <Info label="접수일" value={company.received_at} />
               <Info label="계약일" value={company.contracted_at} />
             </div>
 
-            {company.inquiry_purpose ? (
-              <div className="mt-4 pt-3 border-t border-zinc-100">
-                <div className="text-xs text-zinc-500 mb-1.5">접수 목적 / 메모</div>
-                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
-                  {company.inquiry_purpose}
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-4 pt-3 border-t border-zinc-100">
+              <div className="text-xs text-zinc-500 mb-1.5">접수 목적</div>
+              <EditableCompanyField
+                companyId={company.id}
+                field="inquiry_purpose"
+                value={company.inquiry_purpose}
+                placeholder="접수 시 남긴 목적…"
+                multiline
+                render={(v) =>
+                  v ? (
+                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">{String(v)}</div>
+                  ) : (
+                    <span className="text-zinc-300 text-xs">—</span>
+                  )
+                }
+                className="w-full block"
+              />
+            </div>
 
-            {company.notes ? (
-              <div className="mt-3 pt-3 border-t border-zinc-100">
-                <div className="text-xs text-zinc-500 mb-1.5">추가 메모</div>
-                <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words">
-                  {company.notes}
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-3 pt-3 border-t border-zinc-100">
+              <div className="text-xs text-zinc-500 mb-1.5">추가 메모</div>
+              <EditableCompanyField
+                companyId={company.id}
+                field="notes"
+                value={company.notes}
+                placeholder="내부 코멘트·후속 액션·참고 링크…"
+                multiline
+                render={(v) =>
+                  v ? (
+                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">{String(v)}</div>
+                  ) : (
+                    <span className="text-zinc-300 text-xs">—</span>
+                  )
+                }
+                className="w-full block"
+              />
+            </div>
           </div>
 
           {/* TIPS 운영사 매칭 (여러 곳 가능) */}

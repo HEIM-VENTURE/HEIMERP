@@ -209,6 +209,101 @@ export async function deleteTipsMatchAction(
   return {};
 }
 
+// ─────────────────────────────────────────────
+// 기업 마스터 인라인 편집 (기본 정보 카드용)
+// ─────────────────────────────────────────────
+const EDITABLE_COMPANY_FIELDS = [
+  "name",
+  "ceo_name",
+  "phone",
+  "email",
+  "address",
+  "main_item",
+  "founded_at",
+  "last_year_revenue",
+  "inquiry_purpose",
+  "notes",
+] as const;
+type EditableCompanyField = (typeof EDITABLE_COMPANY_FIELDS)[number];
+
+export type CompanyPatch = Partial<Record<EditableCompanyField, string | number | null>>;
+
+export async function updateCompanyField(
+  companyId: number,
+  patch: CompanyPatch,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!companyId) return { ok: false, error: "companyId 없음" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "로그인 세션이 만료되었습니다." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!profile || profile.role !== "admin") {
+    return { ok: false, error: "관리자 권한이 필요합니다." };
+  }
+
+  const clean: Record<string, unknown> = {};
+  for (const key of Object.keys(patch) as EditableCompanyField[]) {
+    if (!(EDITABLE_COMPANY_FIELDS as readonly string[]).includes(key)) {
+      return { ok: false, error: `허용되지 않은 필드: ${key}` };
+    }
+    const raw = patch[key];
+
+    if (key === "last_year_revenue") {
+      if (raw === null || raw === "" || raw === undefined) {
+        clean[key] = null;
+      } else {
+        const num = typeof raw === "number" ? raw : Number(String(raw).replace(/,/g, ""));
+        if (!Number.isFinite(num)) {
+          return { ok: false, error: "매출은 숫자여야 합니다." };
+        }
+        clean[key] = num;
+      }
+      continue;
+    }
+
+    if (key === "founded_at") {
+      if (raw === null || raw === "" || raw === undefined) {
+        clean[key] = null;
+      } else if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
+        clean[key] = raw.trim();
+      } else {
+        return { ok: false, error: "설립일은 YYYY-MM-DD 형식이어야 합니다." };
+      }
+      continue;
+    }
+
+    // 텍스트 필드
+    const trimmed = typeof raw === "string" ? raw.trim() : raw;
+    if (key === "name") {
+      if (!trimmed) return { ok: false, error: "회사명은 비울 수 없습니다." };
+      clean[key] = trimmed;
+    } else {
+      clean[key] = trimmed === "" ? null : trimmed;
+    }
+  }
+
+  if (Object.keys(clean).length === 0) return { ok: true };
+
+  const { error } = await supabase
+    .from("companies")
+    .update(clean)
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  revalidatePath("/admin/companies");
+  revalidatePath("/admin/pipeline");
+  return { ok: true };
+}
+
 /** 드랍 취소(복구) — drop_reason 제거 */
 export async function restoreCompanyAction(companyId: number) {
   const supabase = await createClient();
