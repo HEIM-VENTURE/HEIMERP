@@ -543,11 +543,15 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 value={company.last_year_revenue}
                 placeholder="백만원 단위"
                 type="number"
-                render={(v) => {
-                  if (v == null || v === "") return <span className="text-zinc-300">—</span>;
-                  const num = typeof v === "number" ? v : Number(v);
-                  return <span className="text-zinc-900 tabular-nums">{formatRevenue(num) ?? "—"}</span>;
-                }}
+                displayNode={
+                  company.last_year_revenue == null ? (
+                    <span className="text-zinc-300">—</span>
+                  ) : (
+                    <span className="text-zinc-900 tabular-nums">
+                      {formatRevenue(Number(company.last_year_revenue)) ?? "—"}
+                    </span>
+                  )
+                }
               />
               <Info label="접수일" value={company.received_at} />
               <Info label="계약일" value={company.contracted_at} />
@@ -561,9 +565,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 value={company.inquiry_purpose}
                 placeholder="접수 시 남긴 목적…"
                 multiline
-                render={(v) =>
-                  v ? (
-                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">{String(v)}</div>
+                displayNode={
+                  company.inquiry_purpose ? (
+                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">
+                      {company.inquiry_purpose}
+                    </div>
                   ) : (
                     <span className="text-zinc-300 text-xs">—</span>
                   )
@@ -580,9 +586,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 value={company.notes}
                 placeholder="내부 코멘트·후속 액션·참고 링크…"
                 multiline
-                render={(v) =>
-                  v ? (
-                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">{String(v)}</div>
+                displayNode={
+                  company.notes ? (
+                    <div className="text-xs text-zinc-700 whitespace-pre-wrap break-words text-left">
+                      {company.notes}
+                    </div>
                   ) : (
                     <span className="text-zinc-300 text-xs">—</span>
                   )

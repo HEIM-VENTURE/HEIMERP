@@ -19,7 +19,12 @@ type Props = {
   placeholder?: string;
   multiline?: boolean;
   type?: "text" | "date" | "number";
-  render?: (v: string | number | null) => React.ReactNode;
+  /**
+   * 편집 아닐 때 표시할 노드. 서버 컴포넌트가 미리 렌더해서 전달.
+   * (Server → Client 로 함수는 전달 불가, ReactNode 는 가능)
+   * 없으면 기본: value 그대로 or —
+   */
+  displayNode?: React.ReactNode;
   className?: string;
 };
 
@@ -31,7 +36,7 @@ export function EditableCompanyField({
   placeholder,
   multiline,
   type = "text",
-  render,
+  displayNode,
   className,
 }: Props) {
   const [local, setLocal] = useState<string | number | null>(value);
@@ -116,13 +121,29 @@ export function EditableCompanyField({
     );
   }
 
-  const displayValue = render
-    ? render(local)
-    : local == null || local === "" ? (
+  // 편집 아닐 때 표시:
+  // - 로컬 상태(낙관적 업데이트)가 원본과 다르면 새 값을 그대로 표시
+  // - 로컬이 원본과 같으면 서버가 미리 계산해준 displayNode 사용 (있을 때)
+  // - 없으면 기본 렌더
+  const localChanged = local !== value;
+  let displayValue: React.ReactNode;
+  if (localChanged) {
+    displayValue =
+      local == null || local === "" ? (
         <span className="text-zinc-300">—</span>
       ) : (
         <span className="text-zinc-900">{String(local)}</span>
       );
+  } else if (displayNode !== undefined) {
+    displayValue = displayNode;
+  } else {
+    displayValue =
+      local == null || local === "" ? (
+        <span className="text-zinc-300">—</span>
+      ) : (
+        <span className="text-zinc-900">{String(local)}</span>
+      );
+  }
 
   const clickable = (
     <button
