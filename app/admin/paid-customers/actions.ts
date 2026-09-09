@@ -109,3 +109,43 @@ export async function updatePaidCustomer(
   revalidatePath("/admin/paid-customers");
   return { ok: true };
 }
+
+/**
+ * 새 결제 고객(기업) 한 줄 추가.
+ * 기업명만 필수. 다음 no 값 자동 채움.
+ * companyId 넘기면 기존 companies 행과 연결 (선택).
+ */
+export async function createPaidCustomer(
+  companyName: string,
+  companyId?: number | null,
+): Promise<ActionResult & { id?: string }> {
+  const name = companyName?.trim();
+  if (!name) return { ok: false, error: "기업명을 입력해주세요." };
+
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth;
+
+  // 다음 no 값 계산 (기존 max + 1)
+  const { data: last } = await auth.supabase
+    .from("paid_customers")
+    .select("no")
+    .order("no", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  const nextNo = ((last?.no as number | null) ?? 0) + 1;
+
+  const { data, error } = await auth.supabase
+    .from("paid_customers")
+    .insert({
+      company_name: name,
+      no: nextNo,
+      company_id: companyId ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/paid-customers");
+  return { ok: true, id: data.id as string };
+}

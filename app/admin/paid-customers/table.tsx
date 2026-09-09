@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, LinkIcon, PanelRightOpen, Columns3, Check as CheckIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Download, LinkIcon, PanelRightOpen, Columns3, Check as CheckIcon, Plus } from "lucide-react";
 import { SALES_STAGE_LABELS, SALES_STAGE_COLORS } from "@/lib/labels";
 import {
   TextEditCell,
@@ -12,6 +13,7 @@ import {
   statusBadge,
 } from "./edit-cells";
 import { PaidCustomerDetailPanel, type DetailPanelRow } from "./detail-panel";
+import { createPaidCustomer } from "./actions";
 
 type SalesStageKey = keyof typeof SALES_STAGE_LABELS;
 
@@ -250,6 +252,7 @@ export function PaidCustomerTable({ rows }: { rows: PaidCustomer[] }) {
             onAll={() => persistCols(new Set(COLUMNS.map((c) => c.key)))}
             onDefault={() => persistCols(new Set(DEFAULT_VISIBLE))}
           />
+          <AddCustomerButton />
           <button
             type="button"
             onClick={handleExport}
@@ -677,6 +680,103 @@ function ColumnPicker({
             </button>
           </div>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 신규 고객 추가 버튼 (기업명만 입력 후 즉시 등록)
+// ─────────────────────────────────────────────
+function AddCustomerButton() {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  const submit = () => {
+    const v = name.trim();
+    if (!v) {
+      setError("기업명을 입력해주세요.");
+      return;
+    }
+    setError(null);
+    start(async () => {
+      const res = await createPaidCustomer(v);
+      if (!res.ok) {
+        setError(res.error || "추가 실패");
+        return;
+      }
+      setName("");
+      setOpen(false);
+      router.refresh();
+    });
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand text-white text-[12px] font-medium hover:opacity-90 transition-opacity shrink-0"
+        title="새 결제 고객 추가"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        신규 추가
+      </button>
+    );
+  }
+
+  return (
+    <div className="inline-flex items-center gap-1.5 shrink-0">
+      <input
+        ref={inputRef}
+        type="text"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+          if (error) setError(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          else if (e.key === "Escape") {
+            setOpen(false);
+            setName("");
+            setError(null);
+          }
+        }}
+        placeholder="기업명 입력"
+        disabled={pending}
+        className="h-7 px-2 rounded-md border border-zinc-300 text-[12px] w-40 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={pending}
+        className="h-7 px-3 rounded-md bg-brand text-white text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+      >
+        {pending ? "..." : "추가"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          setName("");
+          setError(null);
+        }}
+        disabled={pending}
+        className="h-7 px-2 rounded-md text-[12px] text-zinc-500 hover:text-zinc-900"
+      >
+        취소
+      </button>
+      {error ? (
+        <span className="text-[11px] text-rose-600 ml-1">{error}</span>
       ) : null}
     </div>
   );
