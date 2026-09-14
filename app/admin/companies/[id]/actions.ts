@@ -324,3 +324,42 @@ export async function restoreCompanyAction(companyId: number) {
   revalidatePath("/admin/dashboard");
   return { success: true };
 }
+
+/**
+ * 기업 완전 삭제 — DB 에서 영구 제거. 되돌리기 불가.
+ * 확인용으로 사용자가 기업 이름을 다시 타이핑한 값(confirmName)과 실제 이름 비교.
+ * 연결된 자식 레코드(todos·meetings·files 등)는 FK CASCADE 로 함께 삭제.
+ */
+export async function hardDeleteCompanyAction(
+  companyId: number,
+  confirmName: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인 필요" };
+
+  const { data: company, error: fetchErr } = await supabase
+    .from("companies")
+    .select("id, name")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (fetchErr) return { error: fetchErr.message };
+  if (!company) return { error: "기업을 찾을 수 없습니다." };
+
+  if ((confirmName ?? "").trim() !== company.name) {
+    return { error: `확인 이름이 일치하지 않습니다. 정확히 "${company.name}" 을 입력해주세요.` };
+  }
+
+  const { error } = await supabase
+    .from("companies")
+    .delete()
+    .eq("id", companyId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/companies");
+  revalidatePath("/admin/pipeline");
+  revalidatePath("/admin/dashboard");
+  return { success: true };
+}

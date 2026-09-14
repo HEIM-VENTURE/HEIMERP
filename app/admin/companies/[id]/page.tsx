@@ -35,6 +35,7 @@ import {
 import { EditCompanyModal } from "../../pipeline/company-modals";
 import { FileManager } from "./file-manager";
 import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
+import { DeleteCompanyButton } from "./delete-company-button";
 
 export const dynamic = "force-dynamic";
 
@@ -636,6 +637,23 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             )}
           </div>
         </aside>
+      </div>
+
+      {/* 위험 구역 · 기업 완전 삭제 */}
+      <div className="mt-8 pt-6 border-t border-rose-100">
+        <div className="bg-rose-50/40 border border-rose-100 rounded-2xl p-5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[13px] font-semibold text-rose-700 mb-1">위험 구역</div>
+              <div className="text-[12px] text-zinc-600 leading-relaxed">
+                기업을 완전 삭제하면 관련 미팅·자료·업무 이력이 모두 사라지며 되돌릴 수 없습니다.
+                <br />
+                일반적으로는 <b>드랍 처리</b>(파이프라인 목록에서 자동 제외 + 데이터 보존)를 권장합니다.
+              </div>
+            </div>
+            <DeleteCompanyButton companyId={company.id} companyName={company.name} />
+          </div>
+        </div>
       </div>
     </>
   );
