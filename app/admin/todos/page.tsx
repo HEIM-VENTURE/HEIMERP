@@ -6,7 +6,7 @@ import { NewTodoModal } from "./new-todo-modal";
 import { TodoCheckbox } from "./todo-checkbox";
 import { TodoFilters } from "./todo-filters";
 
-const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
+const PM_OPTIONS = ["박대성", "강영환", "허유나", "이지우", "조상우", "권도준"];
 const STAGE_LABELS: Record<string, string> = {
   ...SALES_STAGE_LABELS,
   ...CONSULTING_STAGE_LABELS,

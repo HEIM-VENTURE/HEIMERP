@@ -21,7 +21,7 @@ type Operator = {
   notes: string | null;
 };
 
-const PM_OPTIONS = ["박대성", "강영환", "기동현", "허유나"];
+const PM_OPTIONS = ["박대성", "강영환", "허유나", "이지우", "조상우", "권도준"];
 
 export function NewOperatorModal() {
   const [open, setOpen] = useState(false);
