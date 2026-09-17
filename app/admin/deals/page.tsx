@@ -31,6 +31,7 @@ type Props = {
   searchParams: Promise<{
     stage?: string;
     view?: string;
+    mode?: string;
     q?: string;
     operator?: string;
     lips?: string;
@@ -112,7 +113,12 @@ export default async function DealsListPage({ searchParams }: Props) {
         </Link>
       </div>
 
-      {view === "tapping" ? <TappingTable filters={tappingFilters} /> : null}
+      {view === "tapping" ? (
+        <TappingTable
+          filters={tappingFilters}
+          mode={(params.mode ?? "kanban") as "kanban" | "table"}
+        />
+      ) : null}
       {view === "deals" ? <DealCardsView activeTab={activeTab} /> : null}
     </>
   );

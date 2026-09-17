@@ -95,6 +95,53 @@ export async function updateTappingEvent(
   return { success: true };
 }
 
+/**
+ * 칸반 드래그 시 사용:
+ * - 태핑에 이벤트가 있으면 → 최신 이벤트의 status 변경
+ * - 이벤트가 없으면 → operator 인자로 새 이벤트 생성 (필수)
+ */
+export async function moveTappingStatus(
+  tappingId: string,
+  newStatus: EventStatus,
+  fallbackOperator?: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const auth = await requireAuth();
+  if (!auth.ok) return { error: auth.error };
+
+  const { data: latest } = await auth.supabase
+    .from("tapping_events")
+    .select("id, sequence")
+    .eq("tapping_id", tappingId)
+    .order("sequence", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latest?.id) {
+    const { error } = await auth.supabase
+      .from("tapping_events")
+      .update({ status: newStatus })
+      .eq("id", latest.id);
+    if (error) return { error: error.message };
+  } else {
+    if (!fallbackOperator?.trim()) {
+      return { error: "이벤트가 없습니다. 태핑 대상을 먼저 입력해주세요." };
+    }
+    const { error } = await auth.supabase
+      .from("tapping_events")
+      .insert({
+        tapping_id: tappingId,
+        sequence: 1,
+        operator: fallbackOperator.trim(),
+        status: newStatus,
+        contact_date: new Date().toISOString().slice(0, 10),
+      });
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/admin/deals");
+  return { success: true };
+}
+
 export async function deleteTappingEvent(
   id: string,
 ): Promise<{ error?: string; success?: boolean }> {

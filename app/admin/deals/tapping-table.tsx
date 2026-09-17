@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { LayoutGrid, Table2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EditCell, EligibleCell, AddTappingButton, DeleteRowButton } from "./tapping-cells";
 import { TappingFiltersBar, type TappingFilters } from "./tapping-filters";
 import { TappingSummaryCell, type TappingEvent } from "./tapping-events-panel";
+import { TappingKanban } from "./tapping-kanban";
 
 type Row = {
   id: string;
@@ -83,7 +85,13 @@ function sortRows(rows: RowWithEvents[], f: TappingFilters): RowWithEvents[] {
   return arr;
 }
 
-export async function TappingTable({ filters }: { filters: TappingFilters }) {
+export async function TappingTable({
+  filters,
+  mode = "kanban",
+}: {
+  filters: TappingFilters;
+  mode?: "kanban" | "table";
+}) {
   const supabase = await createClient();
   const [{ data, error }, { data: eventsData, error: eventsError }] = await Promise.all([
     supabase
@@ -158,15 +166,78 @@ export async function TappingTable({ filters }: { filters: TappingFilters }) {
       <TappingFiltersBar f={filters} />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div className="text-[12px] text-zinc-500">
           <b className="text-zinc-900 tabular-nums">{rows.length}</b>
           <span className="text-zinc-400"> / {allRows.length}</span>
           <span className="mx-2 text-zinc-300">·</span>
-          셀 클릭 → 인라인 편집 · 자격 배지 클릭 → 여/부/대기중 전환
+          {mode === "kanban"
+            ? "카드 드래그 → 태핑 상태 변경 · 카드 클릭 → 상세 관리"
+            : "셀 클릭 → 인라인 편집 · 자격 배지 클릭 → 여/부/대기중"}
         </div>
-        <AddTappingButton />
+        <div className="flex items-center gap-2">
+          {/* Kanban ↔ Table 스위처 */}
+          <div className="inline-flex items-center gap-0.5 p-0.5 bg-zinc-100 rounded-md">
+            <Link
+              href={buildViewHref(filters, "kanban")}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11.5px] font-medium transition-colors ${
+                mode === "kanban" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+              }`}
+            >
+              <LayoutGrid className="w-3 h-3" />
+              칸반
+            </Link>
+            <Link
+              href={buildViewHref(filters, "table")}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11.5px] font-medium transition-colors ${
+                mode === "table" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+              }`}
+            >
+              <Table2 className="w-3 h-3" />
+              표
+            </Link>
+          </div>
+          <AddTappingButton />
+        </div>
       </div>
+
+      {/* 본체: 칸반 or 표 */}
+      {mode === "kanban" ? (
+        <TappingKanban
+          rows={rows.map((r) => ({
+            id: r.id,
+            company_id: r.company_id,
+            company_name_snapshot: r.company_name_snapshot,
+            confirmed_operator: r.confirmed_operator,
+            lips_eligible: r.lips_eligible,
+            tips_eligible: r.tips_eligible,
+            events: r.events,
+          }))}
+        />
+      ) : (
+        <TableView rows={rows} allRowsCount={allRows.length} />
+      )}
+    </>
+  );
+}
+
+function buildViewHref(f: TappingFilters, mode: "kanban" | "table"): string {
+  const p = new URLSearchParams();
+  p.set("view", "tapping");
+  p.set("mode", mode);
+  if (f.q) p.set("q", f.q);
+  if (f.operator && f.operator !== "all") p.set("operator", f.operator);
+  if (f.lips && f.lips !== "all") p.set("lips", f.lips);
+  if (f.tips && f.tips !== "all") p.set("tips", f.tips);
+  if (f.tapping && f.tapping !== "all") p.set("tapping", f.tapping);
+  if (f.sort && f.sort !== "seq") p.set("sort", f.sort);
+  if (f.dir && f.dir !== "asc") p.set("dir", f.dir);
+  return `/admin/deals?${p.toString()}`;
+}
+
+function TableView({ rows, allRowsCount }: { rows: RowWithEvents[]; allRowsCount: number }) {
+  return (
+    <>
 
       {/* 표 */}
       <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-14rem)]">
@@ -191,7 +262,7 @@ export async function TappingTable({ filters }: { filters: TappingFilters }) {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={12} className="py-10 text-center text-zinc-400 text-[13px]">
-                  {allRows.length === 0
+                  {allRowsCount === 0
                     ? "아직 태핑 데이터가 없습니다. 우측 상단 [+ 신규 추가] 로 시작하세요."
                     : "필터 결과가 없습니다."}
                 </td>
