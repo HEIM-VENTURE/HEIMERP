@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, TrendingUp, Sparkles } from "lucide-react";
+import { Coins, TrendingUp, Sparkles, Table2, LayoutGrid } from "lucide-react";
 import {
   MOCK_DEALS,
   DEAL_STAGE_LABEL,
@@ -7,7 +7,9 @@ import {
   ROUND_LABEL,
   type DealStage,
 } from "@/lib/mock-deals";
+import { TappingTable } from "./tapping-table";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "투자 딜 · HEIM ERP" };
 
 const TABS: { key: DealStage | "all" | "active"; label: string }[] = [
@@ -26,11 +28,12 @@ const TABS: { key: DealStage | "all" | "active"; label: string }[] = [
 const ACTIVE_STAGES: DealStage[] = ["tapping", "meeting", "term_sheet", "ic", "closing"];
 
 type Props = {
-  searchParams: Promise<{ stage?: string }>;
+  searchParams: Promise<{ stage?: string; view?: string }>;
 };
 
 export default async function DealsListPage({ searchParams }: Props) {
   const params = await searchParams;
+  const view = (params.view ?? "deals") as "deals" | "tapping";
   const activeTab = (params.stage ?? "all") as DealStage | "all" | "active";
 
   const rows =
@@ -55,17 +58,72 @@ export default async function DealsListPage({ searchParams }: Props) {
 
   return (
     <>
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex items-end justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">투자 딜</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            프로젝트별 투자 라운드 · 투자자 태핑 · 텀시트 · 심의 · 클로징 관리.
+            {view === "tapping"
+              ? "기업별 심사역·운영사 태핑 진행 관리."
+              : "프로젝트별 투자 라운드 · 투자자 태핑 · 텀시트 · 심의 · 클로징 관리."}
           </p>
         </div>
-        <div className="text-xs text-zinc-400 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" />
-          Mock 데이터
-        </div>
+      </div>
+
+      {/* View switcher: 딜 카드 vs 태핑 표 */}
+      <div className="inline-flex items-center gap-0.5 p-0.5 mb-6 bg-zinc-100 rounded-lg">
+        <Link
+          href="/admin/deals"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12.5px] font-medium transition-colors ${
+            view === "deals" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+          }`}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          딜 카드
+          <span className="text-[10.5px] text-zinc-400 ml-1">mock</span>
+        </Link>
+        <Link
+          href="/admin/deals?view=tapping"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12.5px] font-medium transition-colors ${
+            view === "tapping" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+          }`}
+        >
+          <Table2 className="w-3.5 h-3.5" />
+          태핑 표
+        </Link>
+      </div>
+
+      {view === "tapping" ? <TappingTable /> : null}
+      {view === "deals" ? <DealCardsView activeTab={activeTab} /> : null}
+    </>
+  );
+}
+
+async function DealCardsView({ activeTab }: { activeTab: DealStage | "all" | "active" }) {
+  const rows =
+    activeTab === "all"
+      ? MOCK_DEALS
+      : activeTab === "active"
+      ? MOCK_DEALS.filter((d) => ACTIVE_STAGES.includes(d.stage))
+      : MOCK_DEALS.filter((d) => d.stage === activeTab);
+
+  const counts = TABS.reduce<Record<string, number>>((acc, t) => {
+    if (t.key === "all") acc[t.key] = MOCK_DEALS.length;
+    else if (t.key === "active")
+      acc[t.key] = MOCK_DEALS.filter((d) => ACTIVE_STAGES.includes(d.stage)).length;
+    else acc[t.key] = MOCK_DEALS.filter((d) => d.stage === t.key).length;
+    return acc;
+  }, {});
+
+  const activeDeals = MOCK_DEALS.filter((d) => ACTIVE_STAGES.includes(d.stage));
+  const totalTargetActive = activeDeals.reduce((s, d) => s + d.target_amount, 0);
+  const closedDeals = MOCK_DEALS.filter((d) => d.stage === "closed");
+  const totalClosed = closedDeals.reduce((s, d) => s + (d.actual_amount ?? 0), 0);
+
+  return (
+    <>
+      <div className="mb-3 text-xs text-zinc-400 flex items-center gap-1.5">
+        <Sparkles className="w-3 h-3" />
+        Mock 데이터
       </div>
 
       {/* KPI */}
