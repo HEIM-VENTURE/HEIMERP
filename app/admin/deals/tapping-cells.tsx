@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
-import { updateTappingField, createTappingRow, deleteTappingRow, type TappingField } from "./tapping-actions";
+import { updateTappingField, createTappingRow, deleteTappingRow, PM_OPTIONS, type TappingField } from "./tapping-actions";
 
 /** 인라인 편집 텍스트 셀 · 클릭 → input · Enter/blur 저장 · 낙관적 UI */
 export function EditCell({
@@ -96,6 +96,54 @@ export function EditCell({
         <span className="text-zinc-300">{placeholder ?? "—"}</span>
       )}
     </button>
+  );
+}
+
+/** 담당 PM 드롭다운 셀 · 없음 / 6명 중 선택 */
+export function PmCell({
+  id,
+  initial,
+}: {
+  id: string;
+  initial: string | null;
+}) {
+  const [value, setValue] = useState<string>(initial ?? "");
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setValue(initial ?? "");
+  }, [initial]);
+
+  const change = (next: string) => {
+    if (next === value) return;
+    start(async () => {
+      const res = await updateTappingField(id, "pm", next);
+      if (res.error) {
+        alert(`저장 실패: ${res.error}`);
+      } else {
+        setValue(next);
+      }
+    });
+  };
+
+  const cls = value
+    ? "bg-brand/10 text-brand"
+    : "bg-zinc-100 text-zinc-400";
+
+  return (
+    <div className="flex items-center justify-center relative">
+      <select
+        value={value}
+        onChange={(e) => change(e.target.value)}
+        disabled={pending}
+        className={`text-[11.5px] font-semibold px-2 py-0.5 rounded-full appearance-none cursor-pointer ${cls} ${pending ? "opacity-60" : ""}`}
+      >
+        <option value="">미지정</option>
+        {PM_OPTIONS.map((p) => (
+          <option key={p} value={p}>{p}</option>
+        ))}
+      </select>
+    </div>
   );
 }
 

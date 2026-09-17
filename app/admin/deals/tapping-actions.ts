@@ -12,12 +12,23 @@ export type TappingField =
   | "tips_eligible"
   | "progress_status"
   | "confirmed_operator"
+  | "pm"
   | "tapping_1"
   | "tapping_2"
   | "tapping_3"
   | "tapping_4"
   | "tapping_5"
   | "notes";
+
+export const PM_OPTIONS = [
+  "박대성",
+  "강영환",
+  "허유나",
+  "이지우",
+  "조상우",
+  "권도준",
+] as const;
+export type PM = (typeof PM_OPTIONS)[number];
 
 export async function updateTappingField(
   id: string,

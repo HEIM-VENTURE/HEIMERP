@@ -37,6 +37,7 @@ type Props = {
     lips?: string;
     tips?: string;
     tapping?: string;
+    pm?: string;
     sort?: string;
     dir?: string;
   }>;
@@ -53,6 +54,7 @@ export default async function DealsListPage({ searchParams }: Props) {
     lips: (params.lips ?? "all") as "all" | "yes" | "no" | "wait" | "none",
     tips: (params.tips ?? "all") as "all" | "yes" | "no" | "wait" | "none",
     tapping: (params.tapping ?? "all") as "all" | "in_progress" | "none",
+    pm: params.pm ?? "all",
     sort: (params.sort ?? "seq") as "seq" | "name" | "updated",
     dir: (params.dir ?? "asc") as "asc" | "desc",
   };

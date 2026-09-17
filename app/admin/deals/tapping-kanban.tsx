@@ -21,6 +21,7 @@ type CardRow = {
   confirmed_operator: string | null;
   lips_eligible: string | null;
   tips_eligible: string | null;
+  pm: string | null;
   events: TappingEvent[];
 };
 
@@ -42,7 +43,13 @@ function bucketFor(row: CardRow): ColumnKey {
   return row.events[row.events.length - 1].status;
 }
 
-export function TappingKanban({ rows }: { rows: CardRow[] }) {
+export function TappingKanban({
+  rows,
+  currentUserName,
+}: {
+  rows: CardRow[];
+  currentUserName?: string;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [dragOver, setDragOver] = useState<ColumnKey | null>(null);
@@ -143,7 +150,13 @@ export function TappingKanban({ rows }: { rows: CardRow[] }) {
                       비어 있음
                     </div>
                   ) : (
-                    items.map((r) => <KanbanCard key={r.id} row={r} />)
+                    items.map((r) => (
+                      <KanbanCard
+                        key={r.id}
+                        row={r}
+                        isMine={!!currentUserName && r.pm === currentUserName}
+                      />
+                    ))
                   )}
                 </div>
               </div>
@@ -159,7 +172,7 @@ export function TappingKanban({ rows }: { rows: CardRow[] }) {
   );
 }
 
-function KanbanCard({ row }: { row: CardRow }) {
+function KanbanCard({ row, isMine }: { row: CardRow; isMine: boolean }) {
   const last = row.events[row.events.length - 1];
   const c = last ? STATUS_COLOR[last.status] : null;
 
@@ -170,7 +183,9 @@ function KanbanCard({ row }: { row: CardRow }) {
         e.dataTransfer.setData("text/plain", row.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="bg-white rounded-lg border border-zinc-200 p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-grab active:cursor-grabbing transition-shadow"
+      className={`bg-white rounded-lg border p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] cursor-grab active:cursor-grabbing transition-shadow ${
+        isMine ? "border-brand/50 ring-1 ring-brand/20" : "border-zinc-200"
+      }`}
     >
       {/* 기업명 */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -190,8 +205,22 @@ function KanbanCard({ row }: { row: CardRow }) {
         )}
       </div>
 
-      {/* 자격 배지 · 확정 운영사 */}
+      {/* 자격 배지 · 확정 운영사 · 담당 PM */}
       <div className="flex items-center gap-1 mb-2 flex-wrap">
+        {row.pm ? (
+          <span
+            className={`text-[9.5px] font-semibold px-1.5 py-0 rounded-full ${
+              isMine ? "bg-brand text-white" : "bg-zinc-100 text-zinc-700"
+            }`}
+            title={`담당 PM: ${row.pm}`}
+          >
+            {row.pm}
+          </span>
+        ) : (
+          <span className="text-[9.5px] font-medium px-1.5 py-0 rounded-full bg-zinc-100 text-zinc-400">
+            담당 미지정
+          </span>
+        )}
         {row.lips_eligible === "여" ? (
           <span className="text-[9.5px] font-semibold px-1.5 py-0 rounded-full bg-blue-100 text-blue-700">
             LIPS

@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, User } from "lucide-react";
 import { useCallback } from "react";
+import { PM_OPTIONS } from "./tapping-actions";
 
 export type TappingFilters = {
   q?: string;
@@ -10,11 +11,18 @@ export type TappingFilters = {
   lips?: "all" | "yes" | "no" | "wait" | "none";
   tips?: "all" | "yes" | "no" | "wait" | "none";
   tapping?: "all" | "in_progress" | "none";
+  pm?: string; // "all" | "mine" | "none" | 개별 이름
   sort?: "seq" | "name" | "updated";
   dir?: "asc" | "desc";
 };
 
-export function TappingFiltersBar({ f }: { f: TappingFilters }) {
+export function TappingFiltersBar({
+  f,
+  currentUserName,
+}: {
+  f: TappingFilters;
+  currentUserName?: string;
+}) {
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -39,7 +47,10 @@ export function TappingFiltersBar({ f }: { f: TappingFilters }) {
     f.lips && f.lips !== "all" ? f.lips : null,
     f.tips && f.tips !== "all" ? f.tips : null,
     f.tapping && f.tapping !== "all" ? f.tapping : null,
+    f.pm && f.pm !== "all" ? f.pm : null,
   ].filter(Boolean).length;
+
+  const isPmMine = f.pm === "mine" || (currentUserName && f.pm === currentUserName);
 
   return (
     <div className="mb-4 space-y-2.5">
@@ -119,6 +130,32 @@ export function TappingFiltersBar({ f }: { f: TappingFilters }) {
           <Pill active={!f.tapping || f.tapping === "all"} onClick={() => setParam("tapping", null)}>전체</Pill>
           <Pill active={f.tapping === "in_progress"} onClick={() => setParam("tapping", "in_progress")}>진행 중</Pill>
           <Pill active={f.tapping === "none"} onClick={() => setParam("tapping", "none")}>미시작</Pill>
+        </FilterGroup>
+
+        <FilterGroup label="담당">
+          <Pill active={!f.pm || f.pm === "all"} onClick={() => setParam("pm", null)}>전체</Pill>
+          {currentUserName && PM_OPTIONS.includes(currentUserName as (typeof PM_OPTIONS)[number]) ? (
+            <Pill
+              active={!!isPmMine}
+              onClick={() => setParam("pm", currentUserName)}
+              tone="emerald"
+            >
+              <span className="inline-flex items-center gap-1">
+                <User className="w-2.5 h-2.5" />
+                내 담당
+              </span>
+            </Pill>
+          ) : null}
+          <Pill active={f.pm === "none"} onClick={() => setParam("pm", "none")}>미지정</Pill>
+          {PM_OPTIONS.map((name) => (
+            <Pill
+              key={name}
+              active={f.pm === name}
+              onClick={() => setParam("pm", name)}
+            >
+              {name}
+            </Pill>
+          ))}
         </FilterGroup>
       </div>
     </div>

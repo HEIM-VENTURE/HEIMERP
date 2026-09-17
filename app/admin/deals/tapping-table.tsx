@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LayoutGrid, Table2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { EditCell, EligibleCell, AddTappingButton, DeleteRowButton } from "./tapping-cells";
+import { EditCell, EligibleCell, PmCell, AddTappingButton, DeleteRowButton } from "./tapping-cells";
 import { TappingFiltersBar, type TappingFilters } from "./tapping-filters";
 import { TappingSummaryCell, type TappingEvent } from "./tapping-events-panel";
 import { TappingKanban } from "./tapping-kanban";
@@ -24,6 +24,7 @@ type Row = {
   tapping_3: string | null;
   tapping_4: string | null;
   tapping_5: string | null;
+  pm: string | null;
   updated_at: string;
 };
 
@@ -62,6 +63,15 @@ function matchesFilters(r: RowWithEvents, f: TappingFilters): boolean {
   if (f.tapping === "in_progress" && !hasAnyTapping) return false;
   if (f.tapping === "none" && hasAnyTapping) return false;
 
+  if (f.pm && f.pm !== "all") {
+    if (f.pm === "none") {
+      if (r.pm) return false;
+    } else {
+      // "mine" or 특정 이름 — 문자열 그대로 비교 (mine 은 서버에서 currentUserName 으로 치환됨)
+      if (r.pm !== f.pm) return false;
+    }
+  }
+
   return true;
 }
 
@@ -93,6 +103,14 @@ export async function TappingTable({
   mode?: "kanban" | "table";
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle()
+    : { data: null as { name: string } | null };
+  const currentUserName = profile?.name ?? undefined;
+
   const [{ data, error }, { data: eventsData, error: eventsError }] = await Promise.all([
     supabase
       .from("investor_tappings")
@@ -104,9 +122,14 @@ export async function TappingTable({
       .order("sequence", { ascending: true }),
   ]);
   if (eventsError) {
-    // tapping_events 테이블 없으면 (마이그 안 됐으면) 빈 배열로 진행
     console.warn("tapping_events not ready:", eventsError.message);
   }
+
+  // filters.pm 이 "mine" 이면 실제 사용자 이름으로 치환
+  const resolvedFilters: TappingFilters = {
+    ...filters,
+    pm: filters.pm === "mine" ? (currentUserName ?? "mine") : filters.pm,
+  };
 
   if (error) {
     return (
@@ -141,7 +164,7 @@ export async function TappingTable({
     events: eventsByTapping.get(r.id) ?? [],
   }));
 
-  const filtered = sortRows(allRows.filter((r) => matchesFilters(r, filters)), filters);
+  const filtered = sortRows(allRows.filter((r) => matchesFilters(r, resolvedFilters)), resolvedFilters);
 
   // 통계는 항상 '전체' 기준
   const total = allRows.length;
@@ -163,7 +186,7 @@ export async function TappingTable({
       </div>
 
       {/* Filters */}
-      <TappingFiltersBar f={filters} />
+      <TappingFiltersBar f={filters} currentUserName={currentUserName} />
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
@@ -204,6 +227,7 @@ export async function TappingTable({
       {/* 본체: 칸반 or 표 */}
       {mode === "kanban" ? (
         <TappingKanban
+          currentUserName={currentUserName}
           rows={rows.map((r) => ({
             id: r.id,
             company_id: r.company_id,
@@ -211,6 +235,7 @@ export async function TappingTable({
             confirmed_operator: r.confirmed_operator,
             lips_eligible: r.lips_eligible,
             tips_eligible: r.tips_eligible,
+            pm: r.pm,
             events: r.events,
           }))}
         />
@@ -230,6 +255,7 @@ function buildViewHref(f: TappingFilters, mode: "kanban" | "table"): string {
   if (f.lips && f.lips !== "all") p.set("lips", f.lips);
   if (f.tips && f.tips !== "all") p.set("tips", f.tips);
   if (f.tapping && f.tapping !== "all") p.set("tapping", f.tapping);
+  if (f.pm && f.pm !== "all") p.set("pm", f.pm);
   if (f.sort && f.sort !== "seq") p.set("sort", f.sort);
   if (f.dir && f.dir !== "asc") p.set("dir", f.dir);
   return `/admin/deals?${p.toString()}`;
@@ -252,6 +278,7 @@ function TableView({ rows, allRowsCount }: { rows: RowWithEvents[]; allRowsCount
               <Th w={80} center>개투조합</Th>
               <Th w={70} center>LIPS</Th>
               <Th w={70} center>TIPS</Th>
+              <Th w={80} center>담당</Th>
               <Th w={90}>진행여부</Th>
               <Th w={120}>확정 운영사</Th>
               <Th w={260}>태핑 이력 (클릭하여 관리)</Th>
@@ -261,7 +288,7 @@ function TableView({ rows, allRowsCount }: { rows: RowWithEvents[]; allRowsCount
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={12} className="py-10 text-center text-zinc-400 text-[13px]">
+                <td colSpan={13} className="py-10 text-center text-zinc-400 text-[13px]">
                   {allRowsCount === 0
                     ? "아직 태핑 데이터가 없습니다. 우측 상단 [+ 신규 추가] 로 시작하세요."
                     : "필터 결과가 없습니다."}
@@ -294,6 +321,7 @@ function TableView({ rows, allRowsCount }: { rows: RowWithEvents[]; allRowsCount
                   <td className="px-1 py-1"><EligibleCell id={r.id} field="personal_fund_eligible" initial={r.personal_fund_eligible} /></td>
                   <td className="px-1 py-1"><EligibleCell id={r.id} field="lips_eligible" initial={r.lips_eligible} /></td>
                   <td className="px-1 py-1"><EligibleCell id={r.id} field="tips_eligible" initial={r.tips_eligible} /></td>
+                  <td className="px-1 py-1"><PmCell id={r.id} initial={r.pm} /></td>
                   <td className="px-1 py-1"><EditCell id={r.id} field="progress_status" initial={r.progress_status} /></td>
                   <td className="px-1 py-1"><EditCell id={r.id} field="confirmed_operator" initial={r.confirmed_operator} /></td>
                   <td className="px-1 py-1">
