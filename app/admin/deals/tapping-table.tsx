@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EditCell, EligibleCell, AddTappingButton, DeleteRowButton } from "./tapping-cells";
+import { TappingFiltersBar, type TappingFilters } from "./tapping-filters";
 
 type Row = {
   id: string;
@@ -20,9 +21,70 @@ type Row = {
   tapping_3: string | null;
   tapping_4: string | null;
   tapping_5: string | null;
+  updated_at: string;
 };
 
-export async function TappingTable() {
+function matchesFilters(r: Row, f: TappingFilters): boolean {
+  if (f.q) {
+    const q = f.q.trim().toLowerCase();
+    if (q) {
+      const hay = [
+        r.company_name_snapshot,
+        r.confirmed_operator,
+        r.tapping_1,
+        r.tapping_2,
+        r.tapping_3,
+        r.tapping_4,
+        r.tapping_5,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+  }
+  if (f.operator === "assigned" && !r.confirmed_operator) return false;
+  if (f.operator === "unassigned" && r.confirmed_operator) return false;
+
+  const matchEligible = (val: string | null, want: string | undefined): boolean => {
+    if (!want || want === "all") return true;
+    if (want === "yes") return val === "여";
+    if (want === "no") return val === "부";
+    if (want === "wait") return val === "대기중";
+    if (want === "none") return !val;
+    return true;
+  };
+  if (!matchEligible(r.lips_eligible, f.lips)) return false;
+  if (!matchEligible(r.tips_eligible, f.tips)) return false;
+
+  const hasAnyTapping = !!(r.tapping_1 || r.tapping_2 || r.tapping_3 || r.tapping_4 || r.tapping_5);
+  if (f.tapping === "in_progress" && !hasAnyTapping) return false;
+  if (f.tapping === "none" && hasAnyTapping) return false;
+
+  return true;
+}
+
+function sortRows(rows: Row[], f: TappingFilters): Row[] {
+  const sort = f.sort ?? "seq";
+  const asc = (f.dir ?? "asc") === "asc";
+  const sign = asc ? 1 : -1;
+  const arr = [...rows];
+  arr.sort((a, b) => {
+    if (sort === "name") {
+      return sign * a.company_name_snapshot.localeCompare(b.company_name_snapshot, "ko");
+    }
+    if (sort === "updated") {
+      return sign * (new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+    }
+    // seq
+    const av = a.seq ?? Number.MAX_SAFE_INTEGER;
+    const bv = b.seq ?? Number.MAX_SAFE_INTEGER;
+    return sign * (av - bv);
+  });
+  return arr;
+}
+
+export async function TappingTable({ filters }: { filters: TappingFilters }) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("investor_tappings")
@@ -41,16 +103,18 @@ export async function TappingTable() {
     );
   }
 
-  const rows = (data ?? []) as Row[];
+  const allRows = (data ?? []) as Row[];
+  const filtered = sortRows(allRows.filter((r) => matchesFilters(r, filters)), filters);
 
-  // 통계
-  const total = rows.length;
-  const confirmed = rows.filter((r) => r.confirmed_operator).length;
-  const inTapping = rows.filter(
+  // 통계는 항상 '전체' 기준 (필터와 무관)
+  const total = allRows.length;
+  const confirmed = allRows.filter((r) => r.confirmed_operator).length;
+  const inTapping = allRows.filter(
     (r) => r.tapping_1 || r.tapping_2 || r.tapping_3 || r.tapping_4 || r.tapping_5,
   ).length;
-  const lipsEligible = rows.filter((r) => r.lips_eligible === "여").length;
-  const tipsEligible = rows.filter((r) => r.tips_eligible === "여").length;
+  const lipsEligible = allRows.filter((r) => r.lips_eligible === "여").length;
+  const tipsEligible = allRows.filter((r) => r.tips_eligible === "여").length;
+  const rows = filtered;
 
   return (
     <>
@@ -63,9 +127,15 @@ export async function TappingTable() {
         <MiniStat label="TIPS 대상" value={tipsEligible} suffix="곳" tint="#F59E0B" />
       </div>
 
+      {/* Filters */}
+      <TappingFiltersBar f={filters} />
+
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="text-[12px] text-zinc-500">
+          <b className="text-zinc-900 tabular-nums">{rows.length}</b>
+          <span className="text-zinc-400"> / {allRows.length}</span>
+          <span className="mx-2 text-zinc-300">·</span>
           셀 클릭 → 인라인 편집 · 자격 배지 클릭 → 여/부/대기중 전환
         </div>
         <AddTappingButton />

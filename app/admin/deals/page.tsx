@@ -28,13 +28,33 @@ const TABS: { key: DealStage | "all" | "active"; label: string }[] = [
 const ACTIVE_STAGES: DealStage[] = ["tapping", "meeting", "term_sheet", "ic", "closing"];
 
 type Props = {
-  searchParams: Promise<{ stage?: string; view?: string }>;
+  searchParams: Promise<{
+    stage?: string;
+    view?: string;
+    q?: string;
+    operator?: string;
+    lips?: string;
+    tips?: string;
+    tapping?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 };
 
 export default async function DealsListPage({ searchParams }: Props) {
   const params = await searchParams;
   const view = (params.view ?? "deals") as "deals" | "tapping";
   const activeTab = (params.stage ?? "all") as DealStage | "all" | "active";
+
+  const tappingFilters = {
+    q: params.q ?? "",
+    operator: (params.operator ?? "all") as "all" | "assigned" | "unassigned",
+    lips: (params.lips ?? "all") as "all" | "yes" | "no" | "wait" | "none",
+    tips: (params.tips ?? "all") as "all" | "yes" | "no" | "wait" | "none",
+    tapping: (params.tapping ?? "all") as "all" | "in_progress" | "none",
+    sort: (params.sort ?? "seq") as "seq" | "name" | "updated",
+    dir: (params.dir ?? "asc") as "asc" | "desc",
+  };
 
   const rows =
     activeTab === "all"
@@ -92,7 +112,7 @@ export default async function DealsListPage({ searchParams }: Props) {
         </Link>
       </div>
 
-      {view === "tapping" ? <TappingTable /> : null}
+      {view === "tapping" ? <TappingTable filters={tappingFilters} /> : null}
       {view === "deals" ? <DealCardsView activeTab={activeTab} /> : null}
     </>
   );
