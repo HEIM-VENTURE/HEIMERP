@@ -10,6 +10,7 @@ import {
   STATUS_COLOR,
   type TappingEvent,
 } from "./tapping-events-panel";
+import { EditLink } from "./tapping-edit-link";
 import type { EventStatus } from "./tapping-event-actions";
 import { moveTappingStatus } from "./tapping-event-actions";
 
@@ -212,18 +213,53 @@ function KanbanCard({ row }: { row: CardRow }) {
         ) : null}
       </div>
 
-      {/* 태핑 요약 셀 (기존 컴포넌트 재사용 · 클릭 시 사이드패널 열림) */}
+      {/* 태핑 이력 · 1~N차 전체 표시 · 클릭 시 사이드패널 */}
       <div onMouseDown={(e) => e.stopPropagation()}>
-        <TappingSummaryCell
-          tappingId={row.id}
-          companyName={row.company_name_snapshot}
-          events={row.events}
-        />
+        {row.events.length === 0 ? (
+          <TappingSummaryCell
+            tappingId={row.id}
+            companyName={row.company_name_snapshot}
+            events={row.events}
+          />
+        ) : (
+          <div className="space-y-1">
+            {row.events.map((e) => {
+              const sc = STATUS_COLOR[e.status];
+              return (
+                <div
+                  key={e.id}
+                  className="flex items-center gap-1.5 text-[11px] leading-tight"
+                >
+                  <span className="text-zinc-400 font-mono tabular-nums shrink-0 w-8">
+                    {e.sequence}차
+                  </span>
+                  <span
+                    className="inline-flex items-center px-1 rounded text-[9.5px] font-semibold shrink-0"
+                    style={{ background: sc.bg, color: sc.text }}
+                  >
+                    {STATUS_LABEL[e.status]}
+                  </span>
+                  <span className="text-zinc-800 font-medium truncate min-w-0">
+                    {e.operator}
+                  </span>
+                </div>
+              );
+            })}
+            {/* 편집 버튼 (사이드패널 오픈) — 얇은 텍스트 링크 */}
+            <div className="pt-1 mt-1 border-t border-zinc-100">
+              <EditLink
+                tappingId={row.id}
+                companyName={row.company_name_snapshot}
+                events={row.events}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 최근 접촉일 */}
       {last?.contact_date ? (
-        <div className="mt-1 text-[10.5px] text-zinc-400 tabular-nums">
+        <div className="mt-1.5 text-[10.5px] text-zinc-400 tabular-nums">
           최근 접촉: {last.contact_date}
         </div>
       ) : null}

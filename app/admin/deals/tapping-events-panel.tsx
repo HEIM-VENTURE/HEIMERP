@@ -120,7 +120,7 @@ export function TappingSummaryCell({
   );
 }
 
-function TappingPanel({
+export function TappingPanel({
   tappingId,
   companyName,
   onClose,
