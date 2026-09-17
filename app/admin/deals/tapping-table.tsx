@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EditCell, EligibleCell, AddTappingButton, DeleteRowButton } from "./tapping-cells";
 import { TappingFiltersBar, type TappingFilters } from "./tapping-filters";
+import { TappingSummaryCell, type TappingEvent } from "./tapping-events-panel";
 
 type Row = {
   id: string;
@@ -24,18 +25,16 @@ type Row = {
   updated_at: string;
 };
 
-function matchesFilters(r: Row, f: TappingFilters): boolean {
+type RowWithEvents = Row & { events: TappingEvent[] };
+
+function matchesFilters(r: RowWithEvents, f: TappingFilters): boolean {
   if (f.q) {
     const q = f.q.trim().toLowerCase();
     if (q) {
       const hay = [
         r.company_name_snapshot,
         r.confirmed_operator,
-        r.tapping_1,
-        r.tapping_2,
-        r.tapping_3,
-        r.tapping_4,
-        r.tapping_5,
+        ...r.events.map((e) => e.operator),
       ]
         .filter(Boolean)
         .join(" ")
@@ -57,14 +56,14 @@ function matchesFilters(r: Row, f: TappingFilters): boolean {
   if (!matchEligible(r.lips_eligible, f.lips)) return false;
   if (!matchEligible(r.tips_eligible, f.tips)) return false;
 
-  const hasAnyTapping = !!(r.tapping_1 || r.tapping_2 || r.tapping_3 || r.tapping_4 || r.tapping_5);
+  const hasAnyTapping = r.events.length > 0;
   if (f.tapping === "in_progress" && !hasAnyTapping) return false;
   if (f.tapping === "none" && hasAnyTapping) return false;
 
   return true;
 }
 
-function sortRows(rows: Row[], f: TappingFilters): Row[] {
+function sortRows(rows: RowWithEvents[], f: TappingFilters): RowWithEvents[] {
   const sort = f.sort ?? "seq";
   const asc = (f.dir ?? "asc") === "asc";
   const sign = asc ? 1 : -1;
@@ -86,10 +85,20 @@ function sortRows(rows: Row[], f: TappingFilters): Row[] {
 
 export async function TappingTable({ filters }: { filters: TappingFilters }) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("investor_tappings")
-    .select("*")
-    .order("seq", { ascending: true, nullsFirst: false });
+  const [{ data, error }, { data: eventsData, error: eventsError }] = await Promise.all([
+    supabase
+      .from("investor_tappings")
+      .select("*")
+      .order("seq", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("tapping_events")
+      .select("id, tapping_id, sequence, operator, status, contact_date, notes, created_at")
+      .order("sequence", { ascending: true }),
+  ]);
+  if (eventsError) {
+    // tapping_events 테이블 없으면 (마이그 안 됐으면) 빈 배열로 진행
+    console.warn("tapping_events not ready:", eventsError.message);
+  }
 
   if (error) {
     return (
@@ -103,15 +112,33 @@ export async function TappingTable({ filters }: { filters: TappingFilters }) {
     );
   }
 
-  const allRows = (data ?? []) as Row[];
+  const rawRows = (data ?? []) as Row[];
+  const eventList = (eventsData ?? []) as (TappingEvent & { tapping_id: string })[];
+  const eventsByTapping = new Map<string, TappingEvent[]>();
+  for (const e of eventList) {
+    const arr = eventsByTapping.get(e.tapping_id) ?? [];
+    arr.push({
+      id: e.id,
+      sequence: e.sequence,
+      operator: e.operator,
+      status: e.status,
+      contact_date: e.contact_date,
+      notes: e.notes,
+      created_at: e.created_at,
+    });
+    eventsByTapping.set(e.tapping_id, arr);
+  }
+  const allRows: RowWithEvents[] = rawRows.map((r) => ({
+    ...r,
+    events: eventsByTapping.get(r.id) ?? [],
+  }));
+
   const filtered = sortRows(allRows.filter((r) => matchesFilters(r, filters)), filters);
 
-  // 통계는 항상 '전체' 기준 (필터와 무관)
+  // 통계는 항상 '전체' 기준
   const total = allRows.length;
   const confirmed = allRows.filter((r) => r.confirmed_operator).length;
-  const inTapping = allRows.filter(
-    (r) => r.tapping_1 || r.tapping_2 || r.tapping_3 || r.tapping_4 || r.tapping_5,
-  ).length;
+  const inTapping = allRows.filter((r) => r.events.length > 0).length;
   const lipsEligible = allRows.filter((r) => r.lips_eligible === "여").length;
   const tipsEligible = allRows.filter((r) => r.tips_eligible === "여").length;
   const rows = filtered;
@@ -156,19 +183,17 @@ export async function TappingTable({ filters }: { filters: TappingFilters }) {
               <Th w={70} center>TIPS</Th>
               <Th w={90}>진행여부</Th>
               <Th w={120}>확정 운영사</Th>
-              <Th w={110}>1차 태핑</Th>
-              <Th w={110}>2차 태핑</Th>
-              <Th w={110}>3차 태핑</Th>
-              <Th w={110}>4차 태핑</Th>
-              <Th w={110}>5차 태핑</Th>
+              <Th w={260}>태핑 이력 (클릭하여 관리)</Th>
               <Th w={40}></Th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={16} className="py-10 text-center text-zinc-400 text-[13px]">
-                  아직 태핑 데이터가 없습니다. 우측 상단 [+ 신규 추가] 로 시작하세요.
+                <td colSpan={12} className="py-10 text-center text-zinc-400 text-[13px]">
+                  {allRows.length === 0
+                    ? "아직 태핑 데이터가 없습니다. 우측 상단 [+ 신규 추가] 로 시작하세요."
+                    : "필터 결과가 없습니다."}
                 </td>
               </tr>
             ) : (
@@ -200,11 +225,13 @@ export async function TappingTable({ filters }: { filters: TappingFilters }) {
                   <td className="px-1 py-1"><EligibleCell id={r.id} field="tips_eligible" initial={r.tips_eligible} /></td>
                   <td className="px-1 py-1"><EditCell id={r.id} field="progress_status" initial={r.progress_status} /></td>
                   <td className="px-1 py-1"><EditCell id={r.id} field="confirmed_operator" initial={r.confirmed_operator} /></td>
-                  <td className="px-1 py-1"><EditCell id={r.id} field="tapping_1" initial={r.tapping_1} /></td>
-                  <td className="px-1 py-1"><EditCell id={r.id} field="tapping_2" initial={r.tapping_2} /></td>
-                  <td className="px-1 py-1"><EditCell id={r.id} field="tapping_3" initial={r.tapping_3} /></td>
-                  <td className="px-1 py-1"><EditCell id={r.id} field="tapping_4" initial={r.tapping_4} /></td>
-                  <td className="px-1 py-1"><EditCell id={r.id} field="tapping_5" initial={r.tapping_5} /></td>
+                  <td className="px-1 py-1">
+                    <TappingSummaryCell
+                      tappingId={r.id}
+                      companyName={r.company_name_snapshot}
+                      events={r.events}
+                    />
+                  </td>
                   <td className="px-1 py-1 text-center">
                     <DeleteRowButton id={r.id} name={r.company_name_snapshot} />
                   </td>
