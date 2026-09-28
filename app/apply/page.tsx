@@ -190,36 +190,17 @@ export default async function ApplyPage({ searchParams }: Props) {
             ) : null}
 
             <form action={submitApplicationAction} className="space-y-12">
-              {/* ── 01 기업 기본 정보 ── */}
+              {/* ── 01 기업 기본 정보 (노트 순서 그대로) ── */}
               <Section index="01" title="기업 기본 정보">
                 <Grid>
                   <Field label="기업명" required>
                     <Input name="company_name" required placeholder="예: 하임벤처투자" />
-                  </Field>
-                  <Field label="사업자등록번호" hint="선택 · 등록 전이면 비워두세요">
-                    <Input
-                      name="business_number"
-                      placeholder="000-00-00000"
-                      pattern="[0-9\-]{10,12}"
-                    />
                   </Field>
                   <Field label="대표자명" required>
                     <Input name="ceo_name" required placeholder="예: 홍길동" />
                   </Field>
                   <Field label="설립일자" required>
                     <Input name="established_at" type="date" required />
-                  </Field>
-                  <Field label="직원수 (4대보험 가입 기준)" required>
-                    <Input
-                      name="headcount"
-                      type="number"
-                      min={0}
-                      required
-                      placeholder="예: 5"
-                    />
-                  </Field>
-                  <Field label="아이템명" required hint="핵심 제품 또는 서비스명">
-                    <Input name="main_item" required placeholder="예: 반려동물 배변패드" />
                   </Field>
                   <Field label="25년도 매출액 (억원)" required hint="숫자만 · 예: 18, 0.3">
                     <Input
@@ -241,6 +222,18 @@ export default async function ApplyPage({ searchParams }: Props) {
                       placeholder="0"
                     />
                   </Field>
+                  <Field label="직원수 (4대보험 가입 기준)" required>
+                    <Input
+                      name="headcount"
+                      type="number"
+                      min={0}
+                      required
+                      placeholder="예: 5"
+                    />
+                  </Field>
+                  <Field label="아이템명" required hint="핵심 제품 또는 서비스명">
+                    <Input name="main_item" required placeholder="예: 반려동물 배변패드" />
+                  </Field>
                   <Field label="특허 건수" hint="등록·출원 포함 · 없으면 0">
                     <Input
                       name="patent_count"
@@ -250,13 +243,26 @@ export default async function ApplyPage({ searchParams }: Props) {
                       placeholder="0"
                     />
                   </Field>
-                  <Field label="특허 관련 메모" hint="선택">
-                    <Input name="patent_notes" placeholder="예: 이미지 처리 알고리즘 특허 출원 중" />
+                </Grid>
+                <Field label="특허 관련 메모" hint="선택 · 등록·출원 중인 특허 요약">
+                  <Input name="patent_notes" placeholder="예: 이미지 처리 알고리즘 특허 출원 중" />
+                </Field>
+              </Section>
+
+              {/* ── 02 회사 소개·연락 정보 ── */}
+              <Section index="02" title="회사 소개">
+                <Grid>
+                  <Field label="사업자등록번호" hint="선택 · 등록 전이면 비워두세요">
+                    <Input
+                      name="business_number"
+                      placeholder="000-00-00000"
+                      pattern="[0-9\-]{10,12}"
+                    />
+                  </Field>
+                  <Field label="홈페이지 또는 제품·서비스 링크">
+                    <Input name="website" type="url" placeholder="https://..." />
                   </Field>
                 </Grid>
-                <Field label="홈페이지 또는 제품·서비스 링크">
-                  <Input name="website" type="url" placeholder="https://..." />
-                </Field>
                 <Field label="한 줄 사업 소개" required hint="200자 이내">
                   <Textarea
                     name="tagline"
@@ -269,7 +275,7 @@ export default async function ApplyPage({ searchParams }: Props) {
               </Section>
 
               {/* ── 02 담당자 정보 ── */}
-              <Section index="02" title="담당자 정보">
+              <Section index="03" title="담당자 정보">
                 <Grid>
                   <Field label="담당자명" required>
                     <Input name="contact_name" required placeholder="예: 김담당" />
@@ -292,7 +298,7 @@ export default async function ApplyPage({ searchParams }: Props) {
               </Section>
 
               {/* ── 03 진단 정보 ── */}
-              <Section index="03" title="현재 상황 · 진단">
+              <Section index="04" title="현재 상황 · 진단">
                 <Field label="현재 성장 단계" required>
                   <Select name="growth_stage" required options={GROWTH_STAGES} />
                 </Field>
@@ -332,7 +338,7 @@ export default async function ApplyPage({ searchParams }: Props) {
               </Section>
 
               {/* ── 04 자료 첨부 ── */}
-              <Section index="04" title="자료 첨부">
+              <Section index="05" title="자료 첨부">
                 <FileField
                   name="ir_deck"
                   required
@@ -358,7 +364,7 @@ export default async function ApplyPage({ searchParams }: Props) {
               </Section>
 
               {/* ── 05 마지막 ── */}
-              <Section index="05" title="마지막">
+              <Section index="06" title="마지막">
                 <Field label="하임을 알게 된 경로">
                   <Select name="channel" options={CHANNELS} />
                 </Field>
