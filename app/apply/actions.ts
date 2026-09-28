@@ -112,12 +112,25 @@ export async function submitApplicationAction(formData: FormData) {
   // ─────────────────────────────────────────────
   // 4. applications 테이블에 insert
   // ─────────────────────────────────────────────
+  const numOrNull = (v: FormDataEntryValue | null): number | null => {
+    const s = String(v ?? "").trim();
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const { error: insertErr } = await supabase.from("applications").insert({
     application_no: applicationNo,
     company_name: companyName,
     business_number: nullIfEmpty(String(formData.get("business_number") ?? "").trim()),
     ceo_name: String(formData.get("ceo_name") ?? "").trim(),
+    established_at: nullIfEmpty(String(formData.get("established_at") ?? "").trim()),
     headcount: Number(formData.get("headcount") ?? 0) || 0,
+    main_item: nullIfEmpty(String(formData.get("main_item") ?? "").trim()),
+    revenue_2025: numOrNull(formData.get("revenue_2025")),
+    revenue_2026_expected: numOrNull(formData.get("revenue_2026_expected")),
+    patent_count: numOrNull(formData.get("patent_count")) ?? 0,
+    patent_notes: nullIfEmpty(String(formData.get("patent_notes") ?? "").trim()),
     website: nullIfEmpty(String(formData.get("website") ?? "").trim()),
     tagline: String(formData.get("tagline") ?? "").trim(),
     contact_name: String(formData.get("contact_name") ?? "").trim(),

@@ -190,8 +190,8 @@ export default async function ApplyPage({ searchParams }: Props) {
             ) : null}
 
             <form action={submitApplicationAction} className="space-y-12">
-              {/* ── 01 기업 정보 ── */}
-              <Section index="01" title="기업 정보">
+              {/* ── 01 기업 기본 정보 ── */}
+              <Section index="01" title="기업 기본 정보">
                 <Grid>
                   <Field label="기업명" required>
                     <Input name="company_name" required placeholder="예: 하임벤처투자" />
@@ -206,14 +206,52 @@ export default async function ApplyPage({ searchParams }: Props) {
                   <Field label="대표자명" required>
                     <Input name="ceo_name" required placeholder="예: 홍길동" />
                   </Field>
-                  <Field label="상근 인원" required>
+                  <Field label="설립일자" required>
+                    <Input name="established_at" type="date" required />
+                  </Field>
+                  <Field label="직원수 (4대보험 가입 기준)" required>
                     <Input
                       name="headcount"
                       type="number"
-                      min={1}
+                      min={0}
                       required
                       placeholder="예: 5"
                     />
+                  </Field>
+                  <Field label="아이템명" required hint="핵심 제품 또는 서비스명">
+                    <Input name="main_item" required placeholder="예: 반려동물 배변패드" />
+                  </Field>
+                  <Field label="25년도 매출액 (억원)" required hint="숫자만 · 예: 18, 0.3">
+                    <Input
+                      name="revenue_2025"
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      required
+                      placeholder="0"
+                    />
+                  </Field>
+                  <Field label="26년도 예상 매출액 (억원)" required hint="숫자만">
+                    <Input
+                      name="revenue_2026_expected"
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      required
+                      placeholder="0"
+                    />
+                  </Field>
+                  <Field label="특허 건수" hint="등록·출원 포함 · 없으면 0">
+                    <Input
+                      name="patent_count"
+                      type="number"
+                      min={0}
+                      defaultValue={0}
+                      placeholder="0"
+                    />
+                  </Field>
+                  <Field label="특허 관련 메모" hint="선택">
+                    <Input name="patent_notes" placeholder="예: 이미지 처리 알고리즘 특허 출원 중" />
                   </Field>
                 </Grid>
                 <Field label="홈페이지 또는 제품·서비스 링크">
