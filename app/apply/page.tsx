@@ -234,19 +234,7 @@ export default async function ApplyPage({ searchParams }: Props) {
                   <Field label="아이템명" required hint="핵심 제품 또는 서비스명">
                     <Input name="main_item" required placeholder="예: 반려동물 배변패드" />
                   </Field>
-                  <Field label="특허 건수" hint="등록·출원 포함 · 없으면 0">
-                    <Input
-                      name="patent_count"
-                      type="number"
-                      min={0}
-                      defaultValue={0}
-                      placeholder="0"
-                    />
-                  </Field>
                 </Grid>
-                <Field label="특허 관련 메모" hint="선택 · 등록·출원 중인 특허 요약">
-                  <Input name="patent_notes" placeholder="예: 이미지 처리 알고리즘 특허 출원 중" />
-                </Field>
               </Section>
 
               {/* ── 02 회사 소개·연락 정보 ── */}
@@ -261,6 +249,18 @@ export default async function ApplyPage({ searchParams }: Props) {
                   </Field>
                   <Field label="홈페이지 또는 제품·서비스 링크">
                     <Input name="website" type="url" placeholder="https://..." />
+                  </Field>
+                  <Field label="특허 건수" hint="등록·출원 포함 · 없으면 0">
+                    <Input
+                      name="patent_count"
+                      type="number"
+                      min={0}
+                      defaultValue={0}
+                      placeholder="0"
+                    />
+                  </Field>
+                  <Field label="특허 관련 메모" hint="선택 · 등록·출원 중인 특허 요약">
+                    <Input name="patent_notes" placeholder="예: 이미지 처리 알고리즘 특허 출원 중" />
                   </Field>
                 </Grid>
                 <Field label="한 줄 사업 소개" required hint="200자 이내">
