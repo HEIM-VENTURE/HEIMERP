@@ -2,13 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { FolderOpen, CheckCircle2, Circle } from "lucide-react";
 import { PortalFileManager, type PortalFile } from "./portal-file-manager";
 
+// 하임 준비서류 10종 (고객 기업이 제출해야 하는 자료)
 const REQUIRED_KINDS = [
-  { kind: "business_cert", label: "사업자등록증", required: true },
-  { kind: "corp_registry", label: "법인등기부등본", required: true },
-  { kind: "ir_deck", label: "IR Deck", required: true },
-  { kind: "financial", label: "재무제표", required: true },
-  { kind: "tax_invoice", label: "세금계산서", required: false },
-  { kind: "contract", label: "계약서", required: false },
+  { kind: "business_cert", label: "① 사업자등록증", required: true },
+  { kind: "corp_registry", label: "② 법인등기부등본", required: true },
+  { kind: "shareholders", label: "③ 주주명부", required: true },
+  { kind: "insurance_members", label: "④ 4대보험 가입자명부", required: true },
+  { kind: "small_biz_cert", label: "⑤ 소상공인확인서", required: false },
+  { kind: "financial", label: "⑥ 최근 2개년 재무제표", required: true },
+  { kind: "vat_cert", label: "⑦ 부가세 과세표준증명원", required: true },
+  { kind: "revenue_forecast", label: "⑧ 당해년도 예상 매출", required: true },
+  { kind: "company_intro", label: "⑨ 회사소개서·홈페이지 자료", required: true },
+  { kind: "exec_profile", label: "⑩ 주요 경영진 이력·사진", required: true },
 ];
 
 export const dynamic = "force-dynamic";

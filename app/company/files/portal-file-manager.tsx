@@ -23,12 +23,19 @@ export type PortalFile = {
 };
 
 const KIND_OPTIONS = [
+  { value: "business_cert", label: "① 사업자등록증" },
+  { value: "corp_registry", label: "② 법인등기부등본" },
+  { value: "shareholders", label: "③ 주주명부" },
+  { value: "insurance_members", label: "④ 4대보험 가입자명부" },
+  { value: "small_biz_cert", label: "⑤ 소상공인확인서" },
+  { value: "financial", label: "⑥ 최근 2개년 재무제표" },
+  { value: "vat_cert", label: "⑦ 부가세 과세표준증명원" },
+  { value: "revenue_forecast", label: "⑧ 당해년도 예상 매출" },
+  { value: "company_intro", label: "⑨ 회사소개서·홈페이지 자료" },
+  { value: "exec_profile", label: "⑩ 주요 경영진 이력·사진" },
+  { value: "ir_deck", label: "IR Deck" },
   { value: "tax_invoice", label: "세금계산서" },
   { value: "contract", label: "계약서" },
-  { value: "business_cert", label: "사업자등록증" },
-  { value: "ir_deck", label: "IR Deck" },
-  { value: "financial", label: "재무제표" },
-  { value: "corp_registry", label: "법인등기부등본" },
   { value: "general", label: "기타" },
 ];
 
