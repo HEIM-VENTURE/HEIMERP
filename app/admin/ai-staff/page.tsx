@@ -57,6 +57,7 @@ const ACTION_LABEL: Record<string, string> = {
   add_note: "메모 추가",
   add_tapping_event: "태핑 기록 추가",
   add_todo: "할 일 등록",
+  mark_duplicate: "중복 기업 정리",
 };
 const REQ_STATUS: Record<string, { label: string; cls: string }> = {
   open: { label: "대기", cls: "bg-zinc-100 text-zinc-600" },
@@ -91,6 +92,8 @@ function describeChange(c: Change): string {
       return String(a.body ?? "");
     case "add_tapping_event":
       return `${a.operator} · ${a.status}${a.contact_date ? ` · ${a.contact_date}` : ""}`;
+    case "mark_duplicate":
+      return `"${a.dup_name}" → "${a.keep_name}"와 같은 기업으로 보고 드랍 처리 (삭제 아님)`;
     case "add_todo":
       return `${a.title}${a.due_date ? ` (마감 ${a.due_date})` : ""}${a.assignee_name ? ` · ${a.assignee_name}` : ""}`;
     default:

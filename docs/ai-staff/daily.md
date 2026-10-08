@@ -35,6 +35,9 @@ G. 빈 정보 — 담당 PM 없음, 다음 액션 없음, Drive 폴더 없음(ha
    기업마다 따로 올리지 않는다. 종류별로 묶어 하루 한 건씩 info 로 올린다: title "담당 PM 미지정 기업 N곳", body 에 기업명 목록. dedupe_key "missing_pm:{오늘}" / "missing_next:{오늘}" / "missing_drive:{오늘}". 0곳이면 올리지 않는다.
 H. 중복 의심 기업 — 이름에서 (주), ㈜, 주식회사, 공백, 대소문자를 빼고 같거나 한쪽이 다른 쪽을 포함하면.
    info, title "중복 의심: {A} / {B}", dedupe_key "dup:{작은id}-{큰id}"
+I. 대표자 이름으로 등록된 기업 — 기업 X 의 이름((주)·주식회사·공백 제외)이 다른 기업 Y 의 ceo_name·submitter_name, 또는 paid_customer_names 에서 Y(company_id) 의 company_name·legal_name 과 같으면 X 는 Y 를 사람 이름으로 한 번 더 등록한 것이다.
+   → 아래 "직접 고치는 것 2" 로 처리한다.
+   "회사명(사람이름)" 형태인데 같은 회사명 기업이 따로 있는 경우는 어느 쪽을 남길지 사람이 정해야 하므로 처리하지 말고 warn 알림만: title "중복: {A} / {B} — 어느 쪽을 남길지 확인 필요", body 에 양쪽의 단계·결제·태핑·할 일 수, dedupe_key "dup_check:{작은id}-{큰id}".
 
 ■ 해결된 알림 닫기
 my_open_posts 중 dedupe_key 가 위 형식인데 오늘 점검에서 더 이상 해당하지 않으면 resolve_post 로 닫는다.
@@ -44,6 +47,9 @@ my_open_posts 중 dedupe_key 가 위 형식인데 오늘 점검에서 더 이상
 ■ 직접 고치는 것 (근거가 데이터 안에 있을 때만)
 1. 마지막 접촉일 갱신 — 그 기업 태핑 events 의 가장 최근 contact_date, 또는 recent_notes_30d 중 사람이 쓴 메모(by 가 "AI/시스템"이 아닌 것)의 날짜가 last_contact_at 보다 최근이고 오늘 이전이면
    set_last_contact {company_id, date, reason: "태핑 기록 {operator} {date} 기준"} 처럼 근거를 적는다.
+2. 중복 기업 정리 — I 에 해당하는 X 를 mark_duplicate {company_id: X, keep_id: Y, reason: "X 이름이 Y 의 대표자명/현황표 이름과 같음"} 로 드랍(중복) 처리한다. 삭제가 아니다.
+   단, X 가 Y 보다 영업 단계가 앞서 있거나(예: X 는 kickoff, Y 는 received) X 에만 결제(현황표)·계약 정보가 있으면 처리하지 말고 위 dup_check 형식 warn 알림으로 사람에게 맡긴다.
+   처리했으면 info 알림도 남긴다: title "중복 정리: {X} → {Y}", company_id Y, body 에 X 쪽에만 있던 정보(할 일·태핑 이벤트 수 등)를 적어 옮길지 사람이 판단하게 한다. dedupe_key "dup_merged:{X id}".
 그 외 수정은 하지 않는다. 다음 액션이 비어 있어도 내가 지어 넣지 않는다 (G 로 알리기만).
 
 ■ 양 조절

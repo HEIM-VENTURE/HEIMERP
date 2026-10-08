@@ -19,12 +19,12 @@ export async function GET(req: Request) {
   const since60 = new Date(Date.now() - 60 * 86400000).toISOString();
   const since14 = new Date(Date.now() - 14 * 86400000).toISOString();
 
-  const [companies, tappings, events, notes, todos, applications, posts, changes, requests, admins, lastReport] =
+  const [companies, tappings, events, notes, todos, applications, posts, changes, requests, admins, lastReport, paidRows] =
     await Promise.all([
       db
         .from("companies")
         .select(
-          "id, name, custom_fields, sales_stage, consulting_stage, growth_stage, growth_stage_note, next_action, next_action_due, last_contact_at, drive_folder_url, received_at, contracted_at, started_at",
+          "id, name, ceo_name, submitter_name, custom_fields, sales_stage, consulting_stage, growth_stage, growth_stage_note, next_action, next_action_due, last_contact_at, drive_folder_url, received_at, contracted_at, started_at",
         )
         .is("drop_reason", null)
         .order("id"),
@@ -73,9 +73,10 @@ export async function GET(req: Request) {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      db.from("paid_customers").select("company_id, company_name, legal_name").not("company_id", "is", null),
     ]);
 
-  const firstError = [companies, tappings, events, notes, todos, applications, posts, changes, requests, admins, lastReport].find(
+  const firstError = [companies, tappings, events, notes, todos, applications, posts, changes, requests, admins, lastReport, paidRows].find(
     (r) => r.error,
   );
   if (firstError?.error) return NextResponse.json({ error: firstError.error.message }, { status: 500 });
@@ -117,5 +118,7 @@ export async function GET(req: Request) {
     my_recent_changes_14d: changes.data ?? [],
     open_requests: requests.data ?? [],
     last_weekly_report: lastReport.data ?? null,
+    // 고객 현황표의 식별이름(company_name)·법인등기명(legal_name) — 대표자 이름으로 등록된 중복 찾기용
+    paid_customer_names: paidRows.data ?? [],
   });
 }

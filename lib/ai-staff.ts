@@ -313,6 +313,40 @@ const handlers: Record<string, (ctx: Ctx, a: AiAction) => Promise<AiActionResult
     return { type: "add_todo", ok: true, id: String(data.id) };
   },
 
+  /**
+   * 중복 기업 정리 — 대표자 이름 등으로 잘못 등록된 기업을 '드랍(중복)' 처리. 삭제는 하지 않는다.
+   * 데이터 이동도 하지 않는다 (사람이 기업 상세에서 확인 후 필요하면 삭제).
+   */
+  async mark_duplicate(ctx, a) {
+    const cid = companyId(a.company_id);
+    const keepId = companyId(a.keep_id);
+    if (cid === keepId) throw new Error("company_id 와 keep_id 가 같음");
+    const reason = str(a.reason, "reason", 1000)!;
+    const { data: rows, error: e1 } = await ctx.db
+      .from("companies")
+      .select("id, name, drop_reason")
+      .in("id", [cid, keepId]);
+    if (e1) throw new Error(e1.message);
+    const dup = rows?.find((r) => r.id === cid);
+    const keep = rows?.find((r) => r.id === keepId);
+    if (!dup || !keep) throw new Error("기업을 찾을 수 없음");
+    if (keep.drop_reason) throw new Error("남길 기업이 이미 드랍 상태");
+    if (dup.drop_reason) return { type: "mark_duplicate", ok: true, skipped: true, id: String(cid) };
+    const drop_reason = `중복 — ${keep.name}(${keepId})와 같은 기업 (AI 직원)`;
+    const { error } = await ctx.db.from("companies").update({ drop_reason }).eq("id", cid);
+    if (error) throw new Error(error.message);
+    await logChange(ctx, {
+      action: "mark_duplicate",
+      table_name: "companies",
+      record_id: String(cid),
+      company_id: cid,
+      before: { drop_reason: null },
+      after: { drop_reason, keep_id: keepId, keep_name: keep.name, dup_name: dup.name },
+      reason,
+    });
+    return { type: "mark_duplicate", ok: true, id: String(cid) };
+  },
+
   /** 개선 요청 상태·답변 갱신 (시스템 관리 루틴용) */
   async update_request(ctx, a) {
     const id = str(a.id, "id", 64)!;
@@ -424,6 +458,14 @@ export async function revertAiChange(db: SupabaseClient, changeId: string, admin
           .eq("tapping_id", createdTapping);
         if (!count) await db.from("investor_tappings").delete().eq("id", createdTapping);
       }
+      break;
+    }
+    case "mark_duplicate": {
+      if (!(await companyFieldsUnchanged(["drop_reason"]))) {
+        return { error: "그 뒤에 드랍 사유가 다시 바뀌어서 되돌리지 않았습니다." };
+      }
+      const { error: e } = await db.from("companies").update({ drop_reason: null }).eq("id", ch.company_id);
+      if (e) return { error: e.message };
       break;
     }
     case "add_todo": {
