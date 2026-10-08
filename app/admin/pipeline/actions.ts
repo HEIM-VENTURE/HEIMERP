@@ -53,6 +53,53 @@ function pmOrNull(v: FormDataEntryValue | null): string | null {
   return s && s !== "none" ? s : null;
 }
 
+/** investor_tappings 적격성 UPSERT (companyId 로 기존 레코드 있으면 UPDATE, 아니면 INSERT) */
+async function upsertInvestorTapping(
+  supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>,
+  companyId: number,
+  companyName: string,
+  lips: string | null,
+  tips: string | null,
+  pf: string | null,
+): Promise<void> {
+  // 하나라도 값이 있으면 upsert, 전부 null 이면 skip
+  if (!lips && !tips && !pf) return;
+
+  const { data: existing } = await supabase
+    .from("investor_tappings")
+    .select("id")
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  if (existing?.id) {
+    await supabase
+      .from("investor_tappings")
+      .update({
+        lips_eligible: lips,
+        tips_eligible: tips,
+        personal_fund_eligible: pf,
+      })
+      .eq("id", existing.id);
+  } else {
+    // 신규 - seq 는 max+1
+    const { data: last } = await supabase
+      .from("investor_tappings")
+      .select("seq")
+      .order("seq", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    const nextSeq = ((last?.seq as number | null) ?? 0) + 1;
+    await supabase.from("investor_tappings").insert({
+      seq: nextSeq,
+      company_id: companyId,
+      company_name_snapshot: companyName,
+      lips_eligible: lips,
+      tips_eligible: tips,
+      personal_fund_eligible: pf,
+    });
+  }
+}
+
 export async function createCompanyAction(formData: FormData): Promise<ActionResult> {
   const { supabase, error: authError } = await requireAdmin();
   if (authError) return { error: authError };
@@ -91,6 +138,16 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     .single();
 
   if (error) return { error: error.message };
+
+  // 투자사 태핑 적격성 UPSERT (LIPS/TIPS/개투)
+  await upsertInvestorTapping(
+    supabase,
+    data.id,
+    name,
+    nullIfEmpty(formData.get("lips_eligible")),
+    nullIfEmpty(formData.get("tips_eligible")),
+    nullIfEmpty(formData.get("personal_fund_eligible")),
+  );
 
   // Drive 폴더 자동 생성 (체크박스 ON 이면)
   let driveFolderUrl: string | undefined;
@@ -161,6 +218,16 @@ export async function updateCompanyAction(
 
   const { error } = await supabase.from("companies").update(update).eq("id", companyId);
   if (error) return { error: error.message };
+
+  // 투자사 태핑 적격성 UPSERT
+  await upsertInvestorTapping(
+    supabase,
+    companyId,
+    name,
+    nullIfEmpty(formData.get("lips_eligible")),
+    nullIfEmpty(formData.get("tips_eligible")),
+    nullIfEmpty(formData.get("personal_fund_eligible")),
+  );
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath("/admin/pipeline");

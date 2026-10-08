@@ -365,6 +365,9 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 notes: company.notes,
                 received_at: company.received_at,
                 contracted_at: company.contracted_at,
+                lips_eligible: investorTapping?.lips_eligible ?? null,
+                tips_eligible: investorTapping?.tips_eligible ?? null,
+                personal_fund_eligible: investorTapping?.personal_fund_eligible ?? null,
               }}
             />
             <NewMeetingModal companyId={company.id} />

@@ -44,8 +44,8 @@ export const CONSULTING_STAGE_LABELS = {
   initial_review: "초기 검토",
   dev_advisory: "개발자문 / 1차 사업계획",
   ir_deck: "IR Deck 작업",
-  tips_operator_ir: "TIPS 운영사 IR",
-  tips_review: "TIPS 심사",
+  tips_operator_ir: "TIPS·LIPS 운영사 IR",
+  tips_review: "TIPS·LIPS 심사",
   fund_closing: "조합 투자절차 Closing",
   final_closing: "Final Closing",
 } as const;

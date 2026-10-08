@@ -24,7 +24,18 @@ type CompanyValues = {
   notes?: string | null;
   received_at?: string | null;
   contracted_at?: string | null;
+  // 투자사 태핑 적격성
+  lips_eligible?: string | null;
+  tips_eligible?: string | null;
+  personal_fund_eligible?: string | null;
 };
+
+const ELIGIBLE_OPTIONS = [
+  { value: "", label: "— 미입력" },
+  { value: "여", label: "여 (가능)" },
+  { value: "부", label: "부 (불가)" },
+  { value: "대기중", label: "대기중 (확인 필요)" },
+];
 
 const PM_OPTIONS = ["박대성", "강영환", "허유나", "이지우", "조상우", "권도준"];
 
@@ -156,6 +167,46 @@ function CompanyFormFields({
           ))}
         </select>
       </Field>
+
+      {/* 투자사 태핑 적격성 (LIPS/TIPS/개투조합) */}
+      <div className="p-3 rounded-lg bg-brand/5 border border-brand/15">
+        <div className="text-[11px] font-semibold text-brand mb-2">투자 자격</div>
+        <div className="grid grid-cols-3 gap-2">
+          <Field label="LIPS 대상">
+            <select
+              name="lips_eligible"
+              defaultValue={values.lips_eligible ?? ""}
+              className="w-full px-2 py-1.5 text-[12px] border border-zinc-200 rounded bg-white"
+            >
+              {ELIGIBLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="TIPS 대상">
+            <select
+              name="tips_eligible"
+              defaultValue={values.tips_eligible ?? ""}
+              className="w-full px-2 py-1.5 text-[12px] border border-zinc-200 rounded bg-white"
+            >
+              {ELIGIBLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="개투조합">
+            <select
+              name="personal_fund_eligible"
+              defaultValue={values.personal_fund_eligible ?? ""}
+              className="w-full px-2 py-1.5 text-[12px] border border-zinc-200 rounded bg-white"
+            >
+              {ELIGIBLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="접수일">
