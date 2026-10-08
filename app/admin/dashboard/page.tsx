@@ -2,9 +2,8 @@ import Link from "next/link";
 import {
   Inbox,
   Building2,
-  Kanban,
+  Bot,
   Coins,
-  LineChart,
   ArrowUpRight,
   ArrowRight,
   Clock,
@@ -18,8 +17,6 @@ import {
 } from "@/lib/labels";
 import { STATUS_LABEL, STATUS_COLOR } from "@/lib/mock-applications";
 import { listApplications } from "@/lib/applications";
-import { MOCK_PROJECTS } from "@/lib/mock-projects";
-import { MOCK_DEALS } from "@/lib/mock-deals";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +31,7 @@ export default async function AdminDashboardPage() {
   weekLater.setDate(weekLater.getDate() + 7);
   const weekStr = weekLater.toISOString().split("T")[0];
 
-  const [companiesRes, contractsRes, imminentRes, profileRes] = await Promise.all([
+  const [companiesRes, contractsRes, imminentRes, profileRes, tappingsRes, aiAlertsRes] = await Promise.all([
     supabase
       .from("companies")
       .select("id, sales_stage, consulting_stage, received_at, name, updated_at, custom_fields, drop_reason, last_contact_at, next_action, next_action_due"),
@@ -48,7 +45,15 @@ export default async function AdminDashboardPage() {
       .order("due_date", { ascending: true })
       .limit(8),
     supabase.from("profiles").select("name").eq("id", user?.id ?? "").single(),
+    supabase.from("investor_tappings").select("progress_status, confirmed_operator"),
+    supabase.from("ai_staff_posts").select("severity").eq("kind", "alert").eq("status", "open"),
   ]);
+
+  const tappings = tappingsRes.data ?? [];
+  const tappingActive = tappings.filter((t) => t.progress_status === "진행중").length;
+  const tappingConfirmed = tappings.filter((t) => t.confirmed_operator).length;
+  const aiAlerts = aiAlertsRes.data ?? [];
+  const aiUrgent = aiAlerts.filter((a) => a.severity === "urgent").length;
 
   const adminName = (profileRes.data as { name: string } | null)?.name ?? "관리자";
   const allCompanies = companiesRes.data ?? [];
@@ -156,15 +161,15 @@ export default async function AdminDashboardPage() {
 
       {/* ═══════════════════════════════════════════════
           Section 1 — 5 도메인 포털
-          접수 · 기업 · 프로젝트 · 투자 딜 · 모니터링
+          접수 · 기업 · 투자 딜 · AI 직원
          ═══════════════════════════════════════════════ */}
       <div className="mb-3 flex items-baseline justify-between">
         <h2 className="text-[13px] font-semibold text-zinc-900 tracking-tight">
           기업 성장 여정
         </h2>
-        <span className="text-[11.5px] text-zinc-400">접수 → 프로젝트 → 투자 → 성장</span>
+        <span className="text-[11.5px] text-zinc-400">접수 → 기업 → 투자 · AI 직원 점검</span>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         <DomainCard
           href="/admin/applications"
           icon={<Inbox />}
@@ -190,34 +195,24 @@ export default async function AdminDashboardPage() {
           active
         />
         <DomainCard
-          href="/admin/projects"
-          icon={<Kanban />}
-          title="프로젝트"
-          value={MOCK_PROJECTS.filter((p) => p.stage !== "done" && p.stage !== "on_hold").length}
-          unit="건 진행"
-          trend={`완료 ${MOCK_PROJECTS.filter((p) => p.stage === "done").length} · 보류 ${MOCK_PROJECTS.filter((p) => p.stage === "on_hold").length}`}
-          tint="#7A8BA0"
-          active
-        />
-        <DomainCard
           href="/admin/deals"
           icon={<Coins />}
           title="투자 딜"
-          value={MOCK_DEALS.filter((d) => d.stage !== "closed" && d.stage !== "lost").length}
-          unit="건 진행"
-          trend={`목표 ${MOCK_DEALS.filter((d) => d.stage !== "closed" && d.stage !== "lost").reduce((s, d) => s + d.target_amount, 0)}억 · 완료 ${MOCK_DEALS.filter((d) => d.stage === "closed").length}건`}
+          value={tappingActive}
+          unit="개 기업 진행"
+          trend={`태핑 대상 ${tappings.length}곳 · 운영사 확정 ${tappingConfirmed}곳`}
           tint="#8578C4"
           active
         />
         <DomainCard
-          href="/admin/monitoring"
-          icon={<LineChart />}
-          title="사후 모니터링"
-          value={0}
-          unit="개 기업"
-          trend="구축 예정"
-          tint="#6DA37C"
-          comingSoon
+          href="/admin/ai-staff"
+          icon={<Bot />}
+          title="AI 직원"
+          value={aiAlerts.length}
+          unit="건 확인 필요"
+          trend={aiUrgent > 0 ? `긴급 ${aiUrgent}건` : "매일 아침 자동 점검"}
+          tint="#7A8BA0"
+          active
         />
       </div>
 

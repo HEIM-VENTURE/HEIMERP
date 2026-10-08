@@ -8,14 +8,11 @@ import {
   LayoutDashboard,
   Workflow,
   ListChecks,
-  Receipt,
   CalendarDays,
   Landmark,
   Settings,
   Inbox,
-  Kanban,
   Coins,
-  LineChart,
   Building2,
   Video,
   ClipboardList,
@@ -56,16 +53,14 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/applications", label: "기업 접수", icon: Inbox },
       { href: "/admin/pipeline", label: "기업 파이프라인", icon: Workflow },
-      { href: "/admin/projects", label: "프로젝트", icon: Kanban },
+      // 숨김(2026-10-08 메뉴 정리 · 페이지는 남아 있음): 프로젝트(mock), 사후 모니터링(미구축), 계약(6월 이후 미사용)
       { href: "/admin/deals", label: "투자 딜", icon: Coins },
-      { href: "/admin/monitoring", label: "사후 모니터링", icon: LineChart, comingSoon: true },
     ],
   },
   {
     label: "운영",
     items: [
       { href: "/admin/demoday", label: "데모데이", icon: Video },
-      { href: "/admin/contracts", label: "계약", icon: Receipt },
       { href: "/admin/meetings", label: "미팅 · 회의록", icon: CalendarDays },
       { href: "/admin/hr", label: "인사 · 연차", icon: Users2 },
     ],
