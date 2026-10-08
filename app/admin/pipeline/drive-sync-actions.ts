@@ -4,13 +4,15 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listDriveFolders } from "@/lib/google-drive";
 
-/** 공백·괄호·특수문자 제거 후 소문자 변환 (매칭용 정규화) */
-function normalize(s: string): string {
+/** 공백·괄호·특수문자 제거 + 접두/접미 '주식회사'·'대표' 제거 후 소문자 */
+function normalize(s: string | null | undefined): string {
+  if (!s) return "";
   return s
     .toLowerCase()
     .replace(/\s+/g, "")
     .replace(/[()（）\-·.,\\/]/g, "")
     .replace(/^(주식회사|㈜|㈐|주)/g, "")
+    .replace(/대표$/g, "") // "XXX 대표" 접미사 제거
     .trim();
 }
 
@@ -51,7 +53,7 @@ export async function syncDriveWithCompanies(): Promise<DriveSyncResult> {
 
   const { data: companies, error: compErr } = await supabase
     .from("companies")
-    .select("id, name, drive_folder_url")
+    .select("id, name, ceo_name, drive_folder_url")
     .is("drop_reason", null);
   if (compErr) return { error: compErr.message };
 
@@ -62,15 +64,23 @@ export async function syncDriveWithCompanies(): Promise<DriveSyncResult> {
   const companiesWithoutFolder: { id: number; name: string }[] = [];
   const matchedFolderKeys = new Set<string>();
 
+  const tryMatch = (c: { id: number; name: string; ceo_name: string | null }) => {
+    // 기업명 → 대표자명 순서로 시도
+    const keyName = normalize(c.name);
+    if (keyName && folderMap.has(keyName)) return folderMap.get(keyName);
+    const keyCeo = normalize(c.ceo_name);
+    if (keyCeo && folderMap.has(keyCeo)) return folderMap.get(keyCeo);
+    return null;
+  };
+
   for (const c of companies ?? []) {
     if (c.drive_folder_url) {
-      // 이미 연결됨 → 어떤 폴더랑 매칭됐는지만 체크
-      const key = normalize(c.name);
-      if (folderMap.has(key)) matchedFolderKeys.add(key);
+      // 이미 연결됨 → 어떤 폴더랑 매칭됐는지만 체크해서 unmatchedFolders 에서 빼기
+      const match = tryMatch(c);
+      if (match) matchedFolderKeys.add(normalize(match.name));
       continue;
     }
-    const key = normalize(c.name);
-    const match = folderMap.get(key);
+    const match = tryMatch(c);
     if (match) {
       const { error: updErr } = await supabase
         .from("companies")
@@ -78,7 +88,7 @@ export async function syncDriveWithCompanies(): Promise<DriveSyncResult> {
         .eq("id", c.id);
       if (!updErr) {
         linkedCompanies.push({ id: c.id, name: c.name, folderUrl: match.url });
-        matchedFolderKeys.add(key);
+        matchedFolderKeys.add(normalize(match.name));
       }
     } else {
       companiesWithoutFolder.push({ id: c.id, name: c.name });
