@@ -124,10 +124,31 @@ export default async function PipelinePage({
   }
 
   // KPI용 전체 + 필터된 리스트 동시
-  const [allRes, listRes] = await Promise.all([
+  const [allRes, listRes, tappingsRes] = await Promise.all([
     supabase.from("companies").select("id, sales_stage, consulting_stage"),
     listQuery,
+    supabase.from("investor_tappings").select("company_id, lips_eligible, tips_eligible, personal_fund_eligible"),
   ]);
+
+  // 기업 ID -> 적격성 매핑
+  const eligibleByCompany = new Map<number, {
+    lips: string | null;
+    tips: string | null;
+    pf: string | null;
+  }>();
+  for (const t of (tappingsRes.data ?? []) as {
+    company_id: number | null;
+    lips_eligible: string | null;
+    tips_eligible: string | null;
+    personal_fund_eligible: string | null;
+  }[]) {
+    if (!t.company_id) continue;
+    eligibleByCompany.set(t.company_id, {
+      lips: t.lips_eligible,
+      tips: t.tips_eligible,
+      pf: t.personal_fund_eligible,
+    });
+  }
 
   const all = (allRes.data as { sales_stage: Company["sales_stage"]; consulting_stage: Company["consulting_stage"] }[]) ?? [];
   const { data, error } = listRes;
@@ -270,6 +291,20 @@ export default async function PipelinePage({
                           if (days >= 14) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">{days}일 전</span>;
                           return null;
                         })()}
+                        {/* LIPS/TIPS 자격 뱃지 */}
+                        {!c.drop_reason ? (() => {
+                          const el = eligibleByCompany.get(c.id);
+                          if (!el) return null;
+                          return (
+                            <>
+                              {el.lips === "여" ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 shrink-0 font-semibold">LIPS</span> : null}
+                              {el.tips === "여" ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0 font-semibold">TIPS</span> : null}
+                              {el.pf === "여" ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0 font-semibold">개투</span> : null}
+                              {el.lips === "대기중" ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 shrink-0">LIPS?</span> : null}
+                              {el.tips === "대기중" ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 shrink-0">TIPS?</span> : null}
+                            </>
+                          );
+                        })() : null}
                         {c.next_action_due && !c.drop_reason ? (() => {
                           const diff = Math.floor((new Date(c.next_action_due).getTime() - Date.now()) / 86400000);
                           if (diff < 0) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0 font-semibold">마감 {-diff}일 지남</span>;
