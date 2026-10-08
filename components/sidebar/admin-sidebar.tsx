@@ -19,6 +19,7 @@ import {
   Building2,
   Video,
   ClipboardList,
+  Users2,
   ChevronsLeft,
   ChevronsRight,
   type LucideIcon,
@@ -64,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/demoday", label: "데모데이", icon: Video },
       { href: "/admin/contracts", label: "계약", icon: Receipt },
       { href: "/admin/meetings", label: "미팅 · 회의록", icon: CalendarDays },
+      { href: "/admin/hr", label: "인사 · 연차", icon: Users2 },
     ],
   },
   {
