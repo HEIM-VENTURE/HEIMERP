@@ -53,6 +53,17 @@ function pmOrNull(v: FormDataEntryValue | null): string | null {
   return s && s !== "none" ? s : null;
 }
 
+/** 쉼표/세미콜론/개행 분리 + 이메일 트림 + 중복 제거 */
+function parseEmails(v: FormDataEntryValue | null): string[] {
+  const raw = String(v ?? "").trim();
+  if (!raw) return [];
+  const list = raw
+    .split(/[,;\n]+/)
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0 && /^\S+@\S+\.\S+$/.test(s));
+  return Array.from(new Set(list));
+}
+
 /** investor_tappings 적격성 UPSERT (companyId 로 기존 레코드 있으면 UPDATE, 아니면 INSERT) */
 async function upsertInvestorTapping(
   supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>,
@@ -110,6 +121,8 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
   const gradeRaw = String(formData.get("program_grade") ?? "").trim();
   const programGrade = gradeRaw && gradeRaw !== "none" ? gradeRaw : null;
 
+  const portalEmails = parseEmails(formData.get("portal_invite_emails"));
+
   const insert = {
     name,
     address: nullIfEmpty(formData.get("address")),
@@ -127,6 +140,7 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     source: "manual",
     notes: nullIfEmpty(formData.get("notes")),
     custom_fields: pmOrNull(formData.get("pm")) ? { pm: pmOrNull(formData.get("pm")) } : {},
+    portal_invite_emails: portalEmails.length > 0 ? portalEmails : null,
     ...(nullIfEmpty(formData.get("received_at")) ? { received_at: nullIfEmpty(formData.get("received_at")) } : {}),
     ...(nullIfEmpty(formData.get("contracted_at")) ? { contracted_at: nullIfEmpty(formData.get("contracted_at")) } : {}),
   };
@@ -148,6 +162,15 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
     nullIfEmpty(formData.get("tips_eligible")),
     nullIfEmpty(formData.get("personal_fund_eligible")),
   );
+
+  // 포털 초대 이메일에 매칭되는 기존 사용자가 있으면 소급 매핑
+  if (portalEmails.length > 0) {
+    try {
+      await supabase.rpc("sync_portal_invites");
+    } catch {
+      /* 서버 함수 없거나 실패해도 신규 가입 시 trigger 가 처리 */
+    }
+  }
 
   // Drive 폴더 자동 생성 (체크박스 ON 이면)
   let driveFolderUrl: string | undefined;
@@ -196,6 +219,8 @@ export async function updateCompanyAction(
   if (pm) customFields.pm = pm;
   else delete customFields.pm;
 
+  const portalEmails = parseEmails(formData.get("portal_invite_emails"));
+
   const update = {
     name,
     address: nullIfEmpty(formData.get("address")),
@@ -211,6 +236,7 @@ export async function updateCompanyAction(
     program_grade: programGrade,
     notes: nullIfEmpty(formData.get("notes")),
     custom_fields: customFields,
+    portal_invite_emails: portalEmails.length > 0 ? portalEmails : null,
     received_at: nullIfEmpty(formData.get("received_at")),
     contracted_at: nullIfEmpty(formData.get("contracted_at")),
     updated_at: new Date().toISOString(),
@@ -228,6 +254,15 @@ export async function updateCompanyAction(
     nullIfEmpty(formData.get("tips_eligible")),
     nullIfEmpty(formData.get("personal_fund_eligible")),
   );
+
+  // 포털 초대 이메일 소급 매핑
+  if (portalEmails.length > 0) {
+    try {
+      await supabase.rpc("sync_portal_invites");
+    } catch {
+      /* ignore */
+    }
+  }
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath("/admin/pipeline");

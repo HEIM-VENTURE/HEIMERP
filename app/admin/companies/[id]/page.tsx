@@ -376,6 +376,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
                 lips_eligible: investorTapping?.lips_eligible ?? null,
                 tips_eligible: investorTapping?.tips_eligible ?? null,
                 personal_fund_eligible: investorTapping?.personal_fund_eligible ?? null,
+                portal_invite_emails: (company as unknown as { portal_invite_emails?: string[] | null }).portal_invite_emails ?? null,
               }}
             />
             <NewMeetingModal companyId={company.id} />

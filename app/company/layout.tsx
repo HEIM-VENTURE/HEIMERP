@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LayoutDashboard, FolderOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/sidebar/logout-button";
 
@@ -36,7 +38,22 @@ export default async function CompanyLayout({ children }: { children: React.Reac
           />
           <div className="text-[10px] text-zinc-400 mt-1.5 ml-0.5">ERP · 기업</div>
         </div>
-        <div className="px-3 py-2 text-sm text-zinc-600">내 회사</div>
+        <nav className="space-y-1">
+          <Link
+            href="/company/dashboard"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 rounded-md hover:bg-zinc-50"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            대시보드
+          </Link>
+          <Link
+            href="/company/files"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-700 rounded-md hover:bg-zinc-50"
+          >
+            <FolderOpen className="w-4 h-4" />
+            내 자료
+          </Link>
+        </nav>
         <div className="mt-auto pt-4 border-t border-zinc-100 px-2">
           <div className="text-xs mb-2">
             <div className="font-medium text-zinc-900 truncate">{profile?.name ?? user.email}</div>

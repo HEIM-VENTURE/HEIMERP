@@ -28,6 +28,8 @@ type CompanyValues = {
   lips_eligible?: string | null;
   tips_eligible?: string | null;
   personal_fund_eligible?: string | null;
+  // 포털 담당자 이메일
+  portal_invite_emails?: string[] | null;
 };
 
 const ELIGIBLE_OPTIONS = [
@@ -167,6 +169,22 @@ function CompanyFormFields({
           ))}
         </select>
       </Field>
+
+      {/* 기업 포털 담당자 이메일 (여러 명 가능) */}
+      <div className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200">
+        <div className="text-[11px] font-semibold text-emerald-700 mb-1">기업 포털 담당자 이메일</div>
+        <Field label="이메일 (여러 명은 쉼표로 구분)">
+          <Input
+            name="portal_invite_emails"
+            type="text"
+            defaultValue={(values.portal_invite_emails ?? []).join(", ")}
+            placeholder="ceo@company.com, cto@company.com"
+          />
+        </Field>
+        <div className="text-[10.5px] text-emerald-600 mt-1">
+          입력한 이메일로 담당자가 Google 로그인하면 자동으로 포털에 연결됩니다.
+        </div>
+      </div>
 
       {/* 투자사 태핑 적격성 (LIPS/TIPS/개투조합) */}
       <div className="p-3 rounded-lg bg-brand/5 border border-brand/15">
