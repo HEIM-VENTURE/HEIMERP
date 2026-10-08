@@ -107,6 +107,7 @@ export async function updatePaidCustomer(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/admin/paid-customers");
+  revalidatePath("/admin/companies", "layout");
   return { ok: true };
 }
 
@@ -147,5 +148,6 @@ export async function createPaidCustomer(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/admin/paid-customers");
+  revalidatePath("/admin/companies", "layout");
   return { ok: true, id: data.id as string };
 }

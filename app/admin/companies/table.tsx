@@ -24,17 +24,20 @@ export type CompanyRow = {
   received_at: string;
   consultant_id: string | null;
   program_grade: string | null;
+  paid: { is_paid: boolean | null; target_program: string | null; urgency: number | null } | null;
 };
 
 type StageFilter = "all" | SalesStageKey;
 type SourceFilter = "all" | "paid_customers" | "manual" | "tally" | "google_form" | "other";
 type ConsultantFilter = "all" | "assigned" | "unassigned";
+type PaidFilter = "all" | "paid" | "unpaid";
 
 export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
   const [q, setQ] = useState("");
   const [stage, setStage] = useState<StageFilter>("all");
   const [source, setSource] = useState<SourceFilter>("all");
   const [consultant, setConsultant] = useState<ConsultantFilter>("all");
+  const [paid, setPaid] = useState<PaidFilter>("all");
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -53,13 +56,15 @@ export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
       }
       if (consultant === "assigned" && !r.consultant_id) return false;
       if (consultant === "unassigned" && r.consultant_id) return false;
+      if (paid === "paid" && !r.paid?.is_paid) return false;
+      if (paid === "unpaid" && r.paid?.is_paid) return false;
       if (needle) {
         const hay = [r.name, r.ceo_name, r.notes].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     });
-  }, [rows, q, stage, source, consultant]);
+  }, [rows, q, stage, source, consultant, paid]);
 
   return (
     <>
@@ -115,6 +120,17 @@ export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
           onChange={(v) => setConsultant(v as ConsultantFilter)}
         />
 
+        <FilterGroup
+          label="결제"
+          value={paid}
+          options={[
+            { key: "all", label: "전체" },
+            { key: "paid", label: "결제" },
+            { key: "unpaid", label: "미결제" },
+          ]}
+          onChange={(v) => setPaid(v as PaidFilter)}
+        />
+
         <span className="ml-auto text-[12px] text-zinc-500">
           {filtered.length} / {rows.length}건
         </span>
@@ -123,10 +139,13 @@ export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
       {/* 표 */}
       <div className="bg-white border border-zinc-200 rounded-2xl overflow-auto max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-13rem)]">
         <div>
-          <table className="min-w-[900px] w-full text-[13px]">
+          <table className="min-w-[1100px] w-full text-[13px]">
             <thead className="text-[11px] text-zinc-500 bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgb(228_228_231)]">
               <tr>
                 <Th w="w-64">회사명</Th>
+                <Th w="w-16">결제</Th>
+                <Th w="w-28">타깃</Th>
+                <Th w="w-16">긴급도</Th>
                 <Th w="w-28">대표자</Th>
                 <Th w="w-28">설립일</Th>
                 <Th w="w-24">영업 단계</Th>
@@ -146,6 +165,31 @@ export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
                     >
                       {r.name}
                     </Link>
+                  </Td>
+                  <Td>
+                    <PaidBadge value={r.paid?.is_paid ?? null} />
+                  </Td>
+                  <Td>
+                    {r.paid?.target_program ? (
+                      <div className="flex flex-wrap gap-0.5">
+                        {r.paid.target_program.split(",").map((p) => p.trim()).filter(Boolean).map((p) => (
+                          <span key={p} className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[10.5px]">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-300">-</span>
+                    )}
+                  </Td>
+                  <Td>
+                    {r.paid?.urgency ? (
+                      <span className={`text-[11.5px] font-semibold tabular-nums ${r.paid.urgency >= 3 ? "text-rose-600" : "text-zinc-700"}`}>
+                        {r.paid.urgency}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-300">-</span>
+                    )}
                   </Td>
                   <Td>
                     {r.ceo_name ? (
@@ -217,6 +261,14 @@ export function CompaniesTable({ rows }: { rows: CompanyRow[] }) {
 // ─────────────────────────────────────────────
 // Small pieces
 // ─────────────────────────────────────────────
+function PaidBadge({ value }: { value: boolean | null }) {
+  if (value === true)
+    return <span className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">결제</span>;
+  if (value === false)
+    return <span className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500">미결제</span>;
+  return <span className="text-zinc-300">-</span>;
+}
+
 function Th({ children, w }: { children: React.ReactNode; w?: string }) {
   return <th className={`text-left px-3 py-2.5 font-medium ${w ?? ""}`}>{children}</th>;
 }

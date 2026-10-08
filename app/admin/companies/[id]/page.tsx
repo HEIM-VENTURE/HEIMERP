@@ -9,7 +9,6 @@ import {
   Calendar,
   TrendingUp,
   FileText,
-  Kanban,
   Coins,
   Target,
   Clock,
@@ -37,6 +36,7 @@ import { FileManager } from "./file-manager";
 import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
 import { DeleteCompanyButton } from "./delete-company-button";
 import { FollowupCard } from "./followup-card";
+import { PaidStatusCard, type PaidRow } from "./paid-status-card";
 import { NotesTimeline } from "./notes-timeline";
 import { InvestorTappingCard } from "./investor-tapping-card";
 import { JCurveCard } from "./jcurve-card";
@@ -106,7 +106,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes, notesRes, investorTappingRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes, notesRes, investorTappingRes, paidRes] = await Promise.all([
     supabase
       .from("companies")
       .select("*")
@@ -140,6 +140,12 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       .from("investor_tappings")
       .select("id, personal_fund_eligible, lips_eligible, tips_eligible, progress_status, confirmed_operator, pm")
       .eq("company_id", id)
+      .maybeSingle(),
+    supabase
+      .from("paid_customers")
+      .select("id, is_paid, urgency, target_program, new_corp_setup, new_company_name, ir_deck_tips, ir_deck_lips, demoday_1_a, demoday_1_b, demoday_2_a, demoday_2_b, offline, memo")
+      .eq("company_id", id)
+      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -526,7 +532,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             )}
           </div>
 
-          {/* 계약 */}
+          {/* 계약 (계약 메뉴는 숨김 — 기존 계약이 있는 기업만 표시) */}
+          {contracts.length > 0 ? (
           <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-zinc-900">계약</h3>
@@ -580,38 +587,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
               </>
             )}
           </div>
+          ) : null}
 
           {/* 자료 */}
           <FileManager companyId={company.id} files={files as any} />
 
-          {/* 프로젝트 · 투자 딜 placeholder (2열 그리드) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Kanban className="w-4 h-4 text-zinc-300" />
-                <h3 className="text-sm font-semibold text-zinc-400">프로젝트</h3>
-                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
-                  soon
-                </span>
-              </div>
-              <p className="text-[11.5px] text-zinc-400 leading-relaxed">
-                이 기업의 프로젝트가 여기에 표시됩니다 (TIPS·IR·투자유치·성장전략 각각 분리).
-              </p>
-            </div>
-
-            <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Coins className="w-4 h-4 text-zinc-300" />
-                <h3 className="text-sm font-semibold text-zinc-400">투자 딜</h3>
-                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-medium uppercase">
-                  soon
-                </span>
-              </div>
-              <p className="text-[11.5px] text-zinc-400 leading-relaxed">
-                투자자 태핑·미팅·심의 이력이 여기에 축적됩니다.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* ── 우측 (요약·참조 · lg 이상 sticky) ── */}
@@ -623,6 +603,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             nextAction={company.next_action}
             nextActionDue={company.next_action_due}
             lastContactAt={company.last_contact_at}
+          />
+
+          {/* 결제·진행 현황 (구 고객 현황표) */}
+          <PaidStatusCard
+            companyId={company.id}
+            companyName={company.name}
+            row={(paidRes.data as PaidRow | null) ?? null}
           />
 
           {/* 기본 정보 (셀 클릭 인라인 편집) */}

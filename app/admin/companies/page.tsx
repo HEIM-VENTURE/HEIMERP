@@ -23,10 +23,23 @@ export default async function CompaniesPage() {
     );
   }
 
-  const rows = (data ?? []) as CompanyRow[];
+  // 결제·진행 현황 (구 고객 현황표) 연결
+  const { data: paid } = await supabase
+    .from("paid_customers")
+    .select("company_id, is_paid, target_program, urgency")
+    .not("company_id", "is", null);
+  const paidByCompany = new Map((paid ?? []).map((p) => [p.company_id as number, p]));
+
+  const rows = ((data ?? []) as Omit<CompanyRow, "paid">[]).map((r) => {
+    const p = paidByCompany.get(r.id);
+    return {
+      ...r,
+      paid: p ? { is_paid: p.is_paid, target_program: p.target_program, urgency: p.urgency } : null,
+    };
+  }) as CompanyRow[];
   const total = rows.length;
   const kickoffCount = rows.filter((r) => r.sales_stage === "kickoff").length;
-  const sourceCount = rows.filter((r) => r.source === "paid_customers").length;
+  const paidCount = rows.filter((r) => r.paid?.is_paid).length;
 
   return (
     <>
@@ -40,7 +53,7 @@ export default async function CompaniesPage() {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] shrink-0">
           <Stat label="전체" value={total} />
           <Stat label="착수 단계" value={kickoffCount} color="#B91C42" />
-          <Stat label="고객 현황표 시드" value={sourceCount} color="#237A4E" />
+          <Stat label="결제 고객" value={paidCount} color="#237A4E" />
         </div>
       </div>
 
