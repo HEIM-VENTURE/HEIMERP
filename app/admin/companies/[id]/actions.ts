@@ -227,6 +227,8 @@ const EDITABLE_COMPANY_FIELDS = [
   "next_action",
   "next_action_due",
   "last_contact_at",
+  "growth_stage",
+  "growth_stage_note",
 ] as const;
 type EditableCompanyField = (typeof EDITABLE_COMPANY_FIELDS)[number];
 
@@ -269,6 +271,19 @@ export async function updateCompanyField(
           return { ok: false, error: "매출은 숫자여야 합니다." };
         }
         clean[key] = num;
+      }
+      continue;
+    }
+
+    if (key === "growth_stage") {
+      if (raw === null || raw === "" || raw === undefined) {
+        clean[key] = null;
+      } else {
+        const n = typeof raw === "number" ? raw : Number(raw);
+        if (!Number.isInteger(n) || n < 1 || n > 10) {
+          return { ok: false, error: "성장 단계는 1~10 사이 정수여야 합니다." };
+        }
+        clean[key] = n;
       }
       continue;
     }

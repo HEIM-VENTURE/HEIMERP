@@ -39,6 +39,7 @@ import { DeleteCompanyButton } from "./delete-company-button";
 import { FollowupCard } from "./followup-card";
 import { NotesTimeline } from "./notes-timeline";
 import { InvestorTappingCard } from "./investor-tapping-card";
+import { JCurveCard } from "./jcurve-card";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,8 @@ type Company = {
   next_action: string | null;
   next_action_due: string | null;
   last_contact_at: string | null;
+  growth_stage: number | null;
+  growth_stage_note: string | null;
 };
 
 // 통합 단계 정의 (영업 5 + 컨설팅 8 - 'kickoff' 중복 제거 = 12개)
@@ -452,7 +455,14 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── 좌측 (이력·활동) ── */}
         <div className="lg:col-span-2 space-y-6 min-w-0">
-          {/* 담당자 노트 타임라인 (최상단) */}
+          {/* 성장 단계 J-커브 (최상단 하이라이트) */}
+          <JCurveCard
+            companyId={company.id}
+            currentStep={company.growth_stage}
+            note={company.growth_stage_note}
+          />
+
+          {/* 담당자 노트 타임라인 */}
           <NotesTimeline
             companyId={company.id}
             notes={notes}
