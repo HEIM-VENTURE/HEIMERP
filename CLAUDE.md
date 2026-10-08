@@ -27,7 +27,9 @@
 - admin: 기업 상세 "포털 접근 사용자" 섹션 (이메일로 수동 매핑)
 - 신규 기업 모달: 포털 담당자 이메일 다중 입력 (자동 매핑)
 
-**🚧 중단된 작업 (다음 세션 이어서)**:
+**✅ 아래 중단 작업 완료 (`570c16a`, 빌드 통과).** 남은 것: admin `FILE_KIND_LABELS`(lib/labels.ts)에 세금계산서(tax_invoice) 옵션 없음 — files.kind 가 enum(file_kind)인지 DB 확인 후 추가.
+
+**(완료) 중단됐던 작업**:
 - /company/dashboard 에 **"핵심 자료 (세금계산서·계약서·IR Deck)"** 섹션
   - admin이 ERP에 업로드한 files 테이블 중 kind별 최신 1건씩 노출
   - KeyFileClickable 컴포넌트 (키 파일 다운로드) 생성
