@@ -20,6 +20,7 @@ import {
   Video,
   ClipboardList,
   Users2,
+  Bot,
   ChevronsLeft,
   ChevronsRight,
   type LucideIcon,
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/dashboard", label: "대시보드", icon: LayoutDashboard },
       { href: "/admin/todos", label: "할 일", icon: ListChecks },
+      { href: "/admin/ai-staff", label: "AI 직원", icon: Bot },
     ],
   },
   {
