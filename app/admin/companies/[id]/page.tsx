@@ -37,6 +37,7 @@ import { FileManager } from "./file-manager";
 import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
 import { DeleteCompanyButton } from "./delete-company-button";
 import { FollowupCard } from "./followup-card";
+import { NotesTimeline } from "./notes-timeline";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +101,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes, notesRes] = await Promise.all([
     supabase
       .from("companies")
       .select("*")
@@ -124,6 +125,12 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       .order("received_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("company_notes")
+      .select("id, body, pinned, created_at, author_id")
+      .eq("company_id", id)
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   const company = companyRes.data as Company | null;
@@ -134,6 +141,29 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const todos = todosRes.data ?? [];
   const files = filesRes.data ?? [];
   const contracts = contractsRes.data ?? [];
+  const notesRaw = (notesRes.data ?? []) as {
+    id: string;
+    body: string;
+    pinned: boolean;
+    created_at: string;
+    author_id: string | null;
+  }[];
+
+  // 노트 작성자 프로필 매핑
+  const authorIds = Array.from(new Set(notesRaw.map((n) => n.author_id).filter((v): v is string => !!v)));
+  const { data: noteProfiles } = authorIds.length
+    ? await supabase.from("profiles").select("id, name, email").in("id", authorIds)
+    : { data: [] as { id: string; name: string | null; email: string }[] };
+  const noteAuthorMap = new Map((noteProfiles ?? []).map((p) => [p.id, p]));
+  const notes = notesRaw.map((n) => ({
+    ...n,
+    author_name: n.author_id ? noteAuthorMap.get(n.author_id)?.name ?? null : null,
+    author_email: n.author_id ? noteAuthorMap.get(n.author_id)?.email ?? null : null,
+  }));
+
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
   const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null; program: "TIPS" | "LIPS" }[]) ?? [];
   const application = applicationRes.data as { id: string; application_no: string; received_at: string; status: string } | null;
@@ -389,6 +419,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── 좌측 (이력·활동) ── */}
         <div className="lg:col-span-2 space-y-6 min-w-0">
+          {/* 담당자 노트 타임라인 (최상단) */}
+          <NotesTimeline
+            companyId={company.id}
+            notes={notes}
+            currentUserId={currentUser?.id ?? null}
+          />
+
           {/* 활동 피드 */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-5">
