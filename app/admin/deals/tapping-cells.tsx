@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
-import { updateTappingField, createTappingRow, deleteTappingRow, PM_OPTIONS, type TappingField } from "./tapping-actions";
+import { updateTappingField, createTappingRow, deleteTappingRow, type TappingField } from "./tapping-actions";
+import { PM_OPTIONS } from "./pm-options";
 
 /** 인라인 편집 텍스트 셀 · 클릭 → input · Enter/blur 저장 · 낙관적 UI */
 export function EditCell({

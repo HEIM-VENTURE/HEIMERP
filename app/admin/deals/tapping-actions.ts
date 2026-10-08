@@ -20,15 +20,8 @@ export type TappingField =
   | "tapping_5"
   | "notes";
 
-export const PM_OPTIONS = [
-  "박대성",
-  "강영환",
-  "허유나",
-  "이지우",
-  "조상우",
-  "권도준",
-] as const;
-export type PM = (typeof PM_OPTIONS)[number];
+// PM_OPTIONS 와 PM 타입은 ./pm-options 에서 직접 import 하세요.
+// (use server 파일에서는 함수 외 export 금지)
 
 export async function updateTappingField(
   id: string,

@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, User } from "lucide-react";
 import { useCallback } from "react";
-import { PM_OPTIONS } from "./tapping-actions";
+import { PM_OPTIONS } from "./pm-options";
 
 export type TappingFilters = {
   q?: string;
