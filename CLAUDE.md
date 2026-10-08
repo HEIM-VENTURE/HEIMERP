@@ -4,7 +4,41 @@
 
 ---
 
-## ⚡ 다음 세션 먼저 읽기 (2026-08-05 인수인계 — 데모데이·재디자인·자간 sweep 완료)
+## ⚡ 다음 세션 먼저 읽기 (2026-10-08 인수인계 — 기업 포털 Phase 3 중단)
+
+**최근 세션 작업 흐름 (2026-10-08)**:
+- 인사·연차 모듈 (0039) · 기업 후속관리 Drive·다음액션 (0041) · 담당자 노트 (0042)
+- xlsx 통합 임포트 (68개 companies + 84개 tapping_events)
+- 투자 딜 뷰 대개편: mock 제거 · 칸반+표 · PM 필터 · LIPS/TIPS 뱃지 · 필터
+- 기업 상세: J-커브 10단계 + AI 자동 추정 + 투자사 태핑 섹션
+- StatTile 공통 컴포넌트 (디자인 통일)
+- Apps Script Drive 자동 폴더 생성 + 자동 매칭
+- 컨설팅 단계 라벨 'TIPS·LIPS' 통합
+- Supabase RLS 수정 (handle_new_user HVP 제거 - 0031)
+
+**기업 포털 (2026-10-08)**:
+- 0045 profiles.company_id + RLS (SELECT 정책)
+- 0046 companies.portal_invite_emails + handle_new_user 매핑 트리거
+- 0047 files 테이블 + Storage company-files 버킷에 company_member RLS
+- /company/layout: 대시보드·내 자료 메뉴
+- /company/dashboard: 회사명·J-커브·후속관리·투자사 태핑·pinned 노트
+- /company/files: Drive 폴더 파일 자동 10종 매칭 체크리스트
+  (Supabase Storage 업로드 폼은 제거하고 Drive 폴더 바로가기로)
+- admin: 기업 상세 "포털 접근 사용자" 섹션 (이메일로 수동 매핑)
+- 신규 기업 모달: 포털 담당자 이메일 다중 입력 (자동 매핑)
+
+**🚧 중단된 작업 (다음 세션 이어서)**:
+- /company/dashboard 에 **"핵심 자료 (세금계산서·계약서·IR Deck)"** 섹션
+  - admin이 ERP에 업로드한 files 테이블 중 kind별 최신 1건씩 노출
+  - KeyFileClickable 컴포넌트 (키 파일 다운로드) 생성
+  - page.tsx 수정 중 괄호 매칭 실수로 parse error → c514b17 로 revert
+  - 다음 세션: page.tsx 끝부분 함수 분할 조심해서 재작성
+
+**사용자 피로도 높음** · 간단 범위부터 재개할 것.
+
+---
+
+## 이전 세션 (2026-08-05 — 데모데이·재디자인·자간 sweep 완료)
 
 **상태: Vercel 배포 활성 (main auto-deploy). 최신 커밋 `e41db52`.**
 
