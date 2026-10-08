@@ -44,6 +44,7 @@ type SearchParams = {
   consulting?: string;
   dropped?: string;
   pm?: string;
+  eligible?: string;
   sort?: string;
   dir?: string;
 };
@@ -60,6 +61,7 @@ export default async function PipelinePage({
   const consulting = sp.consulting ?? "all";
   const dropped = sp.dropped ?? "active"; // active(드랍 제외) | dropped(드랍만) | all
   const pm = sp.pm ?? "all"; // all | none | <PM 이름>
+  const eligible = sp.eligible ?? "all"; // all | lips | tips | both | either | pf | none
   const sort = sp.sort ?? "";
   const dir = sp.dir ?? "asc";
 
@@ -152,7 +154,24 @@ export default async function PipelinePage({
 
   const all = (allRes.data as { sales_stage: Company["sales_stage"]; consulting_stage: Company["consulting_stage"] }[]) ?? [];
   const { data, error } = listRes;
-  const list: Company[] = (data as Company[]) ?? [];
+  let list: Company[] = (data as Company[]) ?? [];
+
+  // 자격(eligible) 필터는 investor_tappings 조회 이후 적용
+  if (eligible !== "all") {
+    list = list.filter((c) => {
+      const el = eligibleByCompany.get(c.id);
+      const lipsYes = el?.lips === "여";
+      const tipsYes = el?.tips === "여";
+      const pfYes = el?.pf === "여";
+      if (eligible === "lips") return lipsYes;
+      if (eligible === "tips") return tipsYes;
+      if (eligible === "both") return lipsYes && tipsYes;
+      if (eligible === "either") return lipsYes || tipsYes;
+      if (eligible === "pf") return pfYes;
+      if (eligible === "none") return !lipsYes && !tipsYes && !pfYes;
+      return true;
+    });
+  }
 
   // 통계 (전체 기준)
   const total = all.length;
@@ -238,6 +257,7 @@ export default async function PipelinePage({
         initialConsulting={consulting}
         initialDropped={dropped}
         initialPm={pm}
+        initialEligible={eligible}
         resultCount={list.length}
       />
 

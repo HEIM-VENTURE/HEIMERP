@@ -17,6 +17,7 @@ type Props = {
   initialConsulting: string;
   initialDropped: string;
   initialPm: string;
+  initialEligible: string;    // all | lips | tips | both | pf | none
   resultCount: number;
 };
 
@@ -29,6 +30,7 @@ export function PipelineFilters({
   initialConsulting,
   initialDropped,
   initialPm,
+  initialEligible,
   resultCount,
 }: Props) {
   const router = useRouter();
@@ -57,6 +59,7 @@ export function PipelineFilters({
     initialGrade !== "all" ||
     initialConsulting !== "all" ||
     initialPm !== "all" ||
+    initialEligible !== "all" ||
     initialDropped !== "active";
 
   // dropped 파라미터는 기본값 active일 때 URL에서 제거되도록 updateParam이 처리.
@@ -143,6 +146,21 @@ export function PipelineFilters({
               PM: {p}
             </option>
           ))}
+        </select>
+
+        {/* LIPS / TIPS 자격 */}
+        <select
+          value={initialEligible}
+          onChange={(e) => updateParam("eligible", e.target.value)}
+          className="px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white cursor-pointer"
+        >
+          <option value="all">자격: 전체</option>
+          <option value="lips">자격: LIPS만</option>
+          <option value="tips">자격: TIPS만</option>
+          <option value="both">자격: LIPS + TIPS 둘 다</option>
+          <option value="either">자격: LIPS 또는 TIPS</option>
+          <option value="pf">자격: 개투조합</option>
+          <option value="none">자격: 없음·미등록</option>
         </select>
 
         {/* 드랍 표시 */}
