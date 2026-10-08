@@ -24,6 +24,7 @@ A. 다음 액션 마감 지남 — next_action_due < 오늘.
 B. 마감 임박 — 오늘 ≤ due ≤ 오늘+2일. severity info, title "다음 액션 마감 D-N", dedupe_key "due_soon:{id}:{due}"
 C. 연락 끊긴 기업 — contracted_at 또는 started_at 또는 consulting_stage 가 있는 기업은 last_contact_at 이 21일 이상 전(또는 없음), 그 외 기업은 45일 이상 전.
    warn, title "N일째 접촉 없음", body 에 마지막 접촉일·다음 액션·담당 PM. dedupe_key "stale:{id}"
+   단, 해당 기업이 10곳을 넘으면 기업별로 올리지 않고 묶음 1건으로: title "접촉 기록이 오래됐거나 없는 기업 N곳", body 에 기업명 목록(오래된 순), dedupe_key "stale_bulk:{오늘}".
 D. 투자사 관심 이후 방치 — tappings 의 events 중 마지막 status 가 interested 또는 committed 인데 그 contact_date 가 14일 이상 전.
    warn, title "{operator} 관심 표명 후 N일 경과", dedupe_key "tap_idle:{company_id}:{operator}"
 E. 접수 미처리 — applications_60d 중 status 가 new 이고 archived_at 이 없으며 received_at 이 3일 이상 전.
@@ -37,7 +38,7 @@ H. 중복 의심 기업 — 이름에서 (주), ㈜, 주식회사, 공백, 대�
 
 ■ 해결된 알림 닫기
 my_open_posts 중 dedupe_key 가 위 형식인데 오늘 점검에서 더 이상 해당하지 않으면 resolve_post 로 닫는다.
-- 날짜가 붙은 묶음 알림(missing_*, todo_late)은 오늘 날짜가 아니면 전부 닫는다 (오늘 새로 올린 것으로 대체).
+- 날짜가 붙은 묶음 알림(missing_*, todo_late, stale_bulk)은 오늘 날짜가 아니면 전부 닫는다 (오늘 새로 올린 것으로 대체).
 - dedupe_key 가 없는 알림이나 kind=report 는 건드리지 않는다.
 
 ■ 직접 고치는 것 (근거가 데이터 안에 있을 때만)

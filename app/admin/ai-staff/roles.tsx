@@ -22,7 +22,7 @@ export const AI_ROLES: {
     name: "데이터 관리 담당",
     icon: ClipboardCheck,
     schedule: "평일 오전 8:30",
-    status: "testing",
+    status: "active",
     duties: [
       "다음 액션 마감 지남·임박 확인",
       "오래 연락 없는 기업, 관심 표명 후 방치된 투자사 찾기",
@@ -37,7 +37,7 @@ export const AI_ROLES: {
     name: "주간 보고 담당",
     icon: FileBarChart,
     schedule: "매주 월요일 오전 8:00",
-    status: "testing",
+    status: "active",
     duties: [
       "지난주 숫자와 비교한 한눈에 요약",
       "지난주 움직임 (새 접수·태핑·주요 메모)",
