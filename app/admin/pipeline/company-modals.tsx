@@ -210,11 +210,16 @@ export function NewCompanyModal({ label = "+ 신규" }: { label?: string }) {
     setError(null);
     startTransition(async () => {
       const result = await createCompanyAction(formData);
-      if (result.error) setError(result.error);
-      else {
-        setOpen(false);
-        if (result.companyId) router.push(`/admin/companies/${result.companyId}`);
+      if (result.error) {
+        setError(result.error);
+        return;
       }
+      if (result.driveWarning) {
+        // Drive 실패해도 기업은 생성됐으니 경고만
+        alert(result.driveWarning);
+      }
+      setOpen(false);
+      if (result.companyId) router.push(`/admin/companies/${result.companyId}`);
     });
   };
 
@@ -229,6 +234,18 @@ export function NewCompanyModal({ label = "+ 신규" }: { label?: string }) {
         >
           <form action={onSubmit} className="space-y-3">
             <CompanyFormFields values={{}} showStage />
+            <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-brand/5 border border-brand/20 cursor-pointer hover:bg-brand/10 transition-colors">
+              <input
+                type="checkbox"
+                name="create_drive_folder"
+                defaultChecked
+                className="w-4 h-4 accent-brand cursor-pointer"
+              />
+              <span className="text-[12.5px] text-zinc-700">
+                📁 <b className="text-zinc-900">Drive 폴더도 함께 생성</b>
+                <span className="text-zinc-500 ml-1">기업명으로 지정 폴더에 하위 폴더 자동 생성</span>
+              </span>
+            </label>
             {error ? <ErrorBox msg={error} /> : null}
             <FormButtons pending={pending} onCancel={() => setOpen(false)} submitLabel="추가" />
           </form>

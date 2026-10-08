@@ -2,8 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createDriveFolderForCompany } from "@/lib/google-drive";
 
-type ActionResult = { error?: string; success?: boolean; companyId?: number };
+type ActionResult = {
+  error?: string;
+  success?: boolean;
+  companyId?: number;
+  driveFolderUrl?: string;
+  driveWarning?: string;
+};
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -85,9 +92,27 @@ export async function createCompanyAction(formData: FormData): Promise<ActionRes
 
   if (error) return { error: error.message };
 
+  // Drive 폴더 자동 생성 (체크박스 ON 이면)
+  let driveFolderUrl: string | undefined;
+  let driveWarning: string | undefined;
+  const wantDrive = String(formData.get("create_drive_folder") ?? "").trim() === "on";
+  if (wantDrive) {
+    const r = await createDriveFolderForCompany(name);
+    if (r.ok) {
+      driveFolderUrl = r.url;
+      await supabase
+        .from("companies")
+        .update({ drive_folder_url: r.url, drive_folder_id: r.id })
+        .eq("id", data.id);
+    } else {
+      driveWarning = `Drive 폴더 자동 생성 실패: ${r.error}`;
+    }
+  }
+
   revalidatePath("/admin/pipeline");
   revalidatePath("/admin/dashboard");
-  return { success: true, companyId: data.id };
+  revalidatePath(`/admin/companies/${data.id}`);
+  return { success: true, companyId: data.id, driveFolderUrl, driveWarning };
 }
 
 export async function updateCompanyAction(
