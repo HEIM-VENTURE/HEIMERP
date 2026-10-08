@@ -29,6 +29,8 @@
 
 **✅ 아래 중단 작업 완료 (`570c16a`, 빌드 통과).** 남은 것: admin `FILE_KIND_LABELS`(lib/labels.ts)에 세금계산서(tax_invoice) 옵션 없음 — files.kind 가 enum(file_kind)인지 DB 확인 후 추가.
 
+**🤖 AI 직원 (2026-10-08 시작, `bc5a608`)**: 클라우드 루틴이 `/api/ai-staff/snapshot`·`/act` (Bearer `AI_STAFF_TOKEN`)로 ERP 점검·보고·수정 → `/admin/ai-staff`. 동작 화이트리스트·수정 기록·되돌리기는 `lib/ai-staff.ts`. 루틴 지시문 원본 `docs/ai-staff/*.md`. 매일 점검 `trig_01KWSjGMBadwTLCWWzAzcB3J` · 주간 보고 `trig_01LpoCwQkFnXRMj2Y1p6NZB6` (설정 끝나기 전까지 disabled). 남은 단계: 음성 루틴 → ERP 반영, 개선 요청함 → PR.
+
 **🔒 보안 잠금 (`d84b3a8` + 0048 실행 완료)**: company_member 는 files 읽기 전용 · 공유 대상(source='company' 또는 tax_invoice/contract/ir_deck)만. Storage 직접 접근 없음 — 다운로드는 `getPortalFileSignedUrl(fileId)` 서버 액션만. 포털에 새 파일 기능 추가 시 이 원칙 유지.
 
 **(완료) 중단됐던 작업**:
