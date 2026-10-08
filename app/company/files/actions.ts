@@ -25,8 +25,11 @@ export async function createPortalSignedUpload(
   }
   if (size > 104857600) return { error: "파일이 너무 큽니다 (최대 100MB)" };
 
-  const safeName = filename.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
-  const path = `${profile.company_id}/portal/${Date.now()}_${safeName}`;
+  // Storage key 는 ASCII 만 허용 — 한글 파일명은 timestamp + 확장자로 저장.
+  // 원본 파일명은 files.filename 컬럼에 그대로 보존.
+  const ext = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")) : "";
+  const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, "");
+  const path = `${profile.company_id}/portal/${Date.now()}${safeExt}`;
 
   // service role 로 서명 URL 생성 (Storage RLS 우회)
   const admin = createAdminClient();
