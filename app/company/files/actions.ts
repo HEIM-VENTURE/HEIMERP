@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type ActionResult = { error?: string; success?: boolean; path?: string; signedUploadUrl?: string; token?: string };
 
-/** 포털용 서명 업로드 URL 발급 */
+/** 포털용 서명 업로드 URL 발급 (service role 로 Storage RLS bypass) */
 export async function createPortalSignedUpload(
   filename: string,
   size: number,
@@ -27,7 +28,9 @@ export async function createPortalSignedUpload(
   const safeName = filename.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
   const path = `${profile.company_id}/portal/${Date.now()}_${safeName}`;
 
-  const { data, error } = await supabase.storage
+  // service role 로 서명 URL 생성 (Storage RLS 우회)
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
     .from("company-files")
     .createSignedUploadUrl(path);
   if (error) return { error: error.message };
@@ -35,7 +38,7 @@ export async function createPortalSignedUpload(
   return { success: true, path, signedUploadUrl: data.signedUrl, token: data.token };
 }
 
-/** 업로드 완료 후 files 테이블 insert */
+/** 업로드 완료 후 files 테이블 insert (service role 로 RLS bypass + 권한은 서버 액션 내 체크) */
 export async function recordPortalFile(input: {
   path: string;
   filename: string;
@@ -56,7 +59,13 @@ export async function recordPortalFile(input: {
     return { error: "회사가 연결되어 있지 않습니다." };
   }
 
-  const { error } = await supabase.from("files").insert({
+  // 경로가 자기 회사 폴더로 시작하는지 재확인 (보안)
+  if (!input.path.startsWith(`${profile.company_id}/`)) {
+    return { error: "경로 검증 실패" };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("files").insert({
     company_id: profile.company_id,
     uploader_id: user.id,
     kind: input.kind,
@@ -73,7 +82,7 @@ export async function recordPortalFile(input: {
   return { success: true };
 }
 
-/** 다운로드용 서명 URL */
+/** 다운로드용 서명 URL (service role 로 bypass) */
 export async function getPortalFileSignedUrl(
   path: string,
 ): Promise<ActionResult & { signedUrl?: string }> {
@@ -93,7 +102,8 @@ export async function getPortalFileSignedUrl(
     return { error: "접근 권한 없음" };
   }
 
-  const { data, error } = await supabase.storage
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
     .from("company-files")
     .createSignedUrl(path, 60 * 10);
   if (error) return { error: error.message };
@@ -116,10 +126,11 @@ export async function deletePortalFile(fileId: number): Promise<ActionResult> {
     return { error: "본인이 올린 파일만 삭제할 수 있습니다." };
   }
 
+  const admin = createAdminClient();
   // Storage 삭제
-  await supabase.storage.from("company-files").remove([file.path]);
+  await admin.storage.from("company-files").remove([file.path]);
   // files 테이블 삭제
-  const { error } = await supabase.from("files").delete().eq("id", fileId);
+  const { error } = await admin.from("files").delete().eq("id", fileId);
   if (error) return { error: error.message };
 
   revalidatePath("/company/files");
