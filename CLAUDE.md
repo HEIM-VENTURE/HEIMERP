@@ -29,6 +29,8 @@
 
 **✅ 아래 중단 작업 완료 (`570c16a`, 빌드 통과).** 남은 것: admin `FILE_KIND_LABELS`(lib/labels.ts)에 세금계산서(tax_invoice) 옵션 없음 — files.kind 가 enum(file_kind)인지 DB 확인 후 추가.
 
+**🔒 보안 잠금 (`d84b3a8` + 0048 실행 완료)**: company_member 는 files 읽기 전용 · 공유 대상(source='company' 또는 tax_invoice/contract/ir_deck)만. Storage 직접 접근 없음 — 다운로드는 `getPortalFileSignedUrl(fileId)` 서버 액션만. 포털에 새 파일 기능 추가 시 이 원칙 유지.
+
 **(완료) 중단됐던 작업**:
 - /company/dashboard 에 **"핵심 자료 (세금계산서·계약서·IR Deck)"** 섹션
   - admin이 ERP에 업로드한 files 테이블 중 kind별 최신 1건씩 노출
