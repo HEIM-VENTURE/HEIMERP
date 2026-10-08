@@ -107,7 +107,7 @@ export default async function CompanyFilesPage() {
           Drive 조회 실패: {driveError}
           <br />
           <a
-            href={company.drive_folder_url ?? "#"}
+            href={company?.drive_folder_url ?? "#"}
             target="_blank"
             rel="noreferrer"
             className="text-brand hover:underline mt-2 inline-block"
@@ -128,7 +128,7 @@ export default async function CompanyFilesPage() {
               </div>
             </div>
             <a
-              href={company.drive_folder_url ?? "#"}
+              href={company?.drive_folder_url ?? "#"}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-brand text-white text-[13px] font-medium hover:opacity-90 whitespace-nowrap"
