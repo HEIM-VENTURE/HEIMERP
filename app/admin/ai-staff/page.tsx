@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bot, Bell, FileText, History, MessageSquarePlus, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { StatTile } from "@/components/ui/stat-tile";
+import { RoleCards, RoleTag, AI_ROLES, type RoleKey, type RoleStat } from "./roles";
 import { PostButtons, RevertButton, RequestForm, CancelRequestButton } from "./controls";
 
 export const dynamic = "force-dynamic";
@@ -102,7 +102,7 @@ export default async function AiStaffPage() {
   const supabase = await createClient();
   const weekAgo = daysAgoIso(7);
 
-  const [alertsRes, reportsRes, changesRes, requestsRes] = await Promise.all([
+  const [alertsRes, reportsRes, changesRes, requestsRes, lastAlertRes] = await Promise.all([
     supabase
       .from("ai_staff_posts")
       .select("id, kind, severity, title, body, company_id, status, created_at, companies(name)")
@@ -126,6 +126,13 @@ export default async function AiStaffPage() {
       .select("id, body, status, ai_reply, pr_url, created_at, profiles:requested_by(name)")
       .order("created_at", { ascending: false })
       .limit(30),
+    supabase
+      .from("ai_staff_posts")
+      .select("created_at")
+      .eq("kind", "alert")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (alertsRes.error) {
@@ -146,9 +153,25 @@ export default async function AiStaffPage() {
   const reports = (reportsRes.data ?? []) as unknown as Post[];
   const changes = (changesRes.data ?? []) as unknown as Change[];
   const requests = (requestsRes.data ?? []) as unknown as Req[];
-  const changesThisWeek = changes.filter((c) => c.created_at >= weekAgo && !c.reverted_at).length;
+  const weekChanges = (source: string) =>
+    changes.filter((c) => c.source === source && c.created_at >= weekAgo && !c.reverted_at).length;
   const activeRequests = requests.filter((r) => r.status === "open" || r.status === "in_progress").length;
   const [latestReport, ...olderReports] = reports;
+  const lastAlertAt = (lastAlertRes.data as { created_at: string } | null)?.created_at;
+
+  const roleStats: Record<RoleKey, RoleStat[]> = {
+    daily: [
+      { label: "열린 알림", value: `${alerts.length}건` },
+      { label: "이번 주 수정", value: `${weekChanges("daily")}건` },
+      { label: "최근 점검", value: lastAlertAt ? fmt(lastAlertAt) : "아직 없음" },
+    ],
+    weekly: [{ label: "최근 보고", value: latestReport ? fmt(latestReport.created_at) : "아직 없음" }],
+    voice: [{ label: "이번 주 기록", value: `${weekChanges("voice")}건` }],
+    system: [
+      { label: "처리 대기 요청", value: `${activeRequests}건` },
+      { label: "올린 PR", value: `${requests.filter((r) => r.pr_url).length}건` },
+    ],
+  };
 
   return (
     <div className="max-w-5xl space-y-5">
@@ -158,20 +181,16 @@ export default async function AiStaffPage() {
           AI 직원
         </h1>
         <p className="text-sm text-zinc-500 mt-1">
-          매일 아침 ERP 를 점검하고, 매주 월요일 현황을 보고하고, 회의 내용을 ERP 에 반영합니다. 모든 수정은 아래 기록에서 되돌릴 수 있어요.
+          담당 4명이 나눠서 일합니다. AI 가 수정한 내용은 전부 아래 기록에 남고 되돌릴 수 있어요.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <StatTile label="열린 알림" value={alerts.length} tone={alerts.some((a) => a.severity === "urgent") ? "rose" : "default"} />
-        <StatTile label="이번 주 AI 수정" value={changesThisWeek} suffix="건" tone="brand" />
-        <StatTile label="처리 대기 요청" value={activeRequests} suffix="건" tone="blue" />
-      </div>
+      <RoleCards stats={roleStats} />
 
       {/* 알림 */}
       <section className="bg-white border border-zinc-200 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-zinc-900 inline-flex items-center gap-1.5 mb-3">
-          <Bell className="w-4 h-4 text-brand" /> 확인이 필요한 것
+          <Bell className="w-4 h-4 text-brand" /> 확인이 필요한 것 <RoleTag role="daily" />
         </h2>
         {alerts.length === 0 ? (
           <div className="text-[12.5px] text-zinc-400 py-6 text-center">열린 알림이 없습니다</div>
@@ -205,7 +224,7 @@ export default async function AiStaffPage() {
       {/* 주간 보고 */}
       <section className="bg-white border border-zinc-200 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-zinc-900 inline-flex items-center gap-1.5 mb-3">
-          <FileText className="w-4 h-4 text-brand" /> 주간 보고
+          <FileText className="w-4 h-4 text-brand" /> 주간 보고 <RoleTag role="weekly" />
         </h2>
         {latestReport ? (
           <>
@@ -235,7 +254,7 @@ export default async function AiStaffPage() {
       {/* 개선 요청함 */}
       <section className="bg-white border border-zinc-200 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-zinc-900 inline-flex items-center gap-1.5 mb-1">
-          <MessageSquarePlus className="w-4 h-4 text-brand" /> 개선 요청함
+          <MessageSquarePlus className="w-4 h-4 text-brand" /> 개선 요청함 <RoleTag role="system" />
         </h2>
         <p className="text-[11.5px] text-zinc-500 mb-3">
           ERP 에서 바꾸고 싶은 점을 적어두면 AI 직원이 코드를 고쳐 검토용 제안(PR)으로 올립니다. 승인해야 반영돼요.
@@ -295,7 +314,7 @@ export default async function AiStaffPage() {
                   </div>
                   <div className="text-[12px] text-zinc-600 mt-0.5 break-words">{describeChange(c)}</div>
                   <div className="text-[11px] text-zinc-400 mt-0.5">
-                    근거: {c.reason} · {fmt(c.created_at)}
+                    {sourceName(c.source)} · 근거: {c.reason} · {fmt(c.created_at)}
                   </div>
                 </div>
                 {c.reverted_at ? null : <RevertButton id={c.id} />}
@@ -306,4 +325,8 @@ export default async function AiStaffPage() {
       </section>
     </div>
   );
+}
+
+function sourceName(source: string) {
+  return AI_ROLES.find((r) => r.key === source)?.name ?? "AI 직원";
 }
