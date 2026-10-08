@@ -26,6 +26,13 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 }
 
+/** Drive 폴더 URL 에서 folder ID 추출 */
+function extractFolderIdFromUrl(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
 export default async function CompanyFilesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -52,11 +59,15 @@ export default async function CompanyFilesPage() {
     .eq("id", companyId)
     .single();
 
+  // Drive 폴더 ID 결정 (id 없으면 url 에서 추출)
+  const folderId =
+    company?.drive_folder_id || extractFolderIdFromUrl(company?.drive_folder_url ?? null);
+
   // Drive 폴더 파일 리스트 조회
   let driveFiles: DriveFileRow[] = [];
   let driveError: string | null = null;
-  if (company?.drive_folder_id) {
-    const r = await listFilesInDriveFolder(company.drive_folder_id);
+  if (folderId) {
+    const r = await listFilesInDriveFolder(folderId);
     if (r.ok) driveFiles = r.files;
     else driveError = r.error;
   }
@@ -87,7 +98,7 @@ export default async function CompanyFilesPage() {
         <b>{company?.name}</b> · Drive 폴더 안 파일을 자동으로 분류해서 보여드립니다.
       </p>
 
-      {!company?.drive_folder_id ? (
+      {!folderId ? (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-[13px] text-amber-900">
           Drive 폴더가 아직 연결되지 않았습니다. 하임 담당자에게 문의해주세요.
         </div>
