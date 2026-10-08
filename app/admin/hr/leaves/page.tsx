@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { StatTile } from "@/components/ui/stat-tile";
 import { CalendarCheck2 } from "lucide-react";
 import { NewLeaveForm } from "./new-leave-form";
 import { LeaveList, type LeaveRow } from "./leave-list";
@@ -56,10 +57,10 @@ export default async function LeavesPage() {
     <>
       {/* 상단 요약 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Kpi label={`${thisYear} 연간 연차`} value={annual.toString()} suffix="일" />
-        <Kpi label="사용" value={usedThisYear.toString()} suffix="일" tint="#8B5CF6" />
-        <Kpi label="잔여" value={remaining.toFixed(1).replace(/\.0$/, "")} suffix="일" tint="#10B981" />
-        <Kpi label="승인 대기" value={pendingCount.toString()} suffix="건" tint="#F59E0B" />
+        <StatTile label={`${thisYear} 연간 연차`} value={annual} suffix="일" />
+        <StatTile label="사용" value={usedThisYear} suffix="일" tone="violet" />
+        <StatTile label="잔여" value={remaining.toFixed(1).replace(/\.0$/, "")} suffix="일" tone="emerald" />
+        <StatTile label="승인 대기" value={pendingCount} suffix="건" tone="amber" />
       </div>
 
       {/* 2열: 왼쪽 신청 폼 · 오른쪽 목록 */}
@@ -82,16 +83,3 @@ export default async function LeavesPage() {
   );
 }
 
-function Kpi({ label, value, suffix, tint }: { label: string; value: string; suffix?: string; tint?: string }) {
-  return (
-    <div className="bg-white border border-zinc-200 rounded-xl px-4 py-3">
-      <div className="text-[10.5px] font-medium text-zinc-500 uppercase mb-0.5">{label}</div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-[22px] font-bold tabular-nums leading-none" style={{ color: tint ?? "#1F2A36" }}>
-          {value}
-        </span>
-        {suffix ? <span className="text-[11.5px] text-zinc-500">{suffix}</span> : null}
-      </div>
-    </div>
-  );
-}

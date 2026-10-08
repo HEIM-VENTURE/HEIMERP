@@ -5,6 +5,7 @@ import { EditCell, EligibleCell, PmCell, AddTappingButton, DeleteRowButton } fro
 import { TappingFiltersBar, type TappingFilters } from "./tapping-filters";
 import { TappingSummaryCell, type TappingEvent } from "./tapping-events-panel";
 import { TappingKanban } from "./tapping-kanban";
+import { StatTile } from "@/components/ui/stat-tile";
 
 type Row = {
   id: string;
@@ -193,11 +194,11 @@ export async function TappingTable({
     <>
       {/* KPI - 실용 중심 (활성 진행 / 확약 / 드랍 / 미시작) */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-        <MiniStat label="전체 기업" value={total} suffix="곳" />
-        <MiniStat label="활성 진행" value={activeReviewing} suffix="건" tint="#8B5CF6" />
-        <MiniStat label="확약 완료" value={committed} suffix="건" tint="#10B981" />
-        <MiniStat label="드랍" value={passed} suffix="건" tint="#EF4444" />
-        <MiniStat label="미시작 기업" value={notStarted} suffix="곳" tint="#F59E0B" />
+        <StatTile label="전체 기업" value={total} suffix="곳" />
+        <StatTile label="활성 진행" value={activeReviewing} suffix="건" tone="violet" />
+        <StatTile label="확약 완료" value={committed} suffix="건" tone="emerald" />
+        <StatTile label="드랍" value={passed} suffix="건" tone="rose" />
+        <StatTile label="미시작 기업" value={notStarted} suffix="곳" tone="amber" />
       </div>
 
       {/* 투자사별 요약 뱃지 (상위 8개) */}
@@ -405,29 +406,3 @@ function Th({
   );
 }
 
-function MiniStat({
-  label,
-  value,
-  suffix,
-  tint,
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-  tint?: string;
-}) {
-  return (
-    <div className="bg-white border border-zinc-200 rounded-xl px-4 py-3">
-      <div className="text-[10.5px] font-medium text-zinc-500 uppercase mb-0.5">{label}</div>
-      <div className="flex items-baseline gap-1">
-        <span
-          className="text-[22px] font-bold tabular-nums leading-none"
-          style={{ color: tint ?? "#1F2A36" }}
-        >
-          {value}
-        </span>
-        {suffix ? <span className="text-[11.5px] text-zinc-500">{suffix}</span> : null}
-      </div>
-    </div>
-  );
-}
