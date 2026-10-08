@@ -6,12 +6,28 @@ import {
   User,
   TrendingUp,
   Sparkles,
+  FolderOpen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { stageMeta, ZONE_META } from "@/lib/growth-stages";
 import { JCurveSvgLarge } from "@/app/admin/companies/[id]/jcurve-card";
+import { KeyFileClickable } from "./key-file-clickable";
 
 export const dynamic = "force-dynamic";
+
+type KeyFile = {
+  id: number;
+  filename: string;
+  url: string;
+  kind: string;
+  created_at: string;
+};
+
+const KEY_FILE_KINDS = [
+  { kind: "tax_invoice", label: "세금계산서" },
+  { kind: "contract", label: "계약서" },
+  { kind: "ir_deck", label: "IR Deck" },
+];
 
 const STATUS_LABEL: Record<string, string> = {
   contacted: "컨택",
@@ -65,7 +81,7 @@ export default async function CompanyDashboardPage() {
     );
   }
 
-  const [companyRes, tappingRes, notesRes] = await Promise.all([
+  const [companyRes, tappingRes, notesRes, filesRes] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
     supabase
       .from("investor_tappings")
@@ -79,6 +95,12 @@ export default async function CompanyDashboardPage() {
       .eq("pinned", true)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("files")
+      .select("id, filename, url, kind, created_at")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
 
   const company = companyRes.data;
@@ -108,6 +130,13 @@ export default async function CompanyDashboardPage() {
   }
 
   const notes = notesRes.data ?? [];
+
+  // kind별 최신 1건 (files 는 created_at desc 정렬 상태)
+  const files = (filesRes.data ?? []) as KeyFile[];
+  const keyFiles = KEY_FILE_KINDS.map((k) => ({
+    ...k,
+    file: files.find((f) => f.kind === k.kind) ?? null,
+  }));
   const current = stageMeta(company.growth_stage);
   const zoneMeta = current ? ZONE_META[current.zone] : null;
 
@@ -319,6 +348,34 @@ export default async function CompanyDashboardPage() {
         )}
       </section>
 
+      {/* 핵심 자료 */}
+      <section className="bg-white border border-zinc-200 rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-zinc-900 inline-flex items-center gap-1.5 mb-3">
+          <FolderOpen className="w-4 h-4 text-brand" />
+          핵심 자료
+          <span className="text-[11px] text-zinc-400 font-normal">· 하임이 공유한 최신 파일</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          {keyFiles.map(({ kind, label, file }) =>
+            file ? (
+              <KeyFileClickable
+                key={kind}
+                label={label}
+                fileId={file.id}
+                filename={file.filename}
+                path={file.url}
+                createdAt={file.created_at}
+              />
+            ) : (
+              <div key={kind} className="p-3 rounded-lg bg-zinc-50/60 border border-dashed border-zinc-200">
+                <div className="text-[11.5px] font-semibold text-zinc-400 mb-1">{label}</div>
+                <div className="text-[12px] text-zinc-400">아직 공유된 파일 없음</div>
+              </div>
+            ),
+          )}
+        </div>
+      </section>
+
       {/* 담당자 공유 메모 */}
       {notes.length > 0 ? (
         <section className="bg-white border border-zinc-200 rounded-xl p-5">
@@ -337,7 +394,7 @@ export default async function CompanyDashboardPage() {
       ) : null}
 
       <div className="pt-4 border-t border-zinc-200 text-[11.5px] text-zinc-400">
-        정보가 다르거나 수정이 필요하시면 담당 PM{pm ? ` (${pm})` : ""}에게 알려주세요. 자료 공유 메뉴는 Phase 3에서 열립니다.
+        정보가 다르거나 수정이 필요하시면 담당 PM{pm ? ` (${pm})` : ""}에게 알려주세요. 전체 자료는 &lsquo;내 자료&rsquo; 메뉴에서 확인할 수 있습니다.
       </div>
     </div>
   );
