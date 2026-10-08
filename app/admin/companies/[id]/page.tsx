@@ -452,16 +452,27 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           - 좌측 (넓음, 이력·활동·산출물): 활동 피드 → 계약 → 자료 → 프로젝트/투자딜 placeholder
           - 우측 (좁음, 요약·참조, lg 이상 sticky): 기본 정보 → TIPS → 진행중 To-do
           - lg 미만: 자동 세로 스택 */}
+      {/* 성장 단계 J-커브 (Hero 바로 아래 full-width) */}
+      <div className="mb-6">
+        <JCurveCard
+          companyId={company.id}
+          currentStep={company.growth_stage}
+          note={company.growth_stage_note}
+          inferInput={{
+            last_year_revenue: company.last_year_revenue,
+            headcount: (company.custom_fields as { headcount?: number } | null)?.headcount ?? null,
+            founded_at: company.founded_at,
+            committed_count: investorEvents.filter((e) => e.status === "committed").length,
+            interested_count: investorEvents.filter((e) => e.status === "interested" || e.status === "reviewing").length,
+            passed_count: investorEvents.filter((e) => e.status === "passed").length,
+            consulting_stage: company.consulting_stage,
+          }}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── 좌측 (이력·활동) ── */}
         <div className="lg:col-span-2 space-y-6 min-w-0">
-          {/* 성장 단계 J-커브 (최상단 하이라이트) */}
-          <JCurveCard
-            companyId={company.id}
-            currentStep={company.growth_stage}
-            note={company.growth_stage_note}
-          />
-
           {/* 담당자 노트 타임라인 */}
           <NotesTimeline
             companyId={company.id}
