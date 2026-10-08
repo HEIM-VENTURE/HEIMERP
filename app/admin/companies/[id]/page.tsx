@@ -38,6 +38,7 @@ import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
 import { DeleteCompanyButton } from "./delete-company-button";
 import { FollowupCard } from "./followup-card";
 import { NotesTimeline } from "./notes-timeline";
+import { InvestorTappingCard } from "./investor-tapping-card";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const { id } = await params;
   const supabase = await createClient();
 
-  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes, notesRes] = await Promise.all([
+  const [companyRes, historyRes, meetingsRes, todosRes, filesRes, contractsRes, tipsListRes, matchesRes, applicationRes, notesRes, investorTappingRes] = await Promise.all([
     supabase
       .from("companies")
       .select("*")
@@ -131,6 +132,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
       .eq("company_id", id)
       .order("pinned", { ascending: false })
       .order("created_at", { ascending: false }),
+    supabase
+      .from("investor_tappings")
+      .select("id, personal_fund_eligible, lips_eligible, tips_eligible, progress_status, confirmed_operator, pm")
+      .eq("company_id", id)
+      .maybeSingle(),
   ]);
 
   const company = companyRes.data as Company | null;
@@ -164,6 +170,33 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
+
+  // 투자사 태핑 이벤트 조회
+  const investorTapping = investorTappingRes.data as {
+    id: string;
+    personal_fund_eligible: string | null;
+    lips_eligible: string | null;
+    tips_eligible: string | null;
+    progress_status: string | null;
+    confirmed_operator: string | null;
+    pm: string | null;
+  } | null;
+  let investorEvents: {
+    id: string;
+    sequence: number;
+    operator: string;
+    status: string;
+    contact_date: string | null;
+    notes: string | null;
+  }[] = [];
+  if (investorTapping?.id) {
+    const { data: evs } = await supabase
+      .from("tapping_events")
+      .select("id, sequence, operator, status, contact_date, notes")
+      .eq("tapping_id", investorTapping.id)
+      .order("sequence", { ascending: true });
+    investorEvents = (evs ?? []) as typeof investorEvents;
+  }
   const tipsList = (tipsListRes.data as { id: string; name: string; assigned_pm: string | null; focus_area: string | null }[]) ?? [];
   const tipsMatches = (matchesRes.data as { id: number; tips_operator_id: string; valuation: number | null; investment: number | null; program: "TIPS" | "LIPS" }[]) ?? [];
   const application = applicationRes.data as { id: string; application_no: string; received_at: string; status: string } | null;
@@ -425,6 +458,9 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             notes={notes}
             currentUserId={currentUser?.id ?? null}
           />
+
+          {/* 투자사 태핑 현황 */}
+          <InvestorTappingCard tapping={investorTapping} events={investorEvents} />
 
           {/* 활동 피드 */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">
