@@ -10,6 +10,38 @@ export type DriveFolderResult =
   | { ok: true; url: string; id: string; existed: boolean }
   | { ok: false; error: string };
 
+export type DriveFolderListResult =
+  | { ok: true; folders: { name: string; id: string; url: string }[] }
+  | { ok: false; error: string };
+
+/** 지정 상위 폴더의 하위 폴더 전부 조회 */
+export async function listDriveFolders(): Promise<DriveFolderListResult> {
+  const url = process.env.DRIVE_WEBHOOK_URL;
+  const secret = process.env.DRIVE_WEBHOOK_SECRET;
+  if (!url || !secret) return { ok: false, error: "DRIVE_WEBHOOK_URL / DRIVE_WEBHOOK_SECRET 미설정" };
+
+  try {
+    const sep = url.includes("?") ? "&" : "?";
+    const fullUrl = `${url}${sep}action=list&secret=${encodeURIComponent(secret)}`;
+    const res = await fetch(fullUrl, {
+      method: "GET",
+      cache: "no-store",
+      redirect: "follow",
+    });
+    const text = await res.text();
+    let data: { folders?: { name: string; id: string; url: string }[]; error?: string } = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { ok: false, error: `invalid response: ${text.slice(0, 200)}` };
+    }
+    if (data.error) return { ok: false, error: data.error };
+    return { ok: true, folders: data.folders ?? [] };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export async function createDriveFolderForCompany(
   companyName: string,
 ): Promise<DriveFolderResult> {

@@ -13,6 +13,7 @@ import {
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { PipelineFilters } from "./filters";
 import { NewCompanyModal } from "./company-modals";
+import { DriveSyncButton } from "./drive-sync-button";
 
 export const dynamic = "force-dynamic";
 
@@ -154,7 +155,8 @@ export default async function PipelinePage({
           <h1 className="text-2xl font-bold text-zinc-900">기업 파이프라인</h1>
           <p className="text-sm text-zinc-500 mt-1">한 화면에 모든 기업과 단계</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <DriveSyncButton />
           <NewCompanyModal label="+ 신규 기업" />
         </div>
       </div>
