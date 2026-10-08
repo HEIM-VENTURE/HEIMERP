@@ -77,7 +77,7 @@ export async function recordCompanyFileAction(
   if (authError) return { error: authError };
 
   if (!path || !filename) return { error: "경로/파일명 누락" };
-  if (size > 52428800) return { error: "파일이 너무 큽니다 (최대 50MB)" };
+  if (size > 104857600) return { error: "파일이 너무 큽니다 (최대 100MB)" };
 
   const admin = createAdminClient();
 

@@ -45,8 +45,8 @@ export function FileManager({
       setError("파일을 선택하세요");
       return;
     }
-    if (file.size > 52428800) {
-      setError("파일이 너무 큽니다 (최대 50MB)");
+    if (file.size > 104857600) {
+      setError("파일이 너무 큽니다 (최대 100MB)");
       return;
     }
 
