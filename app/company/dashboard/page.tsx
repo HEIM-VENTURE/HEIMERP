@@ -6,10 +6,28 @@ import {
   User,
   TrendingUp,
   Sparkles,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { stageMeta, ZONE_META } from "@/lib/growth-stages";
 import { JCurveSvgLarge } from "@/app/admin/companies/[id]/jcurve-card";
+import { listFilesInDriveFolder } from "@/lib/google-drive";
+import { inferKindFromFilename } from "@/lib/kind-matcher";
+
+function extractFolderIdFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function formatRelative(iso: string): string {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (d === 0) return "오늘";
+  if (d < 7) return `${d}일 전`;
+  if (d < 30) return `${Math.floor(d / 7)}주 전`;
+  return `${Math.floor(d / 30)}개월 전`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +98,27 @@ export default async function CompanyDashboardPage() {
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
+
+  // Drive 폴더에서 IR Deck 최신 파일 조회
+  let latestIrDeck: { name: string; url: string; modifiedAt: string } | null = null;
+  const companyForDrive = companyRes.data as { drive_folder_id?: string | null; drive_folder_url?: string | null } | null;
+  const folderId =
+    companyForDrive?.drive_folder_id ||
+    extractFolderIdFromUrl(companyForDrive?.drive_folder_url ?? null);
+  if (folderId) {
+    const r = await listFilesInDriveFolder(folderId);
+    if (r.ok) {
+      const irFiles = r.files.filter((f) => inferKindFromFilename(f.name) === "ir_deck" || /ir[\s_-]*deck|ir자료|피치/i.test(f.name));
+      if (irFiles.length > 0) {
+        irFiles.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+        latestIrDeck = {
+          name: irFiles[0].name,
+          url: irFiles[0].url,
+          modifiedAt: irFiles[0].modifiedAt,
+        };
+      }
+    }
+  }
 
   const company = companyRes.data;
   if (!company) {
@@ -271,6 +310,44 @@ export default async function CompanyDashboardPage() {
           ) : null}
         </section>
       </div>
+
+      {/* 최신 IR Deck */}
+      {latestIrDeck ? (
+        <section className="bg-white border border-zinc-200 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-zinc-900 inline-flex items-center gap-1.5">
+              <FileText className="w-4 h-4 text-brand" />
+              최신 IR Deck
+            </h2>
+            <a
+              href={latestIrDeck.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] text-brand hover:underline inline-flex items-center gap-0.5"
+            >
+              Drive 열기 <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          <a
+            href={latestIrDeck.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg bg-brand/5 border border-brand/20 hover:bg-brand/10 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-semibold text-zinc-900 truncate">
+                {latestIrDeck.name}
+              </div>
+              <div className="text-[11.5px] text-zinc-500 mt-0.5">
+                마지막 수정 {formatRelative(latestIrDeck.modifiedAt)}
+              </div>
+            </div>
+          </a>
+        </section>
+      ) : null}
 
       {/* 투자사 태핑 */}
       <section className="bg-white border border-zinc-200 rounded-xl p-5">

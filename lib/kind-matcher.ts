@@ -11,6 +11,7 @@ export const KIND_PATTERNS: { kind: string; patterns: RegExp[] }[] = [
   { kind: "revenue_forecast", patterns: [/예상\s*매출|매출\s*계획|매출\s*전망/i] },
   { kind: "company_intro", patterns: [/회사\s*소개|소개서|회사\s*개요/i] },
   { kind: "exec_profile", patterns: [/경영진|이력서?|프로필|대표.*이력/i] },
+  { kind: "ir_deck", patterns: [/ir[\s_-]*deck|ir자료|피치/i] },
 ];
 
 /** 파일명으로 kind 추론 (못 찾으면 null) */
