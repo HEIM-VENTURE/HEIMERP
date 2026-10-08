@@ -40,6 +40,7 @@ import { FollowupCard } from "./followup-card";
 import { NotesTimeline } from "./notes-timeline";
 import { InvestorTappingCard } from "./investor-tapping-card";
 import { JCurveCard } from "./jcurve-card";
+import { CompanyPortalUsers, type PortalUser } from "./company-portal-users";
 
 export const dynamic = "force-dynamic";
 
@@ -173,6 +174,13 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
   const {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
+
+  // 이 기업에 연결된 포털 사용자들 (company_member)
+  const { data: portalUsersData } = await supabase
+    .from("profiles")
+    .select("id, email, name, role")
+    .eq("company_id", company.id);
+  const portalUsers = (portalUsersData ?? []) as PortalUser[];
 
   // 투자사 태핑 이벤트 조회
   const investorTapping = investorTappingRes.data as {
@@ -753,6 +761,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
             )}
           </div>
         </aside>
+      </div>
+
+      {/* 기업 포털 사용자 매핑 */}
+      <div className="mt-8">
+        <CompanyPortalUsers companyId={company.id} users={portalUsers} />
       </div>
 
       {/* 위험 구역 · 기업 완전 삭제 */}
