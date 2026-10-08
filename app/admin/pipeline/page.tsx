@@ -27,6 +27,10 @@ type Company = {
   main_item: string | null;
   received_at: string;
   started_at: string | null;
+  last_contact_at: string | null;
+  next_action: string | null;
+  next_action_due: string | null;
+  drive_folder_url: string | null;
   notes: string | null;
   drop_reason: string | null;
   custom_fields: { pm?: string } | null;
@@ -74,7 +78,7 @@ export default async function PipelinePage({
   let listQuery = supabase
     .from("companies")
     .select(
-      "id, name, sales_stage, consulting_stage, program_grade, proposal_amount, address, main_item, received_at, started_at, notes, drop_reason, custom_fields"
+      "id, name, sales_stage, consulting_stage, program_grade, proposal_amount, address, main_item, received_at, started_at, notes, drop_reason, custom_fields, last_contact_at, next_action, next_action_due, drive_folder_url"
     );
 
   if (sortCol) {
@@ -249,15 +253,36 @@ export default async function PipelinePage({
                 <tr key={c.id} className={`hover:bg-zinc-50/70 group transition-colors ${c.drop_reason ? "opacity-60" : ""}`}>
                   <td className="px-5 py-3.5">
                     <Link href={`/admin/companies/${c.id}`} className="block">
-                      <div className="font-medium text-zinc-900 group-hover:text-zinc-950 truncate flex items-center gap-1.5">
+                      <div className="font-medium text-zinc-900 group-hover:text-zinc-950 truncate flex items-center gap-1.5 flex-wrap">
                         {c.drop_reason ? (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">드랍</span>
                         ) : null}
                         <span className="truncate">{c.name}</span>
+                        {(() => {
+                          if (c.drop_reason) return null;
+                          if (!c.last_contact_at) {
+                            return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 shrink-0">접촉 기록 없음</span>;
+                          }
+                          const days = Math.floor((Date.now() - new Date(c.last_contact_at).getTime()) / 86400000);
+                          if (days >= 30) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0 font-semibold">방치 {days}일</span>;
+                          if (days >= 14) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">{days}일 전</span>;
+                          return null;
+                        })()}
+                        {c.next_action_due && !c.drop_reason ? (() => {
+                          const diff = Math.floor((new Date(c.next_action_due).getTime() - Date.now()) / 86400000);
+                          if (diff < 0) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0 font-semibold">마감 {-diff}일 지남</span>;
+                          if (diff <= 3) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">D-{diff}</span>;
+                          return null;
+                        })() : null}
                       </div>
                       {c.main_item || c.address ? (
                         <div className="text-xs text-zinc-400 truncate">
                           {[c.main_item, c.address].filter(Boolean).join(" · ")}
+                        </div>
+                      ) : null}
+                      {c.next_action && !c.drop_reason ? (
+                        <div className="text-[11px] text-zinc-500 truncate mt-0.5">
+                          <span className="text-zinc-400">▸</span> {c.next_action}
                         </div>
                       ) : null}
                     </Link>

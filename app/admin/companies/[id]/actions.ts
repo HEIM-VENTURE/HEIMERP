@@ -223,6 +223,10 @@ const EDITABLE_COMPANY_FIELDS = [
   "last_year_revenue",
   "inquiry_purpose",
   "notes",
+  "drive_folder_url",
+  "next_action",
+  "next_action_due",
+  "last_contact_at",
 ] as const;
 type EditableCompanyField = (typeof EDITABLE_COMPANY_FIELDS)[number];
 
@@ -269,13 +273,13 @@ export async function updateCompanyField(
       continue;
     }
 
-    if (key === "founded_at") {
+    if (key === "founded_at" || key === "next_action_due" || key === "last_contact_at") {
       if (raw === null || raw === "" || raw === undefined) {
         clean[key] = null;
       } else if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
         clean[key] = raw.trim();
       } else {
-        return { ok: false, error: "설립일은 YYYY-MM-DD 형식이어야 합니다." };
+        return { ok: false, error: `${key}는 YYYY-MM-DD 형식이어야 합니다.` };
       }
       continue;
     }

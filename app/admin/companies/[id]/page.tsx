@@ -36,6 +36,7 @@ import { EditCompanyModal } from "../../pipeline/company-modals";
 import { FileManager } from "./file-manager";
 import { MeetingViewer, type MeetingRow } from "./meeting-viewer";
 import { DeleteCompanyButton } from "./delete-company-button";
+import { FollowupCard } from "./followup-card";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,11 @@ type Company = {
   started_at: string | null;
   notes: string | null;
   custom_fields?: { pm?: string } | null;
+  drive_folder_url: string | null;
+  drive_folder_id: string | null;
+  next_action: string | null;
+  next_action_due: string | null;
+  last_contact_at: string | null;
 };
 
 // 통합 단계 정의 (영업 5 + 컨설팅 8 - 'kickoff' 중복 제거 = 12개)
@@ -500,6 +506,15 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
 
         {/* ── 우측 (요약·참조 · lg 이상 sticky) ── */}
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start min-w-0">
+          {/* 후속 관리 카드 (최상단) */}
+          <FollowupCard
+            companyId={company.id}
+            driveUrl={company.drive_folder_url}
+            nextAction={company.next_action}
+            nextActionDue={company.next_action_due}
+            lastContactAt={company.last_contact_at}
+          />
+
           {/* 기본 정보 (셀 클릭 인라인 편집) */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
