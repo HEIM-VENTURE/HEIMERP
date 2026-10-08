@@ -481,7 +481,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<Pa
           />
 
           {/* 투자사 태핑 현황 */}
-          <InvestorTappingCard tapping={investorTapping} events={investorEvents} />
+          <InvestorTappingCard
+            companyId={company.id}
+            tapping={investorTapping}
+            events={investorEvents}
+          />
 
           {/* 활동 피드 */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6">

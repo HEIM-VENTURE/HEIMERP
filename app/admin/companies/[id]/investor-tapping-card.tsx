@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Coins, ArrowRight } from "lucide-react";
+import { updateTappingField, type TappingField } from "../../deals/tapping-actions";
 
 type Props = {
+  companyId: number;
   tapping: {
     id: string;
     personal_fund_eligible: string | null;
@@ -41,28 +47,8 @@ const STATUS_STYLE: Record<string, string> = {
   hold: "bg-stone-100 text-stone-700",
 };
 
-const ELIGIBLE_STYLE: Record<string, string> = {
-  "여": "bg-emerald-100 text-emerald-700",
-  "부": "bg-rose-100 text-rose-700",
-  "대기중": "bg-amber-100 text-amber-700",
-};
-
-export function InvestorTappingCard({ tapping, events }: Props) {
-  const eligibleBadge = (label: string, val: string | null) => {
-    if (!val) return (
-      <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-400">
-        <span className="font-semibold">{label}</span> —
-      </span>
-    );
-    const cls = ELIGIBLE_STYLE[val] ?? "bg-zinc-100 text-zinc-500";
-    return (
-      <span className={`inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded ${cls}`}>
-        <span className="font-semibold">{label}</span> {val}
-      </span>
-    );
-  };
-
-  // 투자사별 그룹 (한 투자사 여러 이벤트)
+export function InvestorTappingCard({ companyId, tapping, events }: Props) {
+  // 투자사별 그룹
   const byOperator = new Map<string, typeof events>();
   for (const e of events) {
     const arr = byOperator.get(e.operator) ?? [];
@@ -88,11 +74,29 @@ export function InvestorTappingCard({ tapping, events }: Props) {
         </Link>
       </div>
 
-      {/* 자격·확정 운영사 요약 */}
+      {/* 자격 뱃지 (클릭 → 드롭다운 수정) */}
       <div className="flex items-center gap-1.5 flex-wrap mb-4 pb-3 border-b border-zinc-100">
-        {eligibleBadge("LIPS", tapping?.lips_eligible ?? null)}
-        {eligibleBadge("TIPS", tapping?.tips_eligible ?? null)}
-        {eligibleBadge("개투조합", tapping?.personal_fund_eligible ?? null)}
+        <EligibleToggle
+          tappingId={tapping?.id ?? null}
+          companyId={companyId}
+          field="lips_eligible"
+          label="LIPS"
+          value={tapping?.lips_eligible ?? null}
+        />
+        <EligibleToggle
+          tappingId={tapping?.id ?? null}
+          companyId={companyId}
+          field="tips_eligible"
+          label="TIPS"
+          value={tapping?.tips_eligible ?? null}
+        />
+        <EligibleToggle
+          tappingId={tapping?.id ?? null}
+          companyId={companyId}
+          field="personal_fund_eligible"
+          label="개투조합"
+          value={tapping?.personal_fund_eligible ?? null}
+        />
         {tapping?.confirmed_operator ? (
           <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded bg-brand/10 text-brand font-semibold">
             ✓ 운영사 확정 · {tapping.confirmed_operator}
@@ -153,6 +157,72 @@ export function InvestorTappingCard({ tapping, events }: Props) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/** 뱃지 클릭 → 드롭다운. 저장 시 investor_tappings UPDATE */
+function EligibleToggle({
+  tappingId,
+  companyId,
+  field,
+  label,
+  value: initialValue,
+}: {
+  tappingId: string | null;
+  companyId: number;
+  field: TappingField;
+  label: string;
+  value: string | null;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(initialValue ?? "");
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setValue(initialValue ?? "");
+  }, [initialValue]);
+
+  const change = (next: string) => {
+    if (!tappingId) {
+      alert("투자사 태핑 레코드가 없습니다. 투자 딜 보드에서 먼저 추가해주세요.");
+      return;
+    }
+    if (next === value) return;
+    start(async () => {
+      const res = await updateTappingField(tappingId, field, next);
+      if (res.error) {
+        alert(`저장 실패: ${res.error}`);
+        return;
+      }
+      setValue(next);
+      router.refresh();
+    });
+  };
+
+  const cls =
+    value === "여"
+      ? "bg-emerald-100 text-emerald-700"
+      : value === "부"
+      ? "bg-rose-100 text-rose-700"
+      : value === "대기중"
+      ? "bg-amber-100 text-amber-700"
+      : "bg-zinc-100 text-zinc-400";
+
+  return (
+    <div className="relative inline-flex items-center">
+      <select
+        value={value}
+        onChange={(e) => change(e.target.value)}
+        disabled={pending || !tappingId}
+        title={!tappingId ? "투자 딜 보드에서 먼저 추가해주세요" : `${label} 자격 변경`}
+        className={`text-[10.5px] font-semibold px-1.5 py-0.5 rounded appearance-none cursor-pointer ${cls} ${pending ? "opacity-60" : ""}`}
+      >
+        <option value="">{label} 미입력</option>
+        <option value="여">{label} 여</option>
+        <option value="부">{label} 부</option>
+        <option value="대기중">{label} 대기중</option>
+      </select>
     </div>
   );
 }
