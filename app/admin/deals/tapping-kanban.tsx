@@ -40,7 +40,9 @@ const COLUMNS: { key: ColumnKey; label: string; bg: string; header: string }[] =
 
 function bucketFor(row: CardRow): ColumnKey {
   if (row.events.length === 0) return "none";
-  return row.events[row.events.length - 1].status;
+  const last = row.events[row.events.length - 1];
+  const validStatuses: EventStatus[] = ["contacted", "meeting", "reviewing", "interested", "committed", "passed", "hold"];
+  return validStatuses.includes(last.status) ? last.status : "contacted";
 }
 
 export function TappingKanban({
@@ -174,7 +176,7 @@ export function TappingKanban({
 
 function KanbanCard({ row, isMine }: { row: CardRow; isMine: boolean }) {
   const last = row.events[row.events.length - 1];
-  const c = last ? STATUS_COLOR[last.status] : null;
+  const c = last ? (STATUS_COLOR[last.status] ?? STATUS_COLOR.contacted) : null;
 
   return (
     <div
@@ -253,23 +255,24 @@ function KanbanCard({ row, isMine }: { row: CardRow; isMine: boolean }) {
         ) : (
           <div className="space-y-1">
             {row.events.map((e) => {
-              const sc = STATUS_COLOR[e.status];
+              const sc = STATUS_COLOR[e.status] ?? STATUS_COLOR.contacted;
+              const label = STATUS_LABEL[e.status] ?? String(e.status ?? "—");
               return (
                 <div
                   key={e.id}
                   className="flex items-center gap-1.5 text-[11px] leading-tight"
                 >
                   <span className="text-zinc-400 font-mono tabular-nums shrink-0 w-8">
-                    {e.sequence}차
+                    {e.sequence ?? "?"}차
                   </span>
                   <span
                     className="inline-flex items-center px-1 rounded text-[9.5px] font-semibold shrink-0"
                     style={{ background: sc.bg, color: sc.text }}
                   >
-                    {STATUS_LABEL[e.status]}
+                    {label}
                   </span>
                   <span className="text-zinc-800 font-medium truncate min-w-0">
-                    {e.operator}
+                    {e.operator ?? "—"}
                   </span>
                 </div>
               );
