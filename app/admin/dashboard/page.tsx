@@ -37,7 +37,7 @@ export default async function AdminDashboardPage() {
   const [companiesRes, contractsRes, imminentRes, profileRes] = await Promise.all([
     supabase
       .from("companies")
-      .select("id, sales_stage, consulting_stage, received_at, name, updated_at"),
+      .select("id, sales_stage, consulting_stage, received_at, name, updated_at, custom_fields, drop_reason, last_contact_at, next_action, next_action_due"),
     supabase.from("contracts").select("id, total_amount"),
     supabase
       .from("todos")
@@ -89,6 +89,54 @@ export default async function AdminDashboardPage() {
         new Date((a as any).updated_at ?? a.received_at).getTime()
     )
     .slice(0, 5);
+
+  // ── 후속 관리 알림 집계 (방치 / 다음 액션) ──
+  const nowTime = Date.now();
+  type FollowupRow = {
+    id: number;
+    name: string;
+    pm: string;
+    last_contact_at: string | null;
+    next_action: string | null;
+    next_action_due: string | null;
+    daysSinceContact: number | null;
+    dueDiff: number | null;
+  };
+  const followupRows: FollowupRow[] = allCompanies
+    .filter((c: any) => !c.drop_reason)
+    .map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      pm: c.custom_fields?.pm ?? "미지정",
+      last_contact_at: c.last_contact_at,
+      next_action: c.next_action,
+      next_action_due: c.next_action_due,
+      daysSinceContact: c.last_contact_at
+        ? Math.floor((nowTime - new Date(c.last_contact_at).getTime()) / 86400000)
+        : null,
+      dueDiff: c.next_action_due
+        ? Math.floor((new Date(c.next_action_due).getTime() - nowTime) / 86400000)
+        : null,
+    }));
+  const dueOverdue = followupRows
+    .filter((r) => r.dueDiff !== null && r.dueDiff < 0)
+    .sort((a, b) => (a.dueDiff ?? 0) - (b.dueDiff ?? 0));
+  const dueSoon = followupRows
+    .filter((r) => r.dueDiff !== null && r.dueDiff >= 0 && r.dueDiff <= 3)
+    .sort((a, b) => (a.dueDiff ?? 0) - (b.dueDiff ?? 0));
+  const stale30 = followupRows
+    .filter((r) => r.daysSinceContact !== null && r.daysSinceContact >= 30)
+    .sort((a, b) => (b.daysSinceContact ?? 0) - (a.daysSinceContact ?? 0));
+  const stale14 = followupRows.filter(
+    (r) => r.daysSinceContact !== null && r.daysSinceContact >= 14 && r.daysSinceContact < 30
+  );
+  // 로그인한 사용자가 담당 PM 인 것만 (내 담당 하이라이트)
+  const mine = {
+    overdue: dueOverdue.filter((r) => r.pm === adminName),
+    soon: dueSoon.filter((r) => r.pm === adminName),
+    stale30: stale30.filter((r) => r.pm === adminName),
+  };
+  const myTotal = mine.overdue.length + mine.soon.length + mine.stale30.length;
 
   const now = new Date();
 
@@ -246,6 +294,21 @@ export default async function AdminDashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* ═══════════════════════════════════════════════
+          Section · 후속 관리 알림 (방치 기업 · 다음 액션 마감)
+         ═══════════════════════════════════════════════ */}
+      <FollowupAlertCard
+        adminName={adminName}
+        myTotal={myTotal}
+        myOverdue={mine.overdue}
+        mySoon={mine.soon}
+        myStale30={mine.stale30}
+        allOverdue={dueOverdue}
+        allSoon={dueSoon}
+        allStale30={stale30}
+        stale14Count={stale14.length}
+      />
 
       {/* ═══════════════════════════════════════════════
           Section 3 — 파이프라인 · 최근 활동
@@ -529,4 +592,185 @@ function timeAgo(iso: string): string {
   if (days < 7) return `${days}일 전`;
   const d = new Date(iso);
   return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+
+type FollowupMini = {
+  id: number;
+  name: string;
+  pm: string;
+  last_contact_at: string | null;
+  next_action: string | null;
+  next_action_due: string | null;
+  daysSinceContact: number | null;
+  dueDiff: number | null;
+};
+
+function FollowupAlertCard({
+  adminName,
+  myTotal,
+  myOverdue,
+  mySoon,
+  myStale30,
+  allOverdue,
+  allSoon,
+  allStale30,
+  stale14Count,
+}: {
+  adminName: string;
+  myTotal: number;
+  myOverdue: FollowupMini[];
+  mySoon: FollowupMini[];
+  myStale30: FollowupMini[];
+  allOverdue: FollowupMini[];
+  allSoon: FollowupMini[];
+  allStale30: FollowupMini[];
+  stale14Count: number;
+}) {
+  const totalUrgent = allOverdue.length + allSoon.length + allStale30.length;
+  if (totalUrgent === 0 && stale14Count === 0) {
+    return (
+      <div className="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-[12.5px] text-emerald-700">
+        ✅ 지금 급한 후속 관리 건이 없습니다. 모든 기업이 정상 흐름.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-5">
+      {/* 헤더 */}
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <h2 className="text-[15.5px] font-bold text-zinc-900 flex items-center gap-2">
+            🔔 후속 관리 알림
+            {myTotal > 0 ? (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                내 담당 {myTotal}건
+              </span>
+            ) : null}
+          </h2>
+          <p className="text-[12px] text-zinc-500 mt-0.5">
+            마감 지남 · D-3 · 30일 방치 기업을 자동으로 추립니다. 매일 평일 09:00 Slack 알림도 발송.
+          </p>
+        </div>
+        <Link
+          href="/admin/pipeline"
+          className="text-[11.5px] text-brand hover:underline whitespace-nowrap"
+        >
+          전체 파이프라인 →
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* 마감 지남 */}
+        <AlertBucket
+          title="⏰ 마감 지남"
+          tone="rose"
+          mine={myOverdue}
+          all={allOverdue}
+          adminName={adminName}
+          renderMeta={(r) =>
+            `${-(r.dueDiff ?? 0)}일 지남${r.next_action ? ` · ${r.next_action}` : ""}`
+          }
+        />
+        {/* D-3 */}
+        <AlertBucket
+          title="🔔 D-3 이내"
+          tone="amber"
+          mine={mySoon}
+          all={allSoon}
+          adminName={adminName}
+          renderMeta={(r) =>
+            `${r.dueDiff === 0 ? "오늘" : `D-${r.dueDiff}`}${r.next_action ? ` · ${r.next_action}` : ""}`
+          }
+        />
+        {/* 방치 30일+ */}
+        <AlertBucket
+          title="🚨 방치 30일+"
+          tone="zinc"
+          mine={myStale30}
+          all={allStale30}
+          adminName={adminName}
+          renderMeta={(r) => `${r.daysSinceContact}일 접촉 없음`}
+        />
+      </div>
+
+      {stale14Count > 0 ? (
+        <div className="mt-3 text-[11.5px] text-zinc-500 text-center">
+          + 14~30일 접촉 없음 {stale14Count}곳 ·{" "}
+          <Link href="/admin/pipeline" className="text-brand hover:underline">
+            전체 파이프라인에서 보기 →
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AlertBucket({
+  title,
+  tone,
+  mine,
+  all,
+  adminName,
+  renderMeta,
+}: {
+  title: string;
+  tone: "rose" | "amber" | "zinc";
+  mine: FollowupMini[];
+  all: FollowupMini[];
+  adminName: string;
+  renderMeta: (r: FollowupMini) => string;
+}) {
+  const toneCls = {
+    rose: "border-rose-200 bg-rose-50/40",
+    amber: "border-amber-200 bg-amber-50/40",
+    zinc: "border-zinc-200 bg-zinc-50/40",
+  }[tone];
+  const titleCls = {
+    rose: "text-rose-700",
+    amber: "text-amber-700",
+    zinc: "text-zinc-700",
+  }[tone];
+
+  const others = all.filter((r) => r.pm !== adminName);
+  const combined = [...mine, ...others].slice(0, 8);
+
+  return (
+    <div className={`rounded-xl border p-3.5 ${toneCls}`}>
+      <div className="flex items-center justify-between mb-2.5">
+        <h3 className={`text-[13px] font-semibold ${titleCls}`}>{title}</h3>
+        <span className="text-[11px] font-semibold text-zinc-700 tabular-nums">
+          {all.length}건
+        </span>
+      </div>
+      {combined.length === 0 ? (
+        <div className="text-[11.5px] text-zinc-400 py-2">없음</div>
+      ) : (
+        <ul className="space-y-1.5">
+          {combined.map((r) => {
+            const isMine = r.pm === adminName;
+            return (
+              <li key={r.id} className="text-[12px] leading-snug">
+                <Link
+                  href={`/admin/companies/${r.id}`}
+                  className="group block px-1.5 py-1 rounded hover:bg-white/70 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={`font-medium truncate ${isMine ? "text-brand" : "text-zinc-900"}`}>
+                      {isMine ? "★ " : ""}{r.name}
+                    </span>
+                    <span className="text-[10.5px] text-zinc-400 shrink-0">{r.pm}</span>
+                  </div>
+                  <div className="text-[11px] text-zinc-500 truncate">{renderMeta(r)}</div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {all.length > combined.length ? (
+        <div className="mt-2 text-[11px] text-zinc-400 text-right">+ {all.length - combined.length}곳</div>
+      ) : null}
+    </div>
+  );
 }
