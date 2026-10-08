@@ -10,6 +10,48 @@ export type DriveFolderResult =
   | { ok: true; url: string; id: string; existed: boolean }
   | { ok: false; error: string };
 
+export type DriveFileRow = {
+  name: string;
+  id: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  modifiedAt: string;
+};
+
+export type DriveFileListResult =
+  | { ok: true; files: DriveFileRow[] }
+  | { ok: false; error: string };
+
+/** 특정 폴더 안의 파일 목록 */
+export async function listFilesInDriveFolder(folderId: string): Promise<DriveFileListResult> {
+  const url = process.env.DRIVE_WEBHOOK_URL;
+  const secret = process.env.DRIVE_WEBHOOK_SECRET;
+  if (!url || !secret) return { ok: false, error: "DRIVE_WEBHOOK_URL / DRIVE_WEBHOOK_SECRET 미설정" };
+  if (!folderId) return { ok: false, error: "folderId required" };
+
+  try {
+    const sep = url.includes("?") ? "&" : "?";
+    const fullUrl = `${url}${sep}action=files&secret=${encodeURIComponent(secret)}&folderId=${encodeURIComponent(folderId)}`;
+    const res = await fetch(fullUrl, {
+      method: "GET",
+      cache: "no-store",
+      redirect: "follow",
+    });
+    const text = await res.text();
+    let data: { files?: DriveFileRow[]; error?: string } = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { ok: false, error: `invalid response: ${text.slice(0, 200)}` };
+    }
+    if (data.error) return { ok: false, error: data.error };
+    return { ok: true, files: data.files ?? [] };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export type DriveFolderListResult =
   | { ok: true; folders: { name: string; id: string; url: string }[] }
   | { ok: false; error: string };
