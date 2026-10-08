@@ -166,24 +166,62 @@ export async function TappingTable({
 
   const filtered = sortRows(allRows.filter((r) => matchesFilters(r, resolvedFilters)), resolvedFilters);
 
-  // 통계는 항상 '전체' 기준
+  // 통계 - 활용 중심 (상태별 집계)
   const total = allRows.length;
-  const confirmed = allRows.filter((r) => r.confirmed_operator).length;
   const inTapping = allRows.filter((r) => r.events.length > 0).length;
-  const lipsEligible = allRows.filter((r) => r.lips_eligible === "여").length;
-  const tipsEligible = allRows.filter((r) => r.tips_eligible === "여").length;
+  const notStarted = total - inTapping;
+
+  // 전체 태핑 이벤트 상태별 집계
+  const allEvents = allRows.flatMap((r) => r.events);
+  const committed = allEvents.filter((e) => e.status === "committed").length;
+  const activeReviewing = allEvents.filter((e) => ["interested", "reviewing", "meeting"].includes(e.status)).length;
+  const passed = allEvents.filter((e) => e.status === "passed").length;
+
+  // 투자사별 count (상위)
+  const operatorCount = new Map<string, number>();
+  for (const e of allEvents) {
+    const op = e.operator || "—";
+    operatorCount.set(op, (operatorCount.get(op) ?? 0) + 1);
+  }
+  const topOperators = Array.from(operatorCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+
   const rows = filtered;
 
   return (
     <>
-      {/* KPI */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        <MiniStat label="전체" value={total} suffix="곳" />
-        <MiniStat label="운영사 확정" value={confirmed} suffix="곳" tint="#10B981" />
-        <MiniStat label="태핑 진행" value={inTapping} suffix="곳" tint="#8B5CF6" />
-        <MiniStat label="LIPS 대상" value={lipsEligible} suffix="곳" tint="#3B82F6" />
-        <MiniStat label="TIPS 대상" value={tipsEligible} suffix="곳" tint="#F59E0B" />
+      {/* KPI - 실용 중심 (활성 진행 / 확약 / 드랍 / 미시작) */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <MiniStat label="전체 기업" value={total} suffix="곳" />
+        <MiniStat label="활성 진행" value={activeReviewing} suffix="건" tint="#8B5CF6" />
+        <MiniStat label="확약 완료" value={committed} suffix="건" tint="#10B981" />
+        <MiniStat label="드랍" value={passed} suffix="건" tint="#EF4444" />
+        <MiniStat label="미시작 기업" value={notStarted} suffix="곳" tint="#F59E0B" />
       </div>
+
+      {/* 투자사별 요약 뱃지 (상위 8개) */}
+      {topOperators.length > 0 ? (
+        <div className="mb-5">
+          <div className="text-[11px] font-semibold text-zinc-500 uppercase mb-2">투자사별 태핑 건수</div>
+          <div className="flex flex-wrap gap-1.5">
+            {topOperators.map(([name, count]) => (
+              <span
+                key={name}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] bg-white border border-zinc-200 hover:border-brand/40 transition-colors"
+              >
+                <span className="font-medium text-zinc-900">{name}</span>
+                <span className="text-[10.5px] font-semibold text-zinc-500 tabular-nums">{count}</span>
+              </span>
+            ))}
+            {operatorCount.size > 8 ? (
+              <span className="inline-flex items-center px-2.5 py-1 text-[11px] text-zinc-400">
+                +{operatorCount.size - 8}곳
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {/* Filters */}
       <TappingFiltersBar f={filters} currentUserName={currentUserName} />

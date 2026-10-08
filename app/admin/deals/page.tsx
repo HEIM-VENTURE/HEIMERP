@@ -45,7 +45,8 @@ type Props = {
 
 export default async function DealsListPage({ searchParams }: Props) {
   const params = await searchParams;
-  const view = (params.view ?? "deals") as "deals" | "tapping";
+  // 기본값: 태핑 뷰 (mock 딜 카드 뷰는 제거됨)
+  const view = "tapping" as const;
   const activeTab = (params.stage ?? "all") as DealStage | "all" | "active";
 
   const tappingFilters = {
@@ -85,43 +86,15 @@ export default async function DealsListPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">투자 딜</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {view === "tapping"
-              ? "기업별 심사역·운영사 태핑 진행 관리."
-              : "프로젝트별 투자 라운드 · 투자자 태핑 · 텀시트 · 심의 · 클로징 관리."}
+            기업별 심사역·운영사 태핑 진행 관리.
           </p>
         </div>
       </div>
 
-      {/* View switcher: 딜 카드 vs 태핑 표 */}
-      <div className="inline-flex items-center gap-0.5 p-0.5 mb-6 bg-zinc-100 rounded-lg">
-        <Link
-          href="/admin/deals"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12.5px] font-medium transition-colors ${
-            view === "deals" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
-          }`}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          딜 카드
-          <span className="text-[10.5px] text-zinc-400 ml-1">mock</span>
-        </Link>
-        <Link
-          href="/admin/deals?view=tapping"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12.5px] font-medium transition-colors ${
-            view === "tapping" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
-          }`}
-        >
-          <Table2 className="w-3.5 h-3.5" />
-          태핑 표
-        </Link>
-      </div>
-
-      {view === "tapping" ? (
-        <TappingTable
-          filters={tappingFilters}
-          mode={(params.mode ?? "kanban") as "kanban" | "table"}
-        />
-      ) : null}
-      {view === "deals" ? <DealCardsView activeTab={activeTab} /> : null}
+      <TappingTable
+        filters={tappingFilters}
+        mode={(params.mode ?? "kanban") as "kanban" | "table"}
+      />
     </>
   );
 }
