@@ -18,7 +18,6 @@ export const dynamic = "force-dynamic";
 type KeyFile = {
   id: number;
   filename: string;
-  url: string;
   kind: string;
   created_at: string;
 };
@@ -97,7 +96,7 @@ export default async function CompanyDashboardPage() {
       .limit(5),
     supabase
       .from("files")
-      .select("id, filename, url, kind, created_at")
+      .select("id, filename, kind, created_at")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false })
       .limit(100),
@@ -363,7 +362,6 @@ export default async function CompanyDashboardPage() {
                 label={label}
                 fileId={file.id}
                 filename={file.filename}
-                path={file.url}
                 createdAt={file.created_at}
               />
             ) : (

@@ -6,21 +6,20 @@ import { getPortalFileSignedUrl } from "../files/actions";
 
 export function KeyFileClickable({
   label,
+  fileId,
   filename,
-  path,
   createdAt,
 }: {
   label: string;
   fileId: number;
   filename: string;
-  path: string;
   createdAt: string;
 }) {
   const [pending, start] = useTransition();
 
   const open = () => {
     start(async () => {
-      const res = await getPortalFileSignedUrl(path);
+      const res = await getPortalFileSignedUrl(fileId);
       if (res.error || !res.signedUrl) {
         alert(res.error || "다운로드 실패");
         return;
